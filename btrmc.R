@@ -126,6 +126,7 @@ cb2 <- replace(cb2,ws, 1)
 cb2
 
 
+
 cb3 <- y
 vv<-which(cb3 !=4)
 wv <- which(cb3 == 4)
