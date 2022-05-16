@@ -108,8 +108,12 @@ str(cir_train, max.level = 1)
 X <- cir_train$X; y <- cir_train$y # set global variables
 X <- X[rowSums(X)!=0,]; dim(X) # filter out variables with only zero values
 
+# Vector containing 3 positive classes and one negative class
 mo = c(-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,-1,-1,-1,-1,-1,-1,2,2,2,2,2,3,3,3,3,3)
+# affectation vecteur 3 classes dans y
 y <-mo
+
+# first combination one vs all
 cb1 <-y
 vo<-which(cb1 !=2)
 wo <- which(cb1 == 2)
@@ -117,6 +121,7 @@ cb1 <- replace(cb1,vo, -1)
 cb1 <- replace(cb1,wo, 1)
 cb1
 
+# second combination one vs all
 cb2 <- y
 vs<-which(cb2 !=4)
 ws <- which(cb2 == 4)
@@ -125,6 +130,7 @@ cb2 <- replace(cb2,ws, 1)
 cb2
 
 
+# third  combination one vs all
 
 cb3 <- y
 vv<-which(cb3 !=4)
