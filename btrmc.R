@@ -109,8 +109,8 @@ X <- cir_train$X; y <- cir_train$y # set global variables
 X <- X[rowSums(X)!=0,]; dim(X) # filter out variables with only zero values
 
 # Vector containing 3 positive classes and one negative class
-mo = c(-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,-1,-1,-1,-1,-1,-1,2,2,2,2,2,3,3,3,3,3)
-# affectation vecteur 3 classes dans y
+mo = c(5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5,5,2,2,2,2,2,3,3,3,3,3)
+# affectation vecteur 4 classes dans y
 y <-mo
 
 # first combination one vs all
@@ -133,16 +133,32 @@ cb2
 # third  combination one vs all
 
 cb3 <- y
-vv<-which(cb3 !=4)
-wv <- which(cb3 == 4)
+vv<-which(cb3 !=3)
+wv <- which(cb3 == 3)
 cb3 <- replace(cb3,vv, -1)
 cb3 <- replace(cb3,wv, 1)
 cb3
 
+# third  combination one vs all
+
+cb4 <- y
+vl<-which(cb4 !=5)
+wl <- which(cb4 == 5)
+cb4 <- replace(cb4,vv, -1)
+cb4 <- replace(cb4,wv, 1)
+cb4
+
+# creation first binary classifier one vs all of our dataset
+
+
+
+
+
+
 
 
 # Launch the fit classifier routine
-mcterga1_fit <- function(X, y, clf) {
+mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
 
   # Setting the language environment
   switch(clf$params$language,
@@ -270,32 +286,62 @@ mcterga1_fit <- function(X, y, clf) {
       }
 
       # then we evolve
-      pop_last      <- evolve(X, y, clf, pop, seed = clf$params$current_seed)
+      pop_lastcb1      <- evolve(X, cb1, clf, pop, seed = clf$params$current_seed)
+      pop_lastcb2      <- evolve(X, cb2, clf, pop, seed = clf$params$current_seed)
+      pop_lastcb3      <- evolve(X, cb3, clf, pop, seed = clf$params$current_seed)
+      pop_lastcb4      <- evolve(X, cb4, clf, pop, seed = clf$params$current_seed)
     }
 
     # evaluate the fitting function for all the models of the populaion
     # transform to a population of model objects
-    pop_last.mod <- listOfSparseVecToListOfModels(X = X, y = y, clf = clf, v = pop_last)
+    pop_last.modcb1 <- listOfSparseVecToListOfModels(X = X, cb1 = cb1, clf = clf, v = pop_lastcb1)
+    pop_last.modcb2 <- listOfSparseVecToListOfModels(X = X, cb2 = cb2, clf = clf, v = pop_lastcb2)
+    pop_last.modcb3 <- listOfSparseVecToListOfModels(X = X, cb3= cb3, clf = clf, v = pop_lastcb3)
+    pop_last.modcb4 <- listOfSparseVecToListOfModels(X = X, cb4= cb4, clf = clf, v = pop_lastcb4)
     # evaluate the population
-    pop.last.eval <- evaluatePopulation(X, y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE)
+    pop.last.evalcb1 <- evaluatePopulation(X, cb1, clf, pop_last.modcb1, force.re.evaluation = TRUE, eval.all = TRUE)
+    pop.last.evalcb2 <- evaluatePopulation(X, cb2, clf, pop_last.modcb2, force.re.evaluation = TRUE, eval.all = TRUE)
+    pop.last.evalcb3 <- evaluatePopulation(X, cb3, clf, pop_last.modcb3, force.re.evaluation = TRUE, eval.all = TRUE)
+    pop.last.evalcb4 <- evaluatePopulation(X, cb4, clf, pop_last.modcb4, force.re.evaluation = TRUE, eval.all = TRUE)
     # get the evaluation vector
-    evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
+    evaluationcb1    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.evalcb1))
+    evaluationcb2   <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.evalcb2))
+    evaluationcb3    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.evalcb3))
+    evaluationcb4    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.evalcb4))
     # get the evaluation
-    evaluation.ord <- order(abs(evaluation), decreasing = TRUE)
+    evaluationcb1.ord <- order(abs(evaluationcb1), decreasing = TRUE)
+    evaluationcb2.ord <- order(abs(evaluationcb2), decreasing = TRUE)
+    evaluationcb3.ord <- order(abs(evaluationcb3), decreasing = TRUE)
+    evaluationcb4.ord <- order(abs(evaluationcb4), decreasing = TRUE)
     # order by best in front
-    evaluation <- evaluation[evaluation.ord]
-    pop_ordered_mod <- pop.last.eval[evaluation.ord] # we gain speed
+    evaluationcb1 <- evaluationcb1[evaluationcb1.ord]
+    evaluationcb2 <- evaluationcb2[evaluationcb2.ord]
+    evaluationcb3 <- evaluationcb3[evaluationcb3.ord]
+    evaluationcb4 <- evaluationcb4[evaluationcb4.ord]
+    pop_ordered_modcb1 <- pop.last.evalcb1[evaluationcb1.ord] # we gain speed
+    pop_ordered_modcb2 <- pop.last.evalcb2[evaluationcb2.ord] # we gain speed
+    pop_ordered_modcb3 <- pop.last.evalcb3[evaluationcb3.ord] # we gain speed
+    pop_ordered_modcb4 <- pop.last.evalcb4[evaluationcb4.ord] # we gain speed
 
     # get the best individuals (should be the first)
-    best_individual_index <- which.max(abs(evaluation))
-    best_individual <- pop_ordered_mod[[best_individual_index]]
+    best_individual_indexcb1 <- which.max(abs(evaluationcb1))
+    best_individual_indexcb2 <- which.max(abs(evaluationcb2))
+    best_individual_indexcb3 <- which.max(abs(evaluationcb3))
+    best_individual_indexcb4 <- which.max(abs(evaluationcb4))
+    best_individualcb1 <- pop_ordered_modcb1[[best_individual_indexcb1]]
+    best_individualcb2 <- pop_ordered_modcb2[[best_individual_indexcb2]]
+    best_individualcb3 <- pop_ordered_modcb3[[best_individual_indexcb3]]
+    best_individualcb4 <- pop_ordered_modcb4[[best_individual_indexcb4]]
 
     # print it out
     if(clf$params$verbose)
     {
-      if(isModel(best_individual))
+      if(isModel(best_individualcb1) & (best_individualcb2) & (best_individualcb3) & (best_individualcb4))
       {
-        try(cat(paste("gen =",i,"\t", printModel(mod = best_individual, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
+        try(cat(paste("gencb1 =",i, "\t", printModel(mod = best_individualcb1, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
+        try(cat(paste("gencb2 =",i, "\t", printModel(modc = best_individualcb2, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
+        try(cat(paste("gencb3 =",i, "\t", printModel(mod= best_individualcb3, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
+        try(cat(paste("gencb4 =",i, "\t", printModel(mod = best_individualcb4, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
       }
     }
 
