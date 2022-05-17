@@ -248,19 +248,28 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
     # test for
     if (clf$params$current_sparsity == 1 & !clf$params$evolve_k1) # if we want to evolve features for k_sparse=1 we create a normal population
     {
-      pop_last      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb1      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb2      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb3      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb4      <- as.list(1:nrow(X)) # create population with k_sparse = 1
       
 
     }else
     {
-      best_ancestor = NULL
+      best_ancestorcb1 = NULL
+      best_ancestorcb2 = NULL
+      best_ancestorcb3 = NULL
+      best_ancestorcb4 = NULL
       
 
-      if (exists("pop_last"))
+      if (exists(("pop_lastcb1")&("pop_lastcb2")&("pop_lastcb3")&("pop_lastcb4")))
       {
         if(length(evaluation) != 0)
         {
-          best_ancestor = pop_last[[which.max(evaluation)]]
+          best_ancestorcb1 = pop_lastcb1[[which.max(evaluation)]]
+          best_ancestorcb2 = pop_lastcb2[[which.max(evaluation)]]
+          best_ancestorcb3 = pop_lastcb3[[which.max(evaluation)]]
+          best_ancestorcb4 = pop_lastcb4[[which.max(evaluation)]]
          
         }
 
@@ -268,7 +277,10 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
         pop         <- population(clf = clf,
                                   size_ind = i,
                                   size_world = nrow(X),
-                                  best_ancestor = best_ancestor,
+                                  best_ancestorcb1 = best_ancestorcb1,
+                                  best_ancestorcb2 = best_ancestorcb2,
+                                  best_ancestorcb3 = best_ancestorcb3,
+                                  best_ancestorcb4 = best_ancestorcb4,
                                   size_pop = clf$params$size_pop,
                                   seed = clf$params$current_seed)
       }else
@@ -277,7 +289,10 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
         pop         <- population(clf = clf,
                                   size_ind = i,
                                   size_world = nrow(X),
-                                  best_ancestor = best_ancestor,
+                                  best_ancestorcb1 = best_ancestorcb1,
+                                  best_ancestorcb2 = best_ancestorcb2,
+                                  best_ancestorcb3 = best_ancestorcb3,
+                                  best_ancestorcb4 = best_ancestorcb4,
                                   size_pop = clf$params$size_pop,
                                   seed = clf$params$current_seed)
       }
