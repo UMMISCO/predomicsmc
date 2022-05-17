@@ -336,19 +336,22 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
     # print it out
     if(clf$params$verbose)
     {
-      if(isModel(best_individualcb1) & (best_individualcb2) & (best_individualcb3) & (best_individualcb4))
+      if(isModel((best_individualcb1) & (best_individualcb2) & (best_individualcb3) & (best_individualcb4)))
       {
         try(cat(paste("gencb1 =",i, "\t", printModel(mod = best_individualcb1, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
-        try(cat(paste("gencb2 =",i, "\t", printModel(modc = best_individualcb2, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
+        try(cat(paste("gencb2 =",i, "\t", printModel(mod = best_individualcb2, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
         try(cat(paste("gencb3 =",i, "\t", printModel(mod= best_individualcb3, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
         try(cat(paste("gencb4 =",i, "\t", printModel(mod = best_individualcb4, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
       }
     }
 
     # transform the indexes into models
-    if(!isPopulation(obj = pop_ordered_mod))
+    if(!isPopulation((objcb1= pop_ordered_modcb1)&(objcb2 = pop_ordered_modcb2)&(objcb3 = pop_ordered_modcb3)&(objcb4 = pop_ordered_modcb4)))
     {
-      pop_ordered_mod <- evaluatePopulation(X, y, clf, pop_ordered_mod, force.re.evaluation = TRUE, eval.all = TRUE)
+      pop_ordered_modcb1 <- evaluatePopulation(X, cb1, clf, pop_ordered_mod, force.re.evaluation = TRUE, eval.all = TRUE)
+      pop_ordered_modcb2 <- evaluatePopulation(X, cb2, clf, pop_ordered_mod, force.re.evaluation = TRUE, eval.all = TRUE)
+      pop_ordered_modcb3 <- evaluatePopulation(X, cb3, clf, pop_ordered_mod, force.re.evaluation = TRUE, eval.all = TRUE)
+      pop_ordered_modcb4 <- evaluatePopulation(X, cb4, clf, pop_ordered_mod, force.re.evaluation = TRUE, eval.all = TRUE)
     }
 
     # keep only models that are unique
