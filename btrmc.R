@@ -248,7 +248,10 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
     # test for
     if (clf$params$current_sparsity == 1 & !clf$params$evolve_k1) # if we want to evolve features for k_sparse=1 we create a normal population
     {
-      pop_last      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb1      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb2      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb3      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_lastcb4      <- as.list(1:nrow(X)) # create population with k_sparse = 1
 
     }else
     {
