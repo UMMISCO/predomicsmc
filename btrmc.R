@@ -248,20 +248,20 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
     # test for
     if (clf$params$current_sparsity == 1 & !clf$params$evolve_k1) # if we want to evolve features for k_sparse=1 we create a normal population
     {
-      pop_lastcb1      <- as.list(1:nrow(X)) # create population with k_sparse = 1
-      pop_lastcb2      <- as.list(1:nrow(X)) # create population with k_sparse = 1
-      pop_lastcb3      <- as.list(1:nrow(X)) # create population with k_sparse = 1
-      pop_lastcb4      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      pop_last      <- as.list(1:nrow(X)) # create population with k_sparse = 1
+      
 
     }else
     {
       best_ancestor = NULL
+      
 
       if (exists("pop_last"))
       {
         if(length(evaluation) != 0)
         {
           best_ancestor = pop_last[[which.max(evaluation)]]
+         
         }
 
         # build a new population seeded by the last one
@@ -289,10 +289,11 @@ mcterga1_fit <- function(X, y,cb1, cb2, cb3, cb4,clf) {
       }
 
       # then we evolve
-      pop_lastcb1      <- evolve(X, cb1, clf, pop, seed = clf$params$current_seed)
-      pop_lastcb2      <- evolve(X, cb2, clf, pop, seed = clf$params$current_seed)
-      pop_lastcb3      <- evolve(X, cb3, clf, pop, seed = clf$params$current_seed)
-      pop_lastcb4      <- evolve(X, cb4, clf, pop, seed = clf$params$current_seed)
+      pop_last1      <- evolve(X, cb1, clf, pop, seed = clf$params$current_seed)
+      pop_last2      <- evolve(X, cb2, clf, pop, seed = clf$params$current_seed)
+      pop_last3      <- evolve(X, cb3, clf, pop, seed = clf$params$current_seed)
+      pop_last4      <- evolve(X, cb4, clf, pop, seed = clf$params$current_seed)
+      
     }
 
     # evaluate the fitting function for all the models of the populaion
