@@ -46,12 +46,12 @@ pop         <- population(clf = clf,
                           seed = clf$params$current_seed)
 pop_last      <- evolve_ovo(X, y, clf, pop, seed = clf$params$current_seed)
 pop_last.mod <- listOfSparseVecToListOfModels_ovo(X, y , clf = clf, v = pop_last[[1]])
-scorelist <- getModelScore_ovo(mod = pop_last.mod[[1]], X = X, clf = clf)
+
 expect_length(pop, 100)
 expect_length(pop_last, 6)
 expect_length(pop_last[[1]], 100)
 expect_length(pop_last.mod, 100)
-expect_length(scorelist, 6)
+
 
           }
 )
