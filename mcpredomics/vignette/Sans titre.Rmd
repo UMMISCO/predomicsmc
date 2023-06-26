@@ -170,6 +170,7 @@ save(res.clf, clf, file = "fite_terga1ova.rda", compression_level = 9)
 
 
 ```{r}
+#ggggggg
 y <-  y[, 1]
 y <- as.vector(y)
 ```
