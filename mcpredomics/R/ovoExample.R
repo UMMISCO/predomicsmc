@@ -261,7 +261,7 @@ evaluateAUC_ovo <- function(score, y, sign = '>')
 
   # list values auc_ one versus one
   for(i in 1:length(list_y)){
-    au <- evaluateAUC(score, y = list_y[[i]], sign)
+    au <- evaluateAUC(score, y = list_y[[i]], sign = sign)
     list_auc[[i]] = au
   }
   auc <- list_auc
@@ -282,54 +282,34 @@ evaluateAUC_ovo <- function(score, y, sign = '>')
 #' @return a model whose evaluation parameters are updated
 evaluateAdditionnalMetrics_ovo <- function(mod, X, y, clf, mode = "train")
 {
-
-  # if the following attributes are selected, then we need to fix it since they are derivates of a score
-  if(clf$params$objective == "auc" & (clf$params$evalToFit != "fit_" | clf$params$evalToFit != "unpenalized_fit_"))
-  {
-    clf$params$evalToFit <- "accuracy_"
-  }
-
-  if(clf$params$evalToFit == "accuracy_") # additional metrics is auc_
-  {
-    # compute the auc
-    aucg                 <- evaluateAUC_ovo(score = mod$score, y = y, sign = ">")
-    aucl                 <- evaluateAUC_ovo(score = mod$score, y = y, sign = "<")
-    for(i in 1:length(aucg)){
-      mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+  nClasse <- unique(y)
+  list_mod <- list()
+  listmod <- list()
+  list_y <- list()
+  list_X <- list()
+  listcoeffs <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
     }
   }
 
-  if(clf$params$evalToFit == "auc_") # additional metrics is auc_
-  {
-    # evalute the accuracy that is not measured
-    mod <- evaluateAccuracy_ovo(mod = mod, X = X, y = y, clf = clf, force.re.evaluation = TRUE, mode = mode)
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
+  for(i in 1:(length(list_mod))){
+    clf$coeffs_ <- listcoeffs[[i]]
+    modmetric <- evaluateAdditionnalMetrics(mod = list_mod[[i]], X= list_X[[i]], y= list_y[[i]], clf=clf, mode = mode)
+    listmod[[i]] <- modmetric
   }
-
-  if(!myAssertNotNullNorNa(mod[[1]]$confusionMatrix_))
-  {
-    for(i in 1:length(mod)){
-      # visit this website for more information on the measures https://en.wikipedia.org/wiki/Precision_and_recall
-      confusioMatrix_ <- computeConfusionMatrix_ovo(mod, X, y, clf)
-      mod[[i]]$confusionMatrix_ <- confusioMatrix_[[i]]
-    }
-    if(is.null(mod[[1]]$confusionMatrix_))
-    {
-      return(NULL)
-    }
-  }
-
-  for (i in 1:length(mod)){
-    # precision = tp/(tp+fp)
-    # cm = confusion matrix (2,2 is the positive class)
-    mod[[i]]$precision_ <- mod[[i]]$confusionMatrix[2, 2] / (mod[[i]]$confusionMatrix[2, 2] + mod[[i]]$confusionMatrix[2, 1])
-    #mod$precision_ <- mod$confusionMatrix[1, 1] / (mod$confusionMatrix[1, 1] + mod$confusionMatrix[2, 1])
-
-    # recall = tp/(tp+fn), aka sensitivity
-    #mod$recall_    <- mod$confusionMatrix[1, 1] / (mod$confusionMatrix[1, 1] + mod$confusionMatrix[1, 2])
-    mod[[i]]$recall_    <- mod[[i]]$confusionMatrix[2, 2] / (mod[[i]]$confusionMatrix[2, 2] + mod[[i]]$confusionMatrix[1, 2])
-
-    mod[[i]]$f1_       <- 2 * (mod[[i]]$precision_ * mod[[i]]$recall_) / (mod[[i]]$precision_ + mod[[i]]$recall_)
-  }
+  mod <- listmod
 
   return(mod)
 }
