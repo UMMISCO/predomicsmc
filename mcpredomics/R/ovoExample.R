@@ -30,7 +30,7 @@ getSign_ovo <- function(X, y, clf = NULL, parallel.local = FALSE)
     }
   }
 
-  for(i in 1:length(list_y)){
+  for(i in 1:(length(list_y))){
     Sign <- getSign(X=list_X[[i]], y=list_y[[i]], clf = NULL, parallel.local = FALSE)
     list_Sign[[i]] = Sign
   }
@@ -131,24 +131,9 @@ evaluateIntercept_ovo <- function(mod, X, y, clf)
   return(mod)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #' Computes the predected classification using a given model
 #'
-#' @description This function evaluates the predicted classification either using (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign
+#' @description This function evaluates the predicted classification using (1) a model object list that contains the intercept and the sign or (2) directly the attributes score, intercept, sign
 #' @param mod: a model object to be used in the class prediction
 #' @param X: dataset to classify
 #' @param y: variable to predict
@@ -156,7 +141,7 @@ evaluateIntercept_ovo <- function(mod, X, y, clf)
 #' @param score: the score passed directly
 #' @param intercept: the intercept passed directly
 #' @param sign: the sign passed directly
-#' @return a vector with the predicted classification of the samples
+#' @return a list with the predicted classification of the samples
 #'
 evaluateYhat_ovo <- function(mod = NULL, X, y, clf, score=NULL, intercept=NULL, sign=NULL)
 {
@@ -192,11 +177,6 @@ evaluateYhat_ovo <- function(mod = NULL, X, y, clf, score=NULL, intercept=NULL, 
   return(yhat)
 }
 
-################################################################
-# COMPUTING MODEL OBJECTS, SCORES, ERRORS...
-################################################################
-
-
 #' Evaluates the confusion Matrix of the predicted class and the class to predict
 #'
 #' @description This function evaluates the accuracy of a model
@@ -207,14 +187,15 @@ evaluateYhat_ovo <- function(mod = NULL, X, y, clf, score=NULL, intercept=NULL, 
 #' @return a list confusion matrix
 computeConfusionMatrix_ovo <- function(mod, X, y, clf)
 {
-  yhat <- list()
+
   cm <- list()
   yhat <- evaluateYhat_ovo(mod = mod, X = X, y = y, clf = clf)
-  if(is.null(yhat[[1]]))
+  for(i in 1:(length(yhat))){
+  if(is.null(yhat[[i]]))
   {
     return(NULL)
   }
-
+  }
   nClasse <- unique(y)
   list_y <- list()
   k <- 1
@@ -233,9 +214,12 @@ computeConfusionMatrix_ovo <- function(mod, X, y, clf)
     yhat[[i]] <- factor(yhat[[i]], levels = names(table(y[[i]])))
   }
 
-  if(length(yhat[[1]]) != length(y[[1]]))
+  for(i in 1:length(yhat)){
+
+  if(length(yhat[[i]]) != length(y[[i]]))
   {
     return(NULL)
+  }
   }
   for(i in 1:length(yhat)){
     cm[[i]] <- table(y[[i]], yhat[[i]], dnn = c("y", "yhat"))

@@ -30,8 +30,8 @@ evaluateYhat_ovo(
 \item{sign:}{the sign passed directly}
 }
 \value{
-a vector with the predicted classification of the samples
+a list with the predicted classification of the samples
 }
 \description{
-This function evaluates the predicted classification either using (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign
+This function evaluates the predicted classification using (1) a model object list that contains the intercept and the sign or (2) directly the attributes score, intercept, sign
 }
