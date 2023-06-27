@@ -65,6 +65,9 @@ y <-  y[, 1]
 y <- as.vector(y)
 ```
 
+```{r}
+ res_clf <- fit_OVO(X = X, y = y, clf = clf, cross.validate = TRUE, nfolds = 1); # class(res_clf
+```
 
 
 

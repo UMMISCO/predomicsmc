@@ -154,7 +154,7 @@ fit_OVO <- function(X,
 
 
 
-      feature.cor     <- filterfeaturesK_ovo(data = t(apply(X.nona, 1, rank)), # for speedup
+      feature.cor     <- filterfeaturesK(data = t(apply(X.nona, 1, rank)), # for speedup
                                          trait = rank(y.nona),             # for speedup
                                          k = max.nb.features,
                                          type = "pearson",                 # for speedup
@@ -163,13 +163,41 @@ fit_OVO <- function(X,
                                          return.data = FALSE) # to avoid having to recompute this all the time
     }else # classification
     {
-      feature.cor     <- filterfeaturesK_ovo(data = X,
-                                         trait = y,
+
+      nClasse <- unique(y)
+      feature.cor   <- list()
+      list_y <- list()
+      list_X <- list()
+      k <- 1
+
+
+
+      for (i in 1:(length(nClasse)-1)) {
+        for (j in (i+1):length(nClasse)) {
+          class_i <- nClasse[i]
+          class_j <- nClasse[j]
+          indices <- which(y == class_i | y == class_j)
+          y_pair <- y[indices]
+          y_pair <- as.vector(y_pair)
+          X_pair <- X[,indices]
+          list_y[[k]] <- y_pair
+          list_X[[k]] <- X_pair
+
+          k <- k+1
+        }
+      }
+
+
+      for (i in 1:(length(list_y))) {
+      feature.cor[[i]]     <- filterfeaturesK(data = list_X[[i]],
+                                         trait = list_y[[i]],
                                          k = max.nb.features,
                                          type = "wilcoxon",
                                          sort = TRUE,
                                          verbose = clf$params$verbose,
                                          return.data = FALSE) # to avoid having to recompute this all the time
+
+      }
     }
 
     if(!is.null(path))
