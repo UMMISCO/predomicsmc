@@ -1,5 +1,4 @@
 
-
 #' Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function
 #'
 #' @description Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function, one versus one.
@@ -87,45 +86,6 @@ individual_ovo <- function(X, y, clf, coeffs = NULL, ind = NULL, eval.all= FALSE
 
 }
 
-#' Computes the best intercept for the model while minimizing error
-#'
-#' @description Computes the best intercept for the model
-#' @param score: the ^y score of the model
-#' @param y: the response vector
-#' @param verbose: print running information when set to TRUE
-#' @param sign: weather the score should be greater or smaller than the intercept (default:"auto")
-#' @param return.all: if TRUE, the function will return the intercept as well as the table used to compute it.
-#' @param plot: if TRUE, the score will be visialized (default:FALSE)
-#' @return the intercept, the sign and the accuracy
-#' @export
-computeIntercept_ovo <- function(score, y, verbose=FALSE, sign="auto", plot = FALSE) {
-
-  nClasse <- unique(y)
-  list_compute <- list()
-  list_y <- list()
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      list_y[[k]] <- y_pair
-      k <- k + 1
-    }
-  }
-  listcoeffs <- list()
-  listcoeffs     <- clf$coeffs_
-  for(i in 1:length(list_y)){
-    clf$coeffs_     <- listcoeffs[[i]]
-    interc <-  computeIntercept(score = score, y = list_y[[i]], clf)
-    list_compute[[i]] = interc
-  }
-  res <- list_compute
-  return(res)
-}
-
-
 
 
 #' Computes the ^y score of the model
@@ -161,18 +121,20 @@ getModelScore_ovo<- function(mod, X, clf, force.re.evaluation = TRUE)
 
 
 
-#' Evaluates the fitting score of a model object
+
+#' Evaluates the fitting scores of a model objects
 #'
-#' @description Evaluates the fitting score of a model object.
-#' @param mod : a model object
+#' @description Evaluates fit scores of model objects.
+#' @param mod : model objects
 #' @param X: the data matrix with variables in the rows and observations in the columns
 #' @param y: the response vector
 #' @param clf: the classifier parameter object
-#' @return a model object with the fitting score
+#' @return model objects with fit scores
 evaluateIntercept_ovo <- function(mod, X, y, clf)
 {
   nClasse <- unique(y)
   list_mod <- list()
+  listmod <- list()
   list_y <- list()
   list_X <- list()
   listcoeffs <- list()
@@ -190,96 +152,31 @@ evaluateIntercept_ovo <- function(mod, X, y, clf)
     }
   }
 
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
 
-  listcoeffs     <- clf$coeffs_
-  #list_mod <- mod
-
-
-  if(!isModel(mod[[1]]))
-  { # if model is not an object
-    if(is.character(mod[[1]]))
-    { # if model is of the form of variable names
-      mod <- index2names(X=list_X[[1]], mod[[1]])
-    }
-    mod <- individual_ovo(X, y, clf = clf, ind = mod)
+  for(i in 1:length(list_mod)){
+    clf$coeffs_ <- listcoeffs[[i]]
+    evalInter <- evaluateIntercept(mod=list_mod[[i]], X=list_X[[i]], y=list_y[[i]], clf)
+    listmod[[i]] <- evalInter
   }
-
-  if(isModelSota(mod[[1]]))
-  {
-    if(clf$params$warnings) warning("evaluateIntercept: no intercept for sota models. Returning unchanged.")
-    return(mod)
-  }
-
-  if((clf$params$intercept=="NULL"))
-  {
-
-    # compute the fitting scores depending on the method
-    if(!myAssertNotNullNorNa(mod$score_))
-    {
-      scorelist <- getModelScore_ovo(mod = mod, X = X, clf = clf)
-      for(i in 1:length(scorelist)){
-
-        mod[[i]]$score_ <- scorelist[[i]]$score_
-        mod[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
-        mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
-
-      }
-
-
-      if(is.null(mod[[1]]$score_))
-      {
-        return(NULL)
-      }
-    }
-
-    # NOTE: in the score we may have infite values that come for instance from the ratio language
-    # This means that whatever the intercept these examples are positive ones. As such we can omit
-    # them when computing the intercept.
-    score <- list()
-
-    for(i in 1:length(mod)){
-      ind.infinite  <- is.infinite(mod[[i]]$score_)
-      ind.nan       <- is.nan(mod[[i]]$score_)
-
-      score__         <- mod[[i]]$score_
-      # the ind.infinite scores should be replaced by a big value let say max(X)+1
-      try(score__[ind.infinite] <- clf$data$X.max[[i]] + 1, silent = TRUE)
-      # the ind.nan should be replaced by a small value for instance min(X)-1
-      try(score__[ind.nan] <- clf$data$X.min[[i]] - 1, silent = TRUE)
-      score[[i]] <- score__
-    }
-
-    switch(clf$params$objective,
-           auc={ # THE AUC objective
-             interc             <- computeIntercept_ovo(score = score, y = y, clf)
-             for(i in 1:length(interc)){
-               mod[[i]]$intercept_     <- interc[[i]]$intercept
-               mod[[i]]$sign_          <- interc[[i]]$sign
-             }
-
-           },
-           cor={
-             for(i in 1:length(mod)){
-               mod[[i]]$intercept_     <- "NULL"
-               mod[[i]]$sign_          <- "NULL"
-             }
-
-           },
-           {
-             if(clf$params$warnings) warning("evaluateIntercept: This objective does not exist !")
-           }
-    )
-  } else
-  {
-    for(i in 1:length(mod)){
-      mod[[i]]$intercept_ <- clf$params$intercept
-      mod[[i]]$sign_ <- ">"
-    }
-
-  }
-
+  mod <- listmod
   return(mod)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #' Computes the predected classification using a given model

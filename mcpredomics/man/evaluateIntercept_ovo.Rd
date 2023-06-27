@@ -2,12 +2,12 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateIntercept_ovo}
 \alias{evaluateIntercept_ovo}
-\title{Evaluates the fitting score of a model object}
+\title{Evaluates the fitting scores of a model objects}
 \usage{
 evaluateIntercept_ovo(mod, X, y, clf)
 }
 \arguments{
-\item{mod}{: a model object}
+\item{mod}{: model objects}
 
 \item{X:}{the data matrix with variables in the rows and observations in the columns}
 
@@ -16,8 +16,8 @@ evaluateIntercept_ovo(mod, X, y, clf)
 \item{clf:}{the classifier parameter object}
 }
 \value{
-a model object with the fitting score
+model objects with fit scores
 }
 \description{
-Evaluates the fitting score of a model object.
+Evaluates fit scores of model objects.
 }
