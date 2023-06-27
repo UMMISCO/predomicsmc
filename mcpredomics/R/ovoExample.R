@@ -392,6 +392,7 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
   listmod <- list()
   list_y <- list()
   list_X <- list()
+  scorelist <- list()
   listcoeffs <- list()
   k <- 1
   for (i in 1:(length(nClasse)-1)) {
