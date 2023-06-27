@@ -88,39 +88,6 @@ individual_ovo <- function(X, y, clf, coeffs = NULL, ind = NULL, eval.all= FALSE
 
 
 
-#' Computes the ^y score of the model
-#'
-#' @description Returns the ^y score of the model
-#' @importFrom kernlab predict
-#' @param mod: a model object where the score will be computed
-#' @param X: the data matrix with variables in the rows and observations in the columns
-#' @param force.re.evaluation: we recompute the score (default:TRUE)
-#' @return a list containing the predicted ^y score for each observation
-#' @export
-
-getModelScore_ovo<- function(mod, X, clf, force.re.evaluation = TRUE)
-{
-
-  list_X <- list()
-  list_X <- clf$data$X
-  list_mod <- list()
-  list_mod <- mod
-  list_res <- list()
-  listcoeffs <- list()
-  listcoeffs     <- clf$coeffs_
-  for (i in 1:length(listcoeffs)){
-   # clf$coeffs_     <- listcoeffs[[i]]
-    res <- getModelScore(mod = mod[[i]], X = list_X[[i]], clf = clf)
-    list_res[[i]] <- res
-  }
-
-  res <- list_res
-
-  return(res)
-}
-
-
-
 
 #' Evaluates the fitting scores of a model objects
 #'
@@ -192,144 +159,38 @@ evaluateIntercept_ovo <- function(mod, X, y, clf)
 #' @return a vector with the predicted classification of the samples
 #'
 evaluateYhat_ovo <- function(mod = NULL, X, y, clf, score=NULL, intercept=NULL, sign=NULL)
-  {
-  list_yhat <- list()
-  score <- list()
-  intercept <- list()
-  sign <- list()
-  if(!isModel(mod[[1]]))
-  {
-    stop("evaluateYhat: please provide a valid model object BTR or SOTA.")
-  }
-
-  if(isModelSotaRF(mod[[1]]))
-  {
-    for(i in 1:length(mod)){
-      X <- clf$data$X[[i]]
-      yhat <- predict(object = mod[[i]]$obj, t(X[mod[[i]]$indices_,]))
-      list_yhat[[i]] <- yhat
-    }
-
-  }
-
-  if(isModelSotaSVM(mod[[1]]))
-  {
-    for(i in 1:length(mod)){
-      X <- clf$data$X[[i]]
-      yhat <- predict(object = mod[[i]]$obj, t(X[mod[[i]]$indices_,]))
-      list_yhat[[i]] <- yhat
+{
+  nClasse <- unique(y)
+  list_mod <- list()
+  listyhat <- list()
+  list_y <- list()
+  list_X <- list()
+  listcoeffs <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
     }
   }
 
-  if(isModelSotaGLMNET(mod[[1]]))
-  {
-    for(i in 1:length(mod)){
-      X <- clf$data$X[[i]]
-      yhat <- predict(object = mod[[i]]$obj, s = mod[[i]]$lambda, newx = t(X), type="class")[,1]
-      list_yhat[[i]] <- yhat
-    }
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
+  for(i in 1:(length(list_mod))){
+    clf$coeffs_ <- listcoeffs[[i]]
+    yha <- evaluateYhat(mod = list_mod[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf)
+    listyhat[[i]] <- yha
   }
+  yhat <- listyhat
 
-  if(!isModelSota(mod[[1]])) # if BTR
-  {
-    # score_
-    if(!myAssertNotNullNorNa(mod[[1]]$score_))
-    {
-      scorelist <- getModelScore_ovo(mod = mod, X = X, clf = clf, force.re.evaluation = FALSE) # compute the score of the model
-
-      for(i in 1:length(scorelist)){
-
-        score[[i]] <- scorelist[[i]]$score_
-      }
-
-      if(is.null(score[[1]]))
-      {
-        return(NULL)
-      }
-
-    } else
-    {
-      for(i in 1:length(mod)){
-        score[[i]]       <- mod[[i]]$score_
-      }
-
-    }
-
-    if(!myAssertNotNullNorNa(mod[[1]]$intercept_) | !myAssertNotNullNorNa(mod[[1]]$sign_))
-    {
-      mod <- evaluateIntercept_ovo(mod = mod, X = X, y = y, clf = clf)
-
-      for(i in 1:length(mod)){
-        intercept[[i]] <- mod[[i]]$intercept_
-        sign[[i]] <- mod[[i]]$sign_
-      }
-
-    }else{
-      for(i in 1:length(mod)){
-        intercept[[i]] <- mod[[i]]$intercept_
-        sign[[i]] <- mod[[i]]$sign_
-      }
-    }
-    for(i in 1:length(score)){
-      if(!myAssertNotNullNorNa(score[[i]], "missing score from evaluateYhat", stop = FALSE)) return(NULL)
-      if(!myAssertNotNullNorNa(intercept[[i]], "missing intercept from evaluateYhat", stop = FALSE)) return(NULL)
-      if(!myAssertNotNullNorNa(sign[[i]], "missing sign from evaluateYhat", stop = FALSE)) return(NULL)
-    }
-
-
-    nClasse <- unique(y)
-    list_y <- list()
-    lev <- list()
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        lev[[k]]   <- levels(as.factor(y_pair))
-        k <- k + 1
-      }
-    }
-
-    # NOTE: in the score we may have infite values that come for instance from the ratio language
-    # This means that whatever the intercept these examples are positive ones. As such we can omit
-    # them when computing the intercept.
-    ind.infinite <- list()
-    ind.nan <- list()
-    for(i in 1:length(mod)){
-      ind.infinite[[i]]  <- is.infinite(mod[[i]]$score_)
-      ind.nan[[i]]       <- is.nan(mod[[i]]$score_)
-    }
-
-
-    for(i in 1:length(mod)){
-      if(mod[[i]]$sign==">")
-      {
-        yhat.bool <- (score[[i]] - intercept[[i]] > 0)
-        yhat.bool[ind.infinite[[i]]] <- TRUE
-        yhat.bool[ind.nan[[i]]] <- FALSE # since 0 is not > than 0
-        # compute the class
-        yhat  <- factor(lev[[i]][as.factor(yhat.bool)], levels=lev[[i]])
-        list_yhat[[i]] <- yhat
-      }
-      #}
-      else
-      {
-        #for(i in 1:length(mod)){
-        yhat.bool <- (score[[i]] - intercept[[i]] < 0)
-        yhat.bool[ind.infinite[[i]]] <- FALSE
-        yhat.bool[ind.nan[[i]]] <- FALSE # since 0 is not < than 0
-        # compute the class
-        yhat  <- factor(lev[[i]][as.factor(yhat.bool)], levels=lev[[i]])
-        list_yhat[[i]] <- yhat
-      }
-      }
-    }
-    yhat <- list_yhat
-    return(yhat)
-  }
-
+  return(yhat)
+}
 
 ################################################################
 # COMPUTING MODEL OBJECTS, SCORES, ERRORS...
