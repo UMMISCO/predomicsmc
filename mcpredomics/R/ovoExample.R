@@ -702,10 +702,6 @@ for(i in 1:length(list_mod)) {
   return(mod)
 }
 
-
-
-
-
 #' Evaluates the fitting score of a model object ovo
 #'
 #' @description Evaluates the fitting score of a model object ovo.
@@ -730,49 +726,70 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   }
 
 
-  if(!isModel(mod[[1]]))
+  nClasse <- unique(y)
+  list_mod <- list()
+  listmod <- list()
+  list_y <- list()
+  list_X <- list()
+  listcoeffs <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
+
+for(i in 1:length(list_mod)){
+  if(!isModel(mod[[i]]))
   {
     # if not a model object but a valid index, create a model
-    if(!is.list(mod))
+    if(!is.list(mod[[i]]))
     {
-      mod <- individual(X = X, y = y, clf = clf, ind = mod[[1]]) # transform into a model
+      mod <- individual_ovo(X = X, y = y, clf = clf, ind = mod) # transform into a model
     }else
     {
       if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist, returning NULL.")
       return(NULL)
     }
   }
-
-
-
-
+}
 
 
   # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
-  if(!isModelSota(mod[[1]]))
+  for(i in 1:length(list_mod)){
+  if(!isModelSota(mod[[i]]))
   {
     # at this stage the model should be a valid one. If not return NULL
-    if(!isModel(mod[[1]]))
+    if(!isModel(mod[[i]]))
     {
       if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
       return(NULL)
     }
-
-   # if(mod[[1]]$language == "ratio" | mod[[1]]$language == "ter" | mod[[1]]$language == "terinter")
-    #{
-
-     # if(length(table(sign(mod[[1]]$coeffs_))) != 2)
-     # {
-        #return(NULL)
-      #}
-
-    #}
-
-
-
-
-
   }
+  }
+
+    for(i in 1:length(list_mod)){
+
+    if(mod[[i]]$language == "ratio" | mod[[i]]$language == "ter" | mod[[i]]$language == "terinter")
+    {
+
+      if(length(table(sign(mod[[i]]$coeffs_))) != 2)
+      {
+        return(NULL)
+      }
+
+    }
+    }
+
 
   # make a copy of the model object
   mod.res <- mod
@@ -806,23 +823,20 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   # If this is a regression problem no need to find intercepts etc...
   if(clf$params$objective == "cor")
   {
-    if(!isModelSota(mod.res[[1]]))
-    {
+    for(i in 1:length(mod.res)) {
+    if(!isModelSota(mod.res[[i]])){
       mod.res <- evaluateModelRegression_ovo(mod = mod.res, X = X, y = y, clf = clf, eval.all = eval.all, force.re.evaluation = force.re.evaluation)
       return(mod.res)
-    }else
+      }
+    else
     {
       if(clf$params$warnings) warning("evaluateModel: evaluating a sota model in correlation objective")
     }
+    }
   }
 
-
-
-
-
-
-
-  if(isModelSota(mod.res[[1]]))
+for(i in 1:length(mod.res)){
+  if(isModelSota(mod.res[[i]]))
   {
     # feature importance estimation will be switched off for the sotas, since the internal model structure is very different
     if(estim.feat.importance)
@@ -830,6 +844,10 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
       estim.feat.importance = FALSE
     }
   }
+}
+
+
+
 
 for(i in 1:length(mod.res)){
   # If sparsity is not the same
@@ -851,37 +869,45 @@ for(i in 1:length(mod.res)){
   # compute all other evaluation metrics
   if(eval.all)
   {
+    for(i in 1:length(mod.res)){
     # At this stage this should not happen but for debug stop it
-    if((!myAssertNotNullNorNa(mod.res[[1]]$intercept_) | !myAssertNotNullNorNa(mod.res[[1]]$sign_)) & !isModelSota(mod.res[[1]]))
+    if((!myAssertNotNullNorNa(mod.res[[i]]$intercept_) | !myAssertNotNullNorNa(mod.res[[i]]$sign_)) & !isModelSota(mod.res[[i]]))
     {
       if(clf$params$warnings) warning("evaluateModel: model without intercept at this stage is not normal.")
       return(NULL)
     }
+    }
 
-    mod.res         <- evaluateAdditionnalMetrics_ovo(mod = mod.res, X = X, y = y, clf = clf, mode = mode)
-    if(!isModel(mod.res[[1]]))
+    mod.res  <- evaluateAdditionnalMetrics_ovo(mod = mod.res, X = X, y = y, clf = clf, mode = mode)
+    for(i in 1:length(mod.res)){
+    if(!isModel(mod.res[[i]]))
     {
       # if(clf$params$warnings) warning("evaluateModel: returning an empty model.")
       return(NULL)
     }
-  }
-
-  # if BTR
-  if(!isModelSota(mod.res[[1]]))
-  {
-    if(estim.feat.importance)
-    {
-      mod.res  <- estimateFeatureImportance_ovo(mod = mod.res, X = X, y = y, clf = clf, plot.importance = FALSE)
     }
   }
 
+  # if BTR
+  for(i in 1:length(mod.res)) {
+  if(!isModelSota(mod.res[[i]]))
+  {
+    if(estim.feat.importance)
+    {
+      clf$coeffs_ <- listcoeffs[[i]]
+      mod.res[[i]]  <- estimateFeatureImportance(mod = mod.res[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf, plot.importance = FALSE)
+    }
+  }
+  }
+
+  for(i in 1:length(mod.res)){
   # At this stage this should not happen but for debug stop it
-  if(!myAssertNotNullNorNa(mod.res[[1]]$unpenalized_fit_))
+  if(!myAssertNotNullNorNa(mod.res[[i]]$unpenalized_fit_))
   {
     if(clf$params$warnings) warning("evaluateModel: model does not have a valid unpenalized_fit_ attribute.")
     return(NULL)
   }
-
+  }
   return(mod.res)
 }
 
