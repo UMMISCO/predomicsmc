@@ -177,27 +177,27 @@ evaluateYhat_ovo <- function(mod = NULL, X, y, clf, score=NULL, intercept=NULL, 
   return(yhat)
 }
 
-#' Evaluates the confusion Matrix of the predicted class and the class to predict
+
+
+#' Evaluates the accuracy of a model
 #'
-#' @description This function evaluates the accuracy of a model
-#' @param mod: a model object to be evaluated
+#' @description This function evaluates the accuracy of either (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign.one versus one
+#' @param mod: a model object to be used in the class prediction
 #' @param X: dataset to classify
 #' @param y: variable to predict
 #' @param clf: an object containing the different parameters of the classifier
-#' @return a list confusion matrix
-computeConfusionMatrix_ovo <- function(mod, X, y, clf)
+#' @param force.re.evaluation: evaluate again all the elements needed for accuracy (default:FALSE)
+#' @param mode: training or test mode. If training, the funciton maximizes accuracy.
+#' @return either (1) list a model whose evaluation parameters are updated or (2) the accuracy
+#' @export
+evaluateAccuracy_ovo <- function(mod = NULL, X, y, clf, force.re.evaluation = FALSE, mode = "train")
 {
-
-  cm <- list()
-  yhat <- evaluateYhat_ovo(mod = mod, X = X, y = y, clf = clf)
-  for(i in 1:(length(yhat))){
-  if(is.null(yhat[[i]]))
-  {
-    return(NULL)
-  }
-  }
   nClasse <- unique(y)
+  list_mod <- list()
+  listmod <- list()
   list_y <- list()
+  list_X <- list()
+  listcoeffs <- list()
   k <- 1
   for (i in 1:(length(nClasse)-1)) {
     for (j in (i+1):length(nClasse)) {
@@ -205,133 +205,21 @@ computeConfusionMatrix_ovo <- function(mod, X, y, clf)
       class_j <- nClasse[j]
       indices <- which(y == class_i | y == class_j)
       y_pair <- y[indices]
+      X_pair <- X[,indices]
       list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
       k <- k + 1
     }
   }
-  y <- list_y
-  for(i in 1:length(yhat)){
-    yhat[[i]] <- factor(yhat[[i]], levels = names(table(y[[i]])))
+
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
+  for(i in 1:(length(list_mod))){
+    clf$coeffs_ <- listcoeffs[[i]]
+    modacc <- evaluateAccuracy(mod = list_mod[[i]], X= list_X[[i]], y= list_y[[i]], clf, force.re.evaluation = force.re.evaluation, mode = mode)
+    listmod[[i]] <- modacc
   }
-
-  for(i in 1:length(yhat)){
-
-  if(length(yhat[[i]]) != length(y[[i]]))
-  {
-    return(NULL)
-  }
-  }
-  for(i in 1:length(yhat)){
-    cm[[i]] <- table(y[[i]], yhat[[i]], dnn = c("y", "yhat"))
-  }
-  return(cm)
-}
-
-
-#' Evaluates the accuracy of a model
-#'
-#' @description This function evaluates the accuracy of either (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign
-#' @param mod: a model object to be used in the class prediction
-#' @param X: dataset to classify
-#' @param y: variable to predict
-#' @param clf: an object containing the different parameters of the classifier
-#' @param force.re.evaluation: evaluate again all the elements needed for accuracy (default:FALSE)
-#' @param mode: training or test mode. If training, the funciton maximizes accuracy.
-#' @return either (1) a model whose evaluation parameters are updated or (2) the accuracy
-#' @export
-evaluateAccuracy_ovo <- function(mod = NULL, X, y, clf, force.re.evaluation = FALSE, mode = "train")
-{
-
-  #If mod is not a valid model
-  if(!isModel(obj = mod[[1]]))
-  {
-    stop("evaluateAccuracy: please provide a valid model object BTR or SOTA")
-  }else
-  {
-    for(i in 1:length(mod)){
-      # test if the confusion matrix exists
-      if(!myAssertNotNullNorNa(mod[[i]]$confusionMatrix_) | force.re.evaluation)
-      {
-        # NOTE: we consider that evaluateFit is the main function where we would have computed the score and intercept if force.re.evaluation.
-        # here we need to update the confusionMatrix_
-
-        # compute the score if it does not exist
-        if(!myAssertNotNullNorNa(mod[[i]]$score_))
-        {
-          scorelist       <- getModelScore_ovo(mod = mod, X = X, clf, force.re.evaluation = force.re.evaluation) # compute the score of the model
-          mod[[i]]$score_      <- scorelist[[i]]$score_
-          mod[[i]]$pos_score_  <- scorelist[[i]]$pos_score_
-          mod[[i]]$neg_score_  <- scorelist[[i]]$neg_score_
-
-          if(is.null(mod[[i]]$score_))
-          {
-            return(NULL)
-          }
-        }
-
-        # compute the intercept and/or the sign if they do not exist
-        if((!myAssertNotNullNorNa(mod[[i]]$intercept_) | !myAssertNotNullNorNa(mod[[i]]$sign_)) & !isModelSota(mod[[i]]))
-        {
-          mod <- evaluateIntercept_ovo(mod = mod, X = X, y = y, clf = clf)
-        }
-
-        if(!isModelSota(mod[[i]]))
-        {
-          if(!myAssertNotNullNorNa(mod[[i]]$intercept_)) return(NULL)
-          if(!myAssertNotNullNorNa(mod[[i]]$sign_)) return(NULL)
-        }
-
-        # compute the confusion matrix
-        confusioMatrix_ <- computeConfusionMatrix_ovo(mod, X, y, clf)
-        mod[[i]]$confusionMatrix_ <- confusioMatrix_[[i]]
-
-        if(is.null(mod[[i]]$confusionMatrix_))
-        {
-          return(NULL)
-        }
-      } # end re-evaluation or missing confusion matrix
-
-
-      if(mode == "train")
-      {
-        a1 <- sum(diag(mod[[i]]$confusionMatrix_)) / sum(mod[[i]]$confusionMatrix_)
-        a2 <- sum(diag(apply(mod[[i]]$confusionMatrix_, 2, rev))) / sum(mod[[i]]$confusionMatrix_)
-
-        if(a1 < a2  & !isModelSota(mod[[i]]))
-        {
-          # inverse the sign
-          if(mod[[i]]$sign_ == ">")
-          {
-            mod[[i]]$sign_ <- "<"
-          }else
-          {
-            mod[[i]]$sign_ <- ">"
-          }
-
-          # and recompute everything. This works with a recursive calling but due to R limits recursive calling in some deep cases
-          # throws errors. This is why we are recoding another solution
-          # mod <- evaluateAccuracy(mod = mod, X = X, y = y, force.re.evaluation = force.re.evaluation, mode = mode)
-
-          # recompute the confusion matrix
-          confusioMatrix_ <- computeConfusionMatrix_ovo(mod, X, y, clf)
-          mod[[i]]$confusionMatrix_ <- confusioMatrix_[[i]]
-          if(is.null(mod[[i]]$confusionMatrix_))
-          {
-            return(NULL)
-          }
-
-          # and accuracy
-          mod[[i]]$accuracy_ <- sum(diag(mod[[i]]$confusionMatrix_)) / sum(mod[[i]]$confusionMatrix_)
-        }else
-        {
-          mod[[i]]$accuracy_ <- a1
-        }
-      }else
-      {
-        mod[[i]]$accuracy_ <- sum(diag(mod[[i]]$confusionMatrix_)) / sum(mod[[i]]$confusionMatrix_)
-      }
-    }
-  } # end train/test
+  mod <- listmod
 
   return(mod)
 }

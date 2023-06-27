@@ -27,8 +27,8 @@ evaluateAccuracy_ovo(
 \item{mode:}{training or test mode. If training, the funciton maximizes accuracy.}
 }
 \value{
-either (1) a model whose evaluation parameters are updated or (2) the accuracy
+either (1) list a model whose evaluation parameters are updated or (2) the accuracy
 }
 \description{
-This function evaluates the accuracy of either (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign
+This function evaluates the accuracy of either (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign.one versus one
 }
