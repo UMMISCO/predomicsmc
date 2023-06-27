@@ -314,6 +314,60 @@ evaluateAdditionnalMetrics_ovo <- function(mod, X, y, clf, mode = "train")
   return(mod)
 }
 
+
+
+#' Evaluates the fitting coefficents of a model object
+#'
+#' @description Evaluates the fitting coefficients of a model object.
+#' @param mod: a model object
+#' @param X: the data matrix with variables in the rows and observations in the columns
+#' @param y: the response vector
+#' @param clf: the classifier parameter object
+#' @param eval.all: should the function evaluate all the scores (default:FALSE)
+#' @param force.re.evaluation: re-evaluate all the scores even if they exist (default:FALSE)
+#' @return a model object with the fitting scores evaluated
+#' @export
+evaluateModelRegression_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE)
+{
+  nClasse <- unique(y)
+  list_mod <- list()
+  listmod <- list()
+  list_y <- list()
+  list_X <- list()
+  listcoeffs <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
+  for(i in 1:(length(list_mod))){
+    clf$coeffs_ <- listcoeffs[[i]]
+    mod.res <- evaluateModelRegression(mod = list_mod[[i]], X= list_X[[i]], y= list_y[[i]], clf=clf, eval.all = eval.all,force.re.evaluation = force.re.evaluation)
+    listmod[[i]] <- mod.res
+  }
+  mod.res <- listmod
+
+  return(mod.res)
+}
+
+
+
+
+
+
+
+
 #' Evaluates the fitting score of a model object
 #'
 #' @description Evaluates the fitting score of a model object.
@@ -657,149 +711,8 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
   return(mod)
 }
 
-#' Evaluates the fitting coefficents of a model object
-#'
-#' @description Evaluates the fitting coefficients of a model object.
-#' @param mod: a model object
-#' @param X: the data matrix with variables in the rows and observations in the columns
-#' @param y: the response vector
-#' @param clf: the classifier parameter object
-#' @param eval.all: should the function evaluate all the scores (default:FALSE)
-#' @param force.re.evaluation: re-evaluate all the scores even if they exist (default:FALSE)
-#' @return a model object with the fitting scores evaluated
-#' @export
-evaluateModelRegression_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE)
-{
-  if(!isModel(mod[[1]]))
-  {
-    stop("evaluateModelRegression: the model to be evaluated does not exist.")
-  }
-
-  if(isModelSota(mod[[1]]))
-  {
-    if(clf$params$warnings) warning("evaluateModelRegression: no intercept for sota models. Returning unchanged.")
-    return(mod)
-  }
-  mod.res <- list()
-  for(i in 1:length(mod)){
-
-    mod.res[[i]] <- mod[[i]]
-  }
-
-  for(i in 1:length(mod.res)){
-    # If sparsity is not the same
-    if(mod.res[[i]]$eval.sparsity > length(unique(mod.res[[i]]$indices_)))
-    {
-      if(clf$params$warnings) warning("evaluateModelRegression: An individual has at least one indice replicated")
-      values2keep             <- which(mod.res[[i]]$indices_ == unique(mod.res[[i]]$indices_))
-      mod.res[[i]]$indices_        <- mod.res[[i]]$indices_[values2keep]
-      mod.res[[i]]$names_          <- mod.res[[i]]$names_ [values2keep]
-      mod.res[[i]]$coeffs_         <- mod.res[[i]]$coeffs[values2keep]
-      mod.res[[i]]$eval.sparsity   <- length(unique(mod.res[[i]]$indices_))
-    }
-  }
-
-  # Compute score
-  for(i in 1:length(mod.res)){
-    if(is.null(mod.res[[i]]$score_) | force.re.evaluation)
-    {
-      scorelist <- getModelScore_ovo(mod = mod.res, X = X, clf = clf)
-      mod.res[[i]]$score_ <- scorelist[[i]]$score_
-      mod.res[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
-      mod.res[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
-
-      if(is.null(mod.res[[i]]$score_))
-      {
-        return(NULL)
-      }
-    }
-  }
-  mod.res                   <- evaluateFit_ovo(mod = mod.res, X=X, y=y, clf=clf, force.re.evaluation = force.re.evaluation)
-  return(mod.res)
-}
 
 
-#' Estimates the importance of each feature in the model object
-#'
-#' @description Estimates the importance of each feature in the model object
-#' @param mod: a model object
-#' @param X: the data matrix with variables in the rows and observations in the columns
-#' @param y: the response vector
-#' @param clf: the classifier parameter object
-#' @param attribute: which attribute should be used to compute the importance (default:unpenalized_fit_)
-#' @param plot.importance: should the function plot the improtance of the features (default:FALSE)
-#' @return a model object with the importance of each feature computed. Negative importance of a feature means that the feature is not beneficial.
-#' @export
-estimateFeatureImportance_ovo <- function(mod, X, y, clf, attribute = "unpenalized_fit_", plot.importance = FALSE)
-{
-  if(!isModel(obj = mod[[1]]))
-  {
-    stop("estimateFeatureImportance: please provide a valid predomics model")
-  }
-
-  if(isModelSota(mod[[1]]))
-  {
-    if(clf$params$warnings) warning("estimateFeatureImportance: estimating feature importance is active only for BTR models")
-    return(mod)
-  }
-
-  # recompute the model if the attribute is NA
-  if(is.na(mod[[1]][[attribute]]))
-  {
-    mod   <- evaluateModel_ovo(mod = mod.tmp, X = X, y = y, clf = clf,
-                                                   eval.all = TRUE, force.re.evaluation = TRUE, mode = "train")
-
-  }
-  for(i in 1:length(mod)){
-
-    importance <- rep(NA, length(mod[[i]]$indices_))
-    names(importance) <- mod[[i]]$names_
-
-    if(length(mod[[i]]$indices_) == 1)
-    {
-      importance[1]             <- mod[[i]][[attribute]]
-    }else
-    {
-      for(i in 1:length(mod[[i]]$indices_))
-      {
-        mod.tmp <- mod
-
-        # omit one feature
-        mod.tmp[[i]]$indices_        <- mod.tmp[[i]]$indices_[-i]
-        mod.tmp[[i]]$names_          <- mod.tmp[[i]]$names_[-i]
-        mod.tmp[[i]]$coeffs_         <- mod.tmp[[i]]$coeffs_[-i]
-        mod.tmp[[i]]$eval.sparsity   <- mod.tmp[[i]]$eval.sparsity -1
-
-        # recompute the model with one feature less
-        mod.tmp                 <- evaluateModel_ovo(mod = mod.tmp, X = X, y = y, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "train")
-
-        # compute the importance
-        available.attributes <- c("fit_", "unpenalized_fit_", "auc_", "accuracy_", "cor_", "aic_",
-                                  "intercept_", "eval.sparsity", "precision_", "recall_", "f1_")
-        if(!attribute %in% available.attributes)
-        {
-          stop("estimateFeatureImportance: attribute does not exist.")
-        }
-
-        if(!attribute %in% names(mod[[i]]) | !attribute %in% names(mod.tmp[[i]]))
-        {
-          stop("estimateFeatureImportance: attribute does not exist in the models.")
-        }
-
-        importance[i]           <- mod[[i]][[attribute]] - mod.tmp[[i]][[attribute]]
-      }
-    }
-
-
-    if(plot.importance)
-    {
-      barplot(sort(importance), col="darkgreen", horiz=TRUE, las=2)
-    }
-    mod[[i]]$importance_           <- importance
-
-  }
-  return(mod)
-}
 
 
 #' Evaluates the fitting score of a model object ovo
