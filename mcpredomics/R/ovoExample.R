@@ -1193,11 +1193,6 @@ cleanPopulation_ovo <- function(pop, clf)
 }
 
 
-
-
-
-
-
 #' Get the best model from a classifier result
 #'
 #' @description Gets a given attribute from a population of predomics objects
@@ -1206,47 +1201,35 @@ cleanPopulation_ovo <- function(pop, clf)
 #' @param na.rm: delete the elements that are NA (default) when returning tovec
 #' @return a vector of attributes
 #' @export
-populationGet_X <- function(element2get, toVec = TRUE, na.rm = TRUE)
-{
-  # custom function
-  func <- function(pop)
-  {
-    # sanity check
-    if(length(pop) > 0)
-    {
-      res <- lapply(pop, function(indiv)
-        if(!is.list(indiv))
-        {
-          NA
-        }else
-        {
-          indiv[[element2get]]
-        }
-      )
-    } else
-    {
-      res <- NA
+populationGet_X_ovo <- function(element2get, toVec = TRUE, na.rm = TRUE) {
+  func <- function(pop) {
+    res <- list()  # Créez une liste pour stocker les résultats
+    for (i in 1:length(pop)) {
+      if (length(pop[[i]]) > 0) {
+        res[[i]] <- lapply(pop[[i]], function(indiv) {
+          if (!is.list(indiv)) {
+            NA
+          } else {
+            indiv[[element2get]]
+          }
+        })
+      } else {
+        res[[i]] <- NA
+      }
     }
 
-    if(toVec) # return vector
-    {
-      if(na.rm)
-      {
+    if (toVec) {  # Retourne un vecteur
+      if (na.rm) {
         ind.na <- which(!is.na(res))
         return(unlist(res[ind.na]))
-      }else
-      {
+      } else {
         return(unlist(res))
       }
-
-    } else # return list
-    {
-      if(na.rm)
-      {
+    } else {  # Retourne une liste
+      if (na.rm) {
         ind.na <- which(!is.na(res))
         return(res[ind.na])
-      }else
-      {
+      } else {
         return(res)
       }
     }
@@ -1254,9 +1237,6 @@ populationGet_X <- function(element2get, toVec = TRUE, na.rm = TRUE)
 
   return(func)
 }
-
-
-
 
 
 
