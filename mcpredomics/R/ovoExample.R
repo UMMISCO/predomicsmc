@@ -777,18 +777,18 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
     }
   }
 
-  for(i in 1:length(list_mod)){
+ # for(i in 1:length(list_mod)){
 
-    if(mod[[i]]$language == "ratio" | mod[[i]]$language == "ter" | mod[[i]]$language == "terinter")
-    {
+    #if(mod[[i]]$language == "ratio" | mod[[i]]$language == "ter" | mod[[i]]$language == "terinter")
+    #{
 
-      if(length(table(sign(mod[[i]]$coeffs_))) != 2)
-      {
-        return(NULL)
-      }
+     # if(length(table(sign(mod[[i]]$coeffs_))) != 2)
+      #{
+       # return(NULL)
+     # }
 
-    }
-  }
+   # }
+ # }
 
 
   # make a copy of the model object
@@ -1019,7 +1019,7 @@ evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
   } # end for loop
 
   # clean population after evaluation as well
-  if(delete.null.models)
+ if(delete.null.models)
   {
     res <- cleanPopulation_ovo(pop = res, clf = clf)
   }
@@ -1182,19 +1182,86 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
 #' @export
 cleanPopulation_ovo <- function(pop, clf)
 {
-  list_pop <- list()
-  listcoeffs <- list()
-  list_pop <- pop
-  poplist <- list()
-  listcoeffs <- clf$coeffs_
-  for(i in 1:length(list_pop)){
-    clf$coeffs_ <- listcoeffs[[i]]
-  res <- cleanPopulation(pop = list_pop[[i]], clf = clf)
-  poplist[[i]] <- res
+  list <- list()
+  for(i in 1:length(pop)){
+    res <- cleanPopulation(pop = pop[[i]], clf = clf)
+    list[[i]] <- res
   }
-  pop <- poplist
+  pop <- list
 
   return(pop)
 }
+
+
+
+
+
+
+
+#' Get the best model from a classifier result
+#'
+#' @description Gets a given attribute from a population of predomics objects
+#' @param element2get: the name of the attribute to get
+#' @param toVec: should the results be unlisted (default:TRUE)
+#' @param na.rm: delete the elements that are NA (default) when returning tovec
+#' @return a vector of attributes
+#' @export
+populationGet_X <- function(element2get, toVec = TRUE, na.rm = TRUE)
+{
+  # custom function
+  func <- function(pop)
+  {
+    # sanity check
+    if(length(pop) > 0)
+    {
+      res <- lapply(pop, function(indiv)
+        if(!is.list(indiv))
+        {
+          NA
+        }else
+        {
+          indiv[[element2get]]
+        }
+      )
+    } else
+    {
+      res <- NA
+    }
+
+    if(toVec) # return vector
+    {
+      if(na.rm)
+      {
+        ind.na <- which(!is.na(res))
+        return(unlist(res[ind.na]))
+      }else
+      {
+        return(unlist(res))
+      }
+
+    } else # return list
+    {
+      if(na.rm)
+      {
+        ind.na <- which(!is.na(res))
+        return(res[ind.na])
+      }else
+      {
+        return(res)
+      }
+    }
+  }
+
+  return(func)
+}
+
+
+
+
+
+
+
+
+
 
 

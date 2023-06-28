@@ -97,4 +97,12 @@ Model_ovo
 res_fit <- evaluateFit_ovo(mod = Model_ovo, X=X, y=y, clf=clf, force.re.evaluation = FALSE, mode = "train")
 res_fit
 ```
+```{r}
+list <- list()
+ for(i in 1:length(pop)){
+   res <- cleanPopulation(pop = pop[[i]], clf = clf)
+   list[[i]] <- res
+ }
+list
+```
 
