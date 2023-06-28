@@ -14,6 +14,17 @@ evaluateModel_ovo(
   estim.feat.importance = FALSE,
   mode = "train"
 )
+
+evaluateModel_ovo(
+  mod,
+  X,
+  y,
+  clf,
+  eval.all = FALSE,
+  force.re.evaluation = FALSE,
+  estim.feat.importance = FALSE,
+  mode = "train"
+)
 }
 \arguments{
 \item{mod:}{a model object ovo}
@@ -35,7 +46,11 @@ of the model (default:"train") or not "test" for the c("terinter","bininter","ra
 }
 \value{
 a model object with the fitting scores evaluated
+
+a model object with the fitting scores evaluated
 }
 \description{
+Evaluates the fitting score of a model object ovo.
+
 Evaluates the fitting score of a model object ovo.
 }

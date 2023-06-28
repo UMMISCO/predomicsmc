@@ -414,60 +414,45 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
 
   for(i in 1: length(list_mod)) {
 
-  # if the models is not a valid object
-  if(!isModel(mod[[i]]))
-  {
-    if(!is.character(mod[[i]]) | !is.numeric(mod[[i]]))
+    # if the models is not a valid object
+    if(!isModel(mod[[i]]))
     {
-      stop("evaluateFit: please provide a valid model object or a feature index vector.")
-    }
+      if(!is.character(mod[[i]]) | !is.numeric(mod[[i]]))
+      {
+        stop("evaluateFit: please provide a valid model object or a feature index vector.")
+      }
 
-    if(is.character(mod[[i]]))
-    {
-      # if model is of the form of variable names
-      mod[[i]] <- names2index(X = list_X[[i]], var.names = mod[[i]])
+      if(is.character(mod[[i]]))
+      {
+        # if model is of the form of variable names
+        mod[[i]] <- names2index(X = list_X[[i]], var.names = mod[[i]])
+      }
+      clf$coeffs_ <- listcoeffs[[i]]
+      mod[[i]] <- individual(X= list_X[[i]], y= list_y[[i]], clf = clf, ind = mod[[i]])
     }
-    clf$coeffs_ <- listcoeffs[[i]]
-    mod[[i]] <- individual(X= list_X[[i]], y= list_y[[i]], clf = clf, ind = mod[[i]])
-  }
 
   }
 
 
   # compute the score in the case it is asked to recompute
+  for(i in 1: length(list_mod)) {
   if(force.re.evaluation)
   {
-    for(i in 1: length(list_mod)) {
-    clf$coeffs_ <- listcoeffs[[i]]
-    scorelist[[i]] <- getModelScore(mod = list_mod[[i]], X = list_X[[i]], clf = clf, force.re.evaluation = force.re.evaluation)
-    mod[[i]]$score_ <- scorelist[[i]]$score_
-    mod[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
-    mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
 
-    }
-  }
-
-
-  else
-  {
-    for(i in 1: length(list_mod)) {
-
-    # compute the score if it does not exist
-    if(!myAssertNotNullNorNa(mod[[i]]$score_))
-    {
       clf$coeffs_ <- listcoeffs[[i]]
       scorelist[[i]] <- getModelScore(mod = list_mod[[i]], X = list_X[[i]], clf = clf, force.re.evaluation = force.re.evaluation)
+      mod[[i]]$score_ <- scorelist[[i]]$score_
+      mod[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
+      mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
 
-      if(!any(is.na(scorelist[[i]])) | isModelSota(mod[[i]]))
-      {
-        mod[[i]]$score_ <- scorelist[[i]]$score_
-        mod[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
-        mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
-      }
-    }else
-    {
-      # in the case the score has been computed before but for an other X, we recompute
-      if(length(mod[[i]]$score_) != ncol(list_X[[i]]))
+
+  }
+  else
+  {
+
+
+      # compute the score if it does not exist
+      if(!myAssertNotNullNorNa(mod[[i]]$score_))
       {
         clf$coeffs_ <- listcoeffs[[i]]
         scorelist[[i]] <- getModelScore(mod = list_mod[[i]], X = list_X[[i]], clf = clf, force.re.evaluation = force.re.evaluation)
@@ -478,24 +463,38 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
           mod[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
           mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
         }
-      }
-    }
-    }
-  }
+      }else
+      {
+        # in the case the score has been computed before but for an other X, we recompute
+        if(length(mod[[i]]$score_) != ncol(list_X[[i]]))
+        {
+          clf$coeffs_ <- listcoeffs[[i]]
+          scorelist[[i]] <- getModelScore(mod = list_mod[[i]], X = list_X[[i]], clf = clf, force.re.evaluation = force.re.evaluation)
 
-for(i in 1:length(list_mod)) {
-  # if after all the above steps we still don't have a score than we kill the model.
-  if(!myAssertNotNullNorNa(mod[[i]]$score_))
-  {
-    return(NULL)
+          if(!any(is.na(scorelist[[i]])) | isModelSota(mod[[i]]))
+          {
+            mod[[i]]$score_ <- scorelist[[i]]$score_
+            mod[[i]]$pos_score_ <- scorelist[[i]]$pos_score_
+            mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
+          }
+        }
+      }
   }
-}
+  }
 
   for(i in 1:length(list_mod)) {
-  if(is.null(mod[[i]]$eval.sparsity)) # if sparsity is not set
-  {
-    mod[[i]]$eval.sparsity <- length(mod[[i]]$indices_)
+    # if after all the above steps we still don't have a score than we kill the model.
+    if(!myAssertNotNullNorNa(mod[[i]]$score_))
+    {
+      return(NULL)
+    }
   }
+
+  for(i in 1:length(list_mod)) {
+    if(is.null(mod[[i]]$eval.sparsity)) # if sparsity is not set
+    {
+      mod[[i]]$eval.sparsity <- length(mod[[i]]$indices_)
+    }
   }
 
 
@@ -510,127 +509,127 @@ for(i in 1:length(list_mod)) {
            if(mode == 'train')
            {
              for(i in 1: length(list_mod)){
-             if((mod[[i]]$language != "ter" & mod[[i]]$language != "bin") & !isModelSota(mod[[i]]))
-             {
-               mod                <- evaluateIntercept_ovo(X = X, y = y, clf = clf, mod = mod)
-             }else
-             {
-               # force intercept to NA for sota
-               if(isModelSota(mod[[i]]))
+               if((mod[[i]]$language != "ter" & mod[[i]]$language != "bin") & !isModelSota(mod[[i]]))
                {
-                 mod[[i]]$intercept_   <- NA
-                 mod[[i]]$sign_        <- NA
+                 mod                <- evaluateIntercept_ovo(X = X, y = y, clf = clf, mod = mod)
                }else
                {
-                 mod[[i]]$intercept_   <- 0
-               }
-             }
-
-             # sanity check
-             if(!clf$params$evalToFit %in% names(mod[[i]]))
-             {
-               stop("evaluateFit: the evalToFit parameter seems not to be a valid one. Please make sure it is among the available ones")
-             }
-
-             # if the following attributes are selected, then we need to fix it since they are derivates of a score
-             if(clf$params$evalToFit != "fit_" | clf$params$evalToFit != "unpenalized_fit_")
-             {
-               clf$params$evalToFit <- "accuracy_"
-             }
-
-             # in case it is auc
-             if(clf$params$evalToFit == "auc_") # in this case the auc will be computed in evaluate other metrics
-             {
-               # compute the auc
-               for(j in 1:length(mod)){
-               scorelist[[j]] <- mod[[j]]$score
-               }
-               aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-               aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-               mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
-               mod[[i]]$unpenalized_fit_ <- mod[[i]]$auc_
-
-             }
-
-             # in case it is accuracy
-             if(clf$params$evalToFit == "accuracy_") # in this case the auc will be computed in evaluate other metrics
-             {
-               mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
-               mod[[i]]$unpenalized_fit_ <- mod[[i]]$accuracy_
-             }
-
-             # otherwise compute the rest
-             if(clf$params$evalToFit != "auc_" & clf$params$evalToFit != "accuracy_")
-             {
-               mod <- evaluateAdditionnalMetrics_ovo(mod = mod, X = X, y = y, clf = clf, mode = mode)
-               mod[[i]]$unpenalized_fit_ <- mod[[i]][[clf$params$evalToFit]]
-               # compte accuracy also
-               mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
-               # and auc, since these are helpful information
-
-
-               for(j in 1:length(mod)){
-                 scorelist[[j]] <- mod[[j]]$score
+                 # force intercept to NA for sota
+                 if(isModelSota(mod[[i]]))
+                 {
+                   mod[[i]]$intercept_   <- NA
+                   mod[[i]]$sign_        <- NA
+                 }else
+                 {
+                   mod[[i]]$intercept_   <- 0
+                 }
                }
 
-               aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-               aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-               mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
-             }
+               # sanity check
+               if(!clf$params$evalToFit %in% names(mod[[i]]))
+               {
+                 stop("evaluateFit: the evalToFit parameter seems not to be a valid one. Please make sure it is among the available ones")
+               }
+
+               # if the following attributes are selected, then we need to fix it since they are derivates of a score
+               if(clf$params$evalToFit != "fit_" | clf$params$evalToFit != "unpenalized_fit_")
+               {
+                 clf$params$evalToFit <- "accuracy_"
+               }
+
+               # in case it is auc
+               if(clf$params$evalToFit == "auc_") # in this case the auc will be computed in evaluate other metrics
+               {
+                 # compute the auc
+                 for(j in 1:length(mod)){
+                   scorelist[[j]] <- mod[[j]]$score
+                 }
+                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
+                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
+                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+                 mod[[i]]$unpenalized_fit_ <- mod[[i]]$auc_
+
+               }
+
+               # in case it is accuracy
+               if(clf$params$evalToFit == "accuracy_") # in this case the auc will be computed in evaluate other metrics
+               {
+                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 mod[[i]]$unpenalized_fit_ <- mod[[i]]$accuracy_
+               }
+
+               # otherwise compute the rest
+               if(clf$params$evalToFit != "auc_" & clf$params$evalToFit != "accuracy_")
+               {
+                 mod <- evaluateAdditionnalMetrics_ovo(mod = mod, X = X, y = y, clf = clf, mode = mode)
+                 mod[[i]]$unpenalized_fit_ <- mod[[i]][[clf$params$evalToFit]]
+                 # compte accuracy also
+                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 # and auc, since these are helpful information
+
+
+                 for(j in 1:length(mod)){
+                   scorelist[[j]] <- mod[[j]]$score
+                 }
+
+                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
+                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
+                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+               }
              }
            } # if test mode, we don't recompute the intercept
            else
            {
              for(i in 1:length(list_mod)) {
-             # sanity check
-             if(!clf$params$evalToFit %in% names(mod[[i]]))
-             {
-               stop("evaluateFit: the evalToFit parameter seems not to be a valid one. Please make sure it is among the available ones")
-             }
-
-             # if the following attributes are selected, then we need to fix it since they are derivates of a score
-             if(clf$params$evalToFit != "fit_" | clf$params$evalToFit != "unpenalized_fit_")
-             {
-               clf$params$evalToFit <- "accuracy_"
-             }
-
-             # in case it is auc
-             if(clf$params$evalToFit == "auc_") # in this case the auc will be computed in evaluate other metrics
-             {
-               # compute the auc
-               for(j in 1:length(mod)){
-                 scorelist[[j]] <- mod[[j]]$score
+               # sanity check
+               if(!clf$params$evalToFit %in% names(mod[[i]]))
+               {
+                 stop("evaluateFit: the evalToFit parameter seems not to be a valid one. Please make sure it is among the available ones")
                }
 
-               aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-               aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-               mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
-               mod[[i]]$unpenalized_fit_ <- mod[[i]]$auc_
-             }
-
-             # in case it is accuracy
-             if(clf$params$evalToFit == "accuracy_") # in this case the auc will be computed in evaluate other metrics
-             {
-               mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
-               mod[[i]]$unpenalized_fit_ <- mod[[i]]$accuracy_
-             }
-
-             # otherwise compute the rest
-             if(clf$params$evalToFit != "auc_" & clf$params$evalToFit != "accuracy_")
-             {
-               mod <- evaluateAdditionnalMetrics_ovo(mod = mod, X = X, y = y, clf = clf, mode = mode)
-               mod[[i]]$unpenalized_fit_ <- mod[[i]][[clf$params$evalToFit]]
-               # compte accuracy also
-               mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
-               # and auc, since these are helpful information
-               for(j in 1:length(mod)){
-                 scorelist[[j]] <- mod[[j]]$score
+               # if the following attributes are selected, then we need to fix it since they are derivates of a score
+               if(clf$params$evalToFit != "fit_" | clf$params$evalToFit != "unpenalized_fit_")
+               {
+                 clf$params$evalToFit <- "accuracy_"
                }
 
-               aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-               aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-               mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
-             }
+               # in case it is auc
+               if(clf$params$evalToFit == "auc_") # in this case the auc will be computed in evaluate other metrics
+               {
+                 # compute the auc
+                 for(j in 1:length(mod)){
+                   scorelist[[j]] <- mod[[j]]$score
+                 }
+
+                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
+                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
+                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+                 mod[[i]]$unpenalized_fit_ <- mod[[i]]$auc_
+               }
+
+               # in case it is accuracy
+               if(clf$params$evalToFit == "accuracy_") # in this case the auc will be computed in evaluate other metrics
+               {
+                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 mod[[i]]$unpenalized_fit_ <- mod[[i]]$accuracy_
+               }
+
+               # otherwise compute the rest
+               if(clf$params$evalToFit != "auc_" & clf$params$evalToFit != "accuracy_")
+               {
+                 mod <- evaluateAdditionnalMetrics_ovo(mod = mod, X = X, y = y, clf = clf, mode = mode)
+                 mod[[i]]$unpenalized_fit_ <- mod[[i]][[clf$params$evalToFit]]
+                 # compte accuracy also
+                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 # and auc, since these are helpful information
+                 for(j in 1:length(mod)){
+                   scorelist[[j]] <- mod[[j]]$score
+                 }
+
+                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
+                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
+                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+               }
              }
            } # end mode = test
 
@@ -646,48 +645,48 @@ for(i in 1:length(list_mod)) {
 
              for(i in 1:length(list_mod)){
                y <- list_y[[i]]
-             ina      <- is.na(mod[[i]]$score_) | is.na(y) | is.infinite(mod[[i]]$score) | is.infinite(y)
-             mod[[i]]$cor_ <- abs(cor(mod[[i]]$score[!ina], y[!ina], method = "pearson"))
+               ina      <- is.na(mod[[i]]$score_) | is.na(y) | is.infinite(mod[[i]]$score) | is.infinite(y)
+               mod[[i]]$cor_ <- abs(cor(mod[[i]]$score[!ina], y[!ina], method = "pearson"))
 
-             # # for optimization reasons the cor will be a pearson implementation,
-             # y is already ranked for objective being "cor" performed in the fit()
-             # # We just need to tank the score to obtain the same result as a spearman correlation.
-             #abs(cor.test(mod$score, y, objective = "spearman")$estimate)
+               # # for optimization reasons the cor will be a pearson implementation,
+               # y is already ranked for objective being "cor" performed in the fit()
+               # # We just need to tank the score to obtain the same result as a spearman correlation.
+               #abs(cor.test(mod$score, y, objective = "spearman")$estimate)
 
-             # use the r2 instead
-             score.scaled <- as.vector(scale(mod[[i]]$score_[!ina], center = TRUE, scale = TRUE))
-             y.scaled <- as.vector(scale(y[!ina], center = TRUE, scale = TRUE))
-             mod[[i]]$rsq_ <- abs(cor(mod[[i]]$score[!ina], y[!ina], method = "pearson"))^2
-             mod[[i]]$ser_ <- sqrt(sum((score.scaled - y.scaled)^2, na.rm = TRUE)/(length(score.scaled) - 2))
+               # use the r2 instead
+               score.scaled <- as.vector(scale(mod[[i]]$score_[!ina], center = TRUE, scale = TRUE))
+               y.scaled <- as.vector(scale(y[!ina], center = TRUE, scale = TRUE))
+               mod[[i]]$rsq_ <- abs(cor(mod[[i]]$score[!ina], y[!ina], method = "pearson"))^2
+               mod[[i]]$ser_ <- sqrt(sum((score.scaled - y.scaled)^2, na.rm = TRUE)/(length(score.scaled) - 2))
 
              }})
 
            for(i in 1:length(list_mod)){
 
-           if(is.null(mod[[i]])) return(mod[[i]])
-           if(myAssertNotNullNorNa(mod[[i]]$cor_))
-           {
-             mod[[i]]$cor_           <- as.numeric(mod[[i]]$cor_)
-           }
-           if(myAssertNotNullNorNa(mod[[i]]$rsq_))
-           {
-             mod[[i]]$rsq_           <- as.numeric(mod[[i]]$rsq_)
-           }
-           if(myAssertNotNullNorNa(mod[[i]]$ser_))
-           {
-             mod[[i]]$ser_           <- as.numeric(mod[[i]]$ser_)
-           }
+             if(is.null(mod[[i]])) return(mod[[i]])
+             if(myAssertNotNullNorNa(mod[[i]]$cor_))
+             {
+               mod[[i]]$cor_           <- as.numeric(mod[[i]]$cor_)
+             }
+             if(myAssertNotNullNorNa(mod[[i]]$rsq_))
+             {
+               mod[[i]]$rsq_           <- as.numeric(mod[[i]]$rsq_)
+             }
+             if(myAssertNotNullNorNa(mod[[i]]$ser_))
+             {
+               mod[[i]]$ser_           <- as.numeric(mod[[i]]$ser_)
+             }
 
-           # get the value to maximize in the general optimization variable
-           #mod$unpenalized_fit_ <- mod$rsq_
-           mod[[i]]$unpenalized_fit_ <- mod[[i]]$rsq_
-         } },
+             # get the value to maximize in the general optimization variable
+             #mod$unpenalized_fit_ <- mod$rsq_
+             mod[[i]]$unpenalized_fit_ <- mod[[i]]$rsq_
+           } },
          aic={ # THE AIC objective
            # TODO test it out
            for(i in 1:length(list_mod)){
-           mod[[i]]$aic_             <- estimateCoefficientsIndividual(X=list_X[[i]], y=list_y[[i]], ind = mod[[i]]$indices_)$aic
-           mod[[i]]$unpenalized_fit_ <- mod[[i]]$aic_
-         }},
+             mod[[i]]$aic_             <- estimateCoefficientsIndividual(X=list_X[[i]], y=list_y[[i]], ind = mod[[i]]$indices_)$aic
+             mod[[i]]$unpenalized_fit_ <- mod[[i]]$aic_
+           }},
          { # else
            if(clf$params$warnings) warning('This objective method does not exist !')
          }
@@ -696,7 +695,7 @@ for(i in 1:length(list_mod)) {
 
   # apply the penalty based on model size
   for(i in 1:length(list_mod)) {
-  mod[[i]]$fit_ <- max(mod[[i]]$unpenalized_fit_ - clf$params$k_penalty * mod[[i]]$eval.sparsity, 0)
+    mod[[i]]$fit_ <- max(mod[[i]]$unpenalized_fit_ - clf$params$k_penalty * mod[[i]]$eval.sparsity, 0)
   }
 
 
@@ -749,36 +748,36 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   listcoeffs <- clf$coeffs_
   list_mod <- mod
 
-for(i in 1:length(list_mod)){
-  if(!isModel(mod[[i]]))
-  {
-    # if not a model object but a valid index, create a model
-    if(!is.list(mod[[i]]))
+  for(i in 1:length(list_mod)){
+    if(!isModel(mod[[i]]))
     {
-      mod <- individual_ovo(X = X, y = y, clf = clf, ind = mod) # transform into a model
-    }else
-    {
-      if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist, returning NULL.")
-      return(NULL)
+      # if not a model object but a valid index, create a model
+      if(!is.list(mod[[i]]))
+      {
+        mod <- individual_ovo(X = X, y = y, clf = clf, ind = mod) # transform into a model
+      }else
+      {
+        if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist, returning NULL.")
+        return(NULL)
+      }
     }
   }
-}
 
 
   # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
   for(i in 1:length(list_mod)){
-  if(!isModelSota(mod[[i]]))
-  {
-    # at this stage the model should be a valid one. If not return NULL
-    if(!isModel(mod[[i]]))
+    if(!isModelSota(mod[[i]]))
     {
-      if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
-      return(NULL)
+      # at this stage the model should be a valid one. If not return NULL
+      if(!isModel(mod[[i]]))
+      {
+        if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
+        return(NULL)
+      }
     }
   }
-  }
 
-    for(i in 1:length(list_mod)){
+  for(i in 1:length(list_mod)){
 
     if(mod[[i]]$language == "ratio" | mod[[i]]$language == "ter" | mod[[i]]$language == "terinter")
     {
@@ -789,7 +788,7 @@ for(i in 1:length(list_mod)){
       }
 
     }
-    }
+  }
 
 
   # make a copy of the model object
@@ -798,70 +797,70 @@ for(i in 1:length(list_mod)){
   if(mode == "train")
   {
     for(i in 1:length(mod.res)){
-    # reset the attributes that need to be recomputed
-    # general attributes
-    mod.res[[i]]$fit_                <- NA
-    mod.res[[i]]$unpenalized_fit_    <- NA
-    # classification
-    mod.res[[i]]$auc_                <- NA
-    mod.res[[i]]$accuracy_           <- NA
-    mod.res[[i]]$precision_          <- NA
-    mod.res[[i]]$recall_             <- NA
-    mod.res[[i]]$f1_                 <- NA
-    mod.res[[i]]$intercept_          <- NA # the intercept
-    mod.res[[i]]$sign_               <- NA # the sign of the model
-    # regression
-    mod.res[[i]]$cor_                <- NA
-    mod.res[[i]]$rsq_                <- NA # r2
-    mod.res[[i]]$ser_                <- NA # standard error of the mean
-    mod.res[[i]]$aic_                <- NA
-    mod.res[[i]]$score_              <- NA # model score
-    mod.res[[i]]$pos_score_          <- NA # the positive model score
-    mod.res[[i]]$neg_score_          <- NA # the negative model score
-  }
+      # reset the attributes that need to be recomputed
+      # general attributes
+      mod.res[[i]]$fit_                <- NA
+      mod.res[[i]]$unpenalized_fit_    <- NA
+      # classification
+      mod.res[[i]]$auc_                <- NA
+      mod.res[[i]]$accuracy_           <- NA
+      mod.res[[i]]$precision_          <- NA
+      mod.res[[i]]$recall_             <- NA
+      mod.res[[i]]$f1_                 <- NA
+      mod.res[[i]]$intercept_          <- NA # the intercept
+      mod.res[[i]]$sign_               <- NA # the sign of the model
+      # regression
+      mod.res[[i]]$cor_                <- NA
+      mod.res[[i]]$rsq_                <- NA # r2
+      mod.res[[i]]$ser_                <- NA # standard error of the mean
+      mod.res[[i]]$aic_                <- NA
+      mod.res[[i]]$score_              <- NA # model score
+      mod.res[[i]]$pos_score_          <- NA # the positive model score
+      mod.res[[i]]$neg_score_          <- NA # the negative model score
+    }
   }
 
   # If this is a regression problem no need to find intercepts etc...
   if(clf$params$objective == "cor")
   {
     for(i in 1:length(mod.res)) {
-    if(!isModelSota(mod.res[[i]])){
-      mod.res <- evaluateModelRegression_ovo(mod = mod.res, X = X, y = y, clf = clf, eval.all = eval.all, force.re.evaluation = force.re.evaluation)
-      return(mod.res)
+      if(!isModelSota(mod.res[[i]])){
+        mod.res <- evaluateModelRegression_ovo(mod = mod.res, X = X, y = y, clf = clf, eval.all = eval.all, force.re.evaluation = force.re.evaluation)
+        return(mod.res)
       }
-    else
+      else
+      {
+        if(clf$params$warnings) warning("evaluateModel: evaluating a sota model in correlation objective")
+      }
+    }
+  }
+
+  for(i in 1:length(mod.res)){
+    if(isModelSota(mod.res[[i]]))
     {
-      if(clf$params$warnings) warning("evaluateModel: evaluating a sota model in correlation objective")
-    }
+      # feature importance estimation will be switched off for the sotas, since the internal model structure is very different
+      if(estim.feat.importance)
+      {
+        estim.feat.importance = FALSE
+      }
     }
   }
 
-for(i in 1:length(mod.res)){
-  if(isModelSota(mod.res[[i]]))
-  {
-    # feature importance estimation will be switched off for the sotas, since the internal model structure is very different
-    if(estim.feat.importance)
+
+
+
+  for(i in 1:length(mod.res)){
+    # If sparsity is not the same
+    if(mod.res[[i]]$eval.sparsity != length(unique(mod.res[[i]]$indices_)))
     {
-      estim.feat.importance = FALSE
+      if(clf$params$warnings) warning("evaluateModel: An individual has at least one indice replicated")
+      values2keep           <- which(mod.res[[i]]$indices_ == unique(mod.res[[i]]$indices_))
+      mod.res[[i]]$indices_      <- mod.res[[i]]$indices_[values2keep]
+      mod.res[[i]]$names_        <- mod.res[[i]]$names_[values2keep]
+      mod.res[[i]]$coeffs_       <- mod.res[[i]]$coeffs[values2keep]
+      mod.res[[i]]$eval.sparsity <- length(unique(mod.res[[i]]$indices_))
     }
   }
-}
-
-
-
-
-for(i in 1:length(mod.res)){
-  # If sparsity is not the same
-  if(mod.res[[i]]$eval.sparsity != length(unique(mod.res[[i]]$indices_)))
-  {
-    if(clf$params$warnings) warning("evaluateModel: An individual has at least one indice replicated")
-    values2keep           <- which(mod.res[[i]]$indices_ == unique(mod.res[[i]]$indices_))
-    mod.res[[i]]$indices_      <- mod.res[[i]]$indices_[values2keep]
-    mod.res[[i]]$names_        <- mod.res[[i]]$names_[values2keep]
-    mod.res[[i]]$coeffs_       <- mod.res[[i]]$coeffs[values2keep]
-    mod.res[[i]]$eval.sparsity <- length(unique(mod.res[[i]]$indices_))
-  }
-}
 
 
   # first evaluate the fit
@@ -871,46 +870,269 @@ for(i in 1:length(mod.res)){
   if(eval.all)
   {
     for(i in 1:length(mod.res)){
-    # At this stage this should not happen but for debug stop it
-    if((!myAssertNotNullNorNa(mod.res[[i]]$intercept_) | !myAssertNotNullNorNa(mod.res[[i]]$sign_)) & !isModelSota(mod.res[[i]]))
-    {
-      if(clf$params$warnings) warning("evaluateModel: model without intercept at this stage is not normal.")
-      return(NULL)
-    }
+      # At this stage this should not happen but for debug stop it
+      if((!myAssertNotNullNorNa(mod.res[[i]]$intercept_) | !myAssertNotNullNorNa(mod.res[[i]]$sign_)) & !isModelSota(mod.res[[i]]))
+      {
+        if(clf$params$warnings) warning("evaluateModel: model without intercept at this stage is not normal.")
+        return(NULL)
+      }
     }
 
     mod.res  <- evaluateAdditionnalMetrics_ovo(mod = mod.res, X = X, y = y, clf = clf, mode = mode)
     for(i in 1:length(mod.res)){
-    if(!isModel(mod.res[[i]]))
-    {
-      # if(clf$params$warnings) warning("evaluateModel: returning an empty model.")
-      return(NULL)
-    }
+      if(!isModel(mod.res[[i]]))
+      {
+        # if(clf$params$warnings) warning("evaluateModel: returning an empty model.")
+        return(NULL)
+      }
     }
   }
 
   # if BTR
   for(i in 1:length(mod.res)) {
-  if(!isModelSota(mod.res[[i]]))
-  {
-    if(estim.feat.importance)
+    if(!isModelSota(mod.res[[i]]))
     {
-      clf$coeffs_ <- listcoeffs[[i]]
-      mod.res[[i]]  <- estimateFeatureImportance(mod = mod.res[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf, plot.importance = FALSE)
+      if(estim.feat.importance)
+      {
+        clf$coeffs_ <- listcoeffs[[i]]
+        mod.res[[i]]  <- estimateFeatureImportance(mod = mod.res[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf, plot.importance = FALSE)
+      }
     }
-  }
   }
 
   for(i in 1:length(mod.res)){
-  # At this stage this should not happen but for debug stop it
-  if(!myAssertNotNullNorNa(mod.res[[i]]$unpenalized_fit_))
-  {
-    if(clf$params$warnings) warning("evaluateModel: model does not have a valid unpenalized_fit_ attribute.")
-    return(NULL)
+    # At this stage this should not happen but for debug stop it
+    if(!myAssertNotNullNorNa(mod.res[[i]]$unpenalized_fit_))
+    {
+      if(clf$params$warnings) warning("evaluateModel: model does not have a valid unpenalized_fit_ attribute.")
+      return(NULL)
+    }
   }
-  }
+  mod.res <- mod.res
+
   return(mod.res)
 }
+
+
+
+
+
+
+
+
+
+
+#' Evaluates the fitting score of a model object ovo
+#'
+#' @description Evaluates the fitting score of a model object ovo.
+#' @param mod: a model object ovo
+#' @param X: the data matrix with variables in the rows and observations in the columns
+#' @param y: the response vector
+#' @param clf: the classifier parameter object
+#' @param eval.all: should the function evaluate all the scores (default:FALSE)
+#' @param force.re.evaluation: re-evaluate all the scores even if they exist (default:FALSE)
+#' @param estim.feat.importance: evaluate the importance in the model object (default:FALSE)
+#' @param mode: A choice from c("train", "test") indicates wether we wish to learn the threthold
+#' of the model (default:"train") or not "test" for the c("terinter","bininter","ratio") languages
+#' @return a model object with the fitting scores evaluated
+#' @export
+
+evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, mode = 'train')
+{
+
+  if(mode != "train" & mode != "test")
+  {
+    stop("evaluateModel: mode should be one of c('train','test')")
+  }
+
+
+  nClasse <- unique(y)
+  list_mod <- list()
+  listmod <- list()
+  list_y <- list()
+  list_X <- list()
+  listcoeffs <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+  listcoeffs <- clf$coeffs_
+  list_mod <- mod
+
+  for(i in 1:length(list_mod)){
+    if(!isModel(mod[[i]]))
+    {
+      # if not a model object but a valid index, create a model
+      if(!is.list(mod[[i]]))
+      {
+        mod <- individual_ovo(X = X, y = y, clf = clf, ind = mod) # transform into a model
+      }else
+      {
+        if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist, returning NULL.")
+        return(NULL)
+      }
+    }
+  }
+
+
+  # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
+  for(i in 1:length(list_mod)){
+    if(!isModelSota(mod[[i]]))
+    {
+      # at this stage the model should be a valid one. If not return NULL
+      if(!isModel(mod[[i]]))
+      {
+        if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
+        return(NULL)
+      }
+    }
+  }
+
+ # for(i in 1:length(list_mod)){
+
+   # if(mod[[i]]$language == "ratio" | mod[[i]]$language == "ter" | mod[[i]]$language == "terinter")
+   # {
+
+     # if(length(table(sign(mod[[i]]$coeffs_))) != 2)
+     # {
+       # return(NULL)
+      #}
+
+    #}
+  #}
+
+
+  # make a copy of the model object
+  mod.res <- mod
+
+  if(mode == "train")
+  {
+    for(i in 1:length(mod.res)){
+      # reset the attributes that need to be recomputed
+      # general attributes
+      mod.res[[i]]$fit_                <- NA
+      mod.res[[i]]$unpenalized_fit_    <- NA
+      # classification
+      mod.res[[i]]$auc_                <- NA
+      mod.res[[i]]$accuracy_           <- NA
+      mod.res[[i]]$precision_          <- NA
+      mod.res[[i]]$recall_             <- NA
+      mod.res[[i]]$f1_                 <- NA
+      mod.res[[i]]$intercept_          <- NA # the intercept
+      mod.res[[i]]$sign_               <- NA # the sign of the model
+      # regression
+      mod.res[[i]]$cor_                <- NA
+      mod.res[[i]]$rsq_                <- NA # r2
+      mod.res[[i]]$ser_                <- NA # standard error of the mean
+      mod.res[[i]]$aic_                <- NA
+      mod.res[[i]]$score_              <- NA # model score
+      mod.res[[i]]$pos_score_          <- NA # the positive model score
+      mod.res[[i]]$neg_score_          <- NA # the negative model score
+    }
+  }
+
+  # If this is a regression problem no need to find intercepts etc...
+  if(clf$params$objective == "cor")
+  {
+    for(i in 1:length(mod.res)) {
+      if(!isModelSota(mod.res[[i]])){
+        mod.res <- evaluateModelRegression_ovo(mod = mod.res, X = X, y = y, clf = clf, eval.all = eval.all, force.re.evaluation = force.re.evaluation)
+        return(mod.res)
+      }
+      else
+      {
+        if(clf$params$warnings) warning("evaluateModel: evaluating a sota model in correlation objective")
+      }
+    }
+  }
+
+  for(i in 1:length(mod.res)){
+    if(isModelSota(mod.res[[i]]))
+    {
+      # feature importance estimation will be switched off for the sotas, since the internal model structure is very different
+      if(estim.feat.importance)
+      {
+        estim.feat.importance = FALSE
+      }
+    }
+  }
+
+
+
+
+  for(i in 1:length(mod.res)){
+    # If sparsity is not the same
+    if(mod.res[[i]]$eval.sparsity != length(unique(mod.res[[i]]$indices_)))
+    {
+      if(clf$params$warnings) warning("evaluateModel: An individual has at least one indice replicated")
+      values2keep           <- which(mod.res[[i]]$indices_ == unique(mod.res[[i]]$indices_))
+      mod.res[[i]]$indices_      <- mod.res[[i]]$indices_[values2keep]
+      mod.res[[i]]$names_        <- mod.res[[i]]$names_[values2keep]
+      mod.res[[i]]$coeffs_       <- mod.res[[i]]$coeffs[values2keep]
+      mod.res[[i]]$eval.sparsity <- length(unique(mod.res[[i]]$indices_))
+    }
+  }
+
+
+  # first evaluate the fit
+  mod.res <- evaluateFit_ovo(mod = mod.res, X=X, y=y, clf=clf, force.re.evaluation = force.re.evaluation, mode = mode)
+
+  # compute all other evaluation metrics
+  if(eval.all)
+  {
+    for(i in 1:length(mod.res)){
+      # At this stage this should not happen but for debug stop it
+      if((!myAssertNotNullNorNa(mod.res[[i]]$intercept_) | !myAssertNotNullNorNa(mod.res[[i]]$sign_)) & !isModelSota(mod.res[[i]]))
+      {
+        if(clf$params$warnings) warning("evaluateModel: model without intercept at this stage is not normal.")
+        return(NULL)
+      }
+    }
+
+    mod.res  <- evaluateAdditionnalMetrics_ovo(mod = mod.res, X = X, y = y, clf = clf, mode = mode)
+    for(i in 1:length(mod.res)){
+      if(!isModel(mod.res[[i]]))
+      {
+        # if(clf$params$warnings) warning("evaluateModel: returning an empty model.")
+        return(NULL)
+      }
+    }
+  }
+
+  # if BTR
+  for(i in 1:length(mod.res)) {
+    if(!isModelSota(mod.res[[i]]))
+    {
+      if(estim.feat.importance)
+      {
+        clf$coeffs_ <- listcoeffs[[i]]
+        mod.res[[i]]  <- estimateFeatureImportance(mod = mod.res[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf, plot.importance = FALSE)
+      }
+    }
+  }
+
+  for(i in 1:length(mod.res)){
+    # At this stage this should not happen but for debug stop it
+    if(!myAssertNotNullNorNa(mod.res[[i]]$unpenalized_fit_))
+    {
+      if(clf$params$warnings) warning("evaluateModel: model does not have a valid unpenalized_fit_ attribute.")
+      return(NULL)
+    }
+  }
+  mod.res <- mod.res
+
+  return(mod.res)
+}
+
 
 
 #' @description Evaluates an entire population of models, that be predomics objects or individuals
@@ -932,11 +1154,11 @@ for(i in 1:length(mod.res)){
 #' @return an individual object
 #' @export
 evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
-                               force.re.evaluation = FALSE,
-                               estim.feat.importance = FALSE,
-                               mode = "train",
-                               delete.null.models = TRUE,
-                               lfolds = NULL)
+                                   force.re.evaluation = FALSE,
+                                   estim.feat.importance = FALSE,
+                                   mode = "train",
+                                   delete.null.models = TRUE,
+                                   lfolds = NULL)
 {
   # test the classifier object
   if(!isClf(clf))
@@ -959,27 +1181,27 @@ evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
       if(mode == "train")
       {
         pop.lfolds[[f]] <- evaluatePopulation_ovo(X[,-lfolds[[f]]],
-                                              y[-lfolds[[f]]],
-                                              clf,
-                                              pop,
-                                              eval.all = eval.all,
-                                              force.re.evaluation = force.re.evaluation,
-                                              estim.feat.importance = estim.feat.importance,
-                                              mode = mode,
-                                              delete.null.models = delete.null.models,
-                                              lfolds = NULL)
+                                                  y[-lfolds[[f]]],
+                                                  clf,
+                                                  pop,
+                                                  eval.all = eval.all,
+                                                  force.re.evaluation = force.re.evaluation,
+                                                  estim.feat.importance = estim.feat.importance,
+                                                  mode = mode,
+                                                  delete.null.models = delete.null.models,
+                                                  lfolds = NULL)
       }else # test
       {
         pop.lfolds[[f]] <- evaluatePopulation_ovo(X[,lfolds[[f]]],
-                                              y[lfolds[[f]]],
-                                              clf,
-                                              pop,
-                                              eval.all = eval.all,
-                                              force.re.evaluation = force.re.evaluation,
-                                              estim.feat.importance = estim.feat.importance,
-                                              mode = mode,
-                                              delete.null.models = delete.null.models,
-                                              lfolds = NULL)
+                                                  y[lfolds[[f]]],
+                                                  clf,
+                                                  pop,
+                                                  eval.all = eval.all,
+                                                  force.re.evaluation = force.re.evaluation,
+                                                  estim.feat.importance = estim.feat.importance,
+                                                  mode = mode,
+                                                  delete.null.models = delete.null.models,
+                                                  lfolds = NULL)
       }
     }
     names(pop.lfolds) <- names(lfolds)
@@ -994,14 +1216,15 @@ evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
     mod <- pop[[i]]
     if(!is.null(mod))
     {
-      res[[i]] <- evaluateModel_ovo(mod = mod,
-                                X = X,
-                                y = y,
-                                clf = clf,
-                                eval.all = eval.all,
-                                force.re.evaluation = force.re.evaluation,
-                                estim.feat.importance = estim.feat.importance,
-                                mode = mode)
+    res[[i]] <- evaluateModel_ovo(mod = mod,
+                                    X = X,
+                                    y = y,
+                                    clf = clf,
+                                    eval.all = eval.all,
+                                    force.re.evaluation = force.re.evaluation,
+                                    estim.feat.importance = estim.feat.importance,
+                                    mode = mode)
+
       #print(i)
     } # end else existance pop
   } # end for loop
@@ -1032,7 +1255,7 @@ sparseVecToModel_ovo <- function(X, y, v, clf, eval.all=FALSE, obj = NULL)
     return(NULL)
   }
 
- res <- individual_ovo(X, y, clf, ind = v,  eval.all = eval.all, obj = obj)
+  res <- individual_ovo(X, y, clf, ind = v,  eval.all = eval.all, obj = obj)
 
   return(res)
 
@@ -1075,19 +1298,87 @@ listOfSparseVecToListOfModels_ovo <- function(X, y, clf, v, lobj = NULL, eval.al
 
   pop <- list()
 
-    for(i in 1:length(v))
-    {
-      model <- v[[i]]
-      pop[[i]] <-  sparseVecToModel_ovo(X, y, model, clf, eval.all=TRUE, obj = lobj[[i]])
-    }
+  for(i in 1:length(v))
+  {
+    model <- v[[i]]
+    pop[[i]] <-  sparseVecToModel_ovo(X, y, model, clf, eval.all=TRUE, obj = lobj[[i]])
+  }
 
   return(pop)
 }
 
 
 
+#' evaluates the feature importance in a population of models
+#'
+#' @description This function perturbes the dataset by shuffling one at a time a subset of features that appear in a population of models
+#' and recomputes the evaluation of those models. The mean deltas of the score to consider will give a measure of importance. Two methods
+#' are implemented: the first (extensive), will shuffle feature by feature multiple times and will compute the evaluation for the whole
+#' population of models, which can be very time consuming. The second (optimized) and the default approach consists on using a different
+#' seed when shuffling a given feature and computing the population. In this setting it is not needed to run multiple seeds on the whole
+#' dataset. This procedure is designed to be applied in cross validation.
+#' @param pop: a population of models to be considered. This population will be filtered if filter.ci = TRUE (default) using the interval
+#' confidence computed around the best model using a binomial distribution.
+#' @param X: dataset used to classify
+#' @param y: variable to predict
+#' @param clf: an object containing the different parameters of the classifier
+#' @param score: the attribute of the model to be considered in the evaluation (default:fit_)
+#' @param filter.ci: filter the population based on the best model confidence interval (default:TRUE)
+#' @param method: Two methods are implemented: the first (extensive), will shuffle feature by feature multiple times and will compute the
+#' evaluation for the whole population of models, which can be very time consuming. The second (optimized) and the default approach consists
+#' on using a different seed when shuffling a given feature and computing the population.
+#' @param seed: one or more seeds to be used in the extensive method shuffling (default:c(1:10). For the optimized method only the first seed will be used
+#' and the rest of the seeds that are needed for each model will be incremented from there.
+#' @param aggregation: the method to be used to aggregate the evaluation for a the whole population (default: mean), but can be either mean or median.
+#' @param verbose: wether to print out information during the execution process.
+#' @return a data.frame with features in rows and the population mean/median score for each model*seed of the population
+#' @export
+evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
+                                                      seed = c(1:10), aggregation = "mean", verbose = TRUE)
+{
+
+  nClasse <- unique(y)
+  list_y <- list()
+  list_X <- list()
+  k <- 1
+  list_pop <- list()
+  #listcoeffs <- list()
+
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+  listcoeffs <- clf$coeffs_
+  list_pop <- pop
+  listpop <- list()
 
 
-#########################################################################################
-#########################################################################################
+  for(i in 1:(length(list_pop))){
+    #clf$coeffs_ <- listcoeffs[[i]]
+    evalfeauture <- evaluateFeatureImportanceInPopulation(pop = pop,
+                                                          X = list_X[[i]],
+                                                          y = list_y[[i]],
+                                                          clf = clf,
+                                                          score = "fit_",
+                                                          filter.ci = TRUE,
+                                                          method = method,
+                                                          seed = c(1:10), # 10 times the perturbation for more accurate importance
+                                                          aggregation = "mean",
+                                                          verbose = verbose)
+    listpop[[i]] =  evalfeauture
+  }
+  res <- listpop
+
+
+  return(res)
+}
+
 

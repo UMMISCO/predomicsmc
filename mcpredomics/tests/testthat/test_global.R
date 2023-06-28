@@ -46,11 +46,26 @@ pop         <- population(clf = clf,
                           seed = clf$params$current_seed)
 pop_last      <- evolve_ovo(X, y, clf, pop, seed = clf$params$current_seed)
 pop_last.mod <- listOfSparseVecToListOfModels_ovo(X, y , clf = clf, v = pop_last[[1]])
-
+mod.res <- evaluateModel_ovo(mod = pop_last.mod[[1]],
+                              X = X,
+                              y = y,
+                              clf = clf,
+                              eval.all = FALSE,
+                              force.re.evaluation = FALSE,
+                              estim.feat.importance = FALSE,
+                              mode = "train")
+res_fit <- evaluateFit_ovo(mod = mod.res, X=X, y=y, clf=clf, force.re.evaluation = FALSE, mode = "train")
+evaluateAddMetric <- evaluateAdditionnalMetrics_ovo(mod=mod.res, X, y, clf, mode = "train")
+evaluateAccuracy_ovo <- evaluateAccuracy_ovo(mod = mod.res, X, y, clf, force.re.evaluation = FALSE, mode = "train")
 expect_length(pop, 100)
 expect_length(pop_last, 6)
 expect_length(pop_last[[1]], 100)
 expect_length(pop_last.mod, 100)
+expect_length(mod.res, 6)
+expect_length(res_fit, 6)
+expect_length(evaluateAddMetric, 6)
+expect_length(evaluateAccuracy_ovo, 6)
+
 
 
           }
