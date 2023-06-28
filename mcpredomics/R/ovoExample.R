@@ -1021,7 +1021,7 @@ evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
   # clean population after evaluation as well
   if(delete.null.models)
   {
-    res <- cleanPopulation(pop = res, clf = clf)
+    res <- cleanPopulation_ovo(pop = res, clf = clf)
   }
 
   return(res)
@@ -1168,6 +1168,33 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
 
 
   return(res)
+}
+
+
+
+
+#' cleanPopulation
+#'
+#' @description Looks for invalid predomics objects in a population and removes them.
+#' @param pop: is population (a list) of predomics objects
+#' @param clf: the classifier object
+#' @return a list population of predomics objects
+#' @export
+cleanPopulation_ovo <- function(pop, clf)
+{
+  list_pop <- list()
+  listcoeffs <- list()
+  list_pop <- pop
+  poplist <- list()
+  listcoeffs <- clf$coeffs_
+  for(i in 1:length(list_pop)){
+    clf$coeffs_ <- listcoeffs[[i]]
+  res <- cleanPopulation(pop = list_pop[[i]], clf = clf)
+  poplist[[i]] <- res
+  }
+  pop <- poplist
+
+  return(pop)
 }
 
 
