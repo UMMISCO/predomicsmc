@@ -310,7 +310,8 @@ terga1_ovo_fit <- function(X, y, clf) {
     pop.last.eval <- evaluatePopulation_ovo(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE)
     #for(i in 1:length(pop.last.eva
     # get the evaluation vector
-    evaluation    <- as.numeric(populationGet_X_ovo(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
+   ##### for(i in 1:length(pop.last.eval)){
+    evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
     # get the evaluation
     evaluation.ord <- order(abs(evaluation), decreasing = TRUE)
     # order by best in front
@@ -320,6 +321,10 @@ terga1_ovo_fit <- function(X, y, clf) {
     # get the best individuals (should be the first)
     best_individual_index <- which.max(abs(evaluation))
     best_individual <- pop_ordered_mod[[best_individual_index]]
+
+   ##### }
+
+
 
     # print it out
     if(clf$params$verbose)
