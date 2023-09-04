@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateAccuracy_ovo}
 \alias{evaluateAccuracy_ovo}
-\title{Evaluates the accuracy of a model}
+\title{evaluateAccuracy_ovo}
 \usage{
 evaluateAccuracy_ovo(
   mod = NULL,
@@ -31,4 +31,7 @@ either (1) list a model whose evaluation parameters are updated or (2) the accur
 }
 \description{
 This function evaluates the accuracy of either (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign.one versus one
+}
+\details{
+Evaluates the accuracy of a model
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{getSign_ovo}
 \alias{getSign_ovo}
-\title{Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function}
+\title{getSign_ovo}
 \usage{
 getSign_ovo(X, y, clf = NULL, parallel.local = FALSE)
 }
@@ -20,4 +20,7 @@ a list of +1 & -1 for each one-vs-all classification of our dataset
 }
 \description{
 Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function, one versus one.
+}
+\details{
+Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function
 }

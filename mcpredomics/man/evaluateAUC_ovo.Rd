@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateAUC_ovo}
 \alias{evaluateAUC_ovo}
-\title{Computes the AUC of a model}
+\title{evaluateAUC_ovo}
 \usage{
 evaluateAUC_ovo(score, y, sign = ">")
 }
@@ -17,8 +17,11 @@ are higher than the values of the case group (controls > t >= cases). "<": if th
 control group are lower or equal than the values of the case group (controls < t <= cases).}
 }
 \value{
-an auc value
+a list of auc values
 }
 \description{
+Computes the AUC of a model
+}
+\details{
 Computes the AUC of a model
 }

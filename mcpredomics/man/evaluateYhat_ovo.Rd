@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateYhat_ovo}
 \alias{evaluateYhat_ovo}
-\title{Computes the predected classification using a given model}
+\title{evaluateYhat_ovo}
 \usage{
 evaluateYhat_ovo(
   mod = NULL,
@@ -34,4 +34,7 @@ a list with the predicted classification of the samples
 }
 \description{
 This function evaluates the predicted classification using (1) a model object list that contains the intercept and the sign or (2) directly the attributes score, intercept, sign
+}
+\details{
+Computes the predected classification using a given model
 }

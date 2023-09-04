@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{sparseVecToModel_ovo}
 \alias{sparseVecToModel_ovo}
-\title{sparseVecToModel}
+\title{sparseVecToModel_ovo}
 \usage{
 sparseVecToModel_ovo(X, y, v, clf, eval.all = FALSE, obj = NULL)
 }
@@ -20,8 +20,11 @@ sparseVecToModel_ovo(X, y, v, clf, eval.all = FALSE, obj = NULL)
 \item{obj:}{an object model to add to the model (default:NULL)}
 }
 \value{
-an model object
+an list of model object one versus one
 }
 \description{
-Builds a model object based on model that is in the sparse (short) format.
+Builds a model object based on model that is in the sparse (short) format, one versus one.
+}
+\details{
+sparseVecToModel
 }

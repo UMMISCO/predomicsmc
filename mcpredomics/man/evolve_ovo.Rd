@@ -2,7 +2,7 @@
 % Please edit documentation in R/terga5.R
 \name{evolve_ovo}
 \alias{evolve_ovo}
-\title{Creates new combinations of features based from a parents.}
+\title{evolve_ovo}
 \usage{
 evolve_ovo(X, y, clf, pop, seed = NULL)
 }
@@ -18,8 +18,11 @@ evolve_ovo(X, y, clf, pop, seed = NULL)
 \item{seed:}{For reproductibility purpose to fix the random generator number.}
 }
 \value{
-a list population of models, containing parents and children
+a list population of models, containing parents and children(one versus one)
 }
 \description{
-This function is used in terga1 and is the main engine of the algorithm that allows to cross, mutate and select individuals from one generation to the next.
+This function is used in terga1 and is the main engine of the algorithm that allows to cross, mutate and select individuals from one generation to the next (one versus one).
+}
+\details{
+Creates new combinations of features based from a parents.
 }

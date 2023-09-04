@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{listOfSparseVecToListOfModels_ovo}
 \alias{listOfSparseVecToListOfModels_ovo}
-\title{listOfSparseVecToListOfModels}
+\title{listOfSparseVecToListOfModels_ovo}
 \usage{
 listOfSparseVecToListOfModels_ovo(X, y, clf, v, lobj = NULL, eval.all = FALSE)
 }
@@ -20,8 +20,11 @@ listOfSparseVecToListOfModels_ovo(X, y, clf, v, lobj = NULL, eval.all = FALSE)
 \item{eval.all:}{evaluate population (default:FALSE)}
 }
 \value{
-an model object
+an list of model object one versus one
 }
 \description{
 Converts an list of "SparseVec" objects onto a list of predomics objects
+}
+\details{
+listOfSparseVecToListOfModels
 }

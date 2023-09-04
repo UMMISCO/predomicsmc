@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{individual_ovo}
 \alias{individual_ovo}
-\title{Creates an object individual ovo}
+\title{individual_ovo}
 \usage{
 individual_ovo(
   X,
@@ -35,5 +35,8 @@ individual_ovo(
 an list individual (model) object
 }
 \description{
+Creates an object individual ovo
+}
+\details{
 Creates an object individual ovo
 }

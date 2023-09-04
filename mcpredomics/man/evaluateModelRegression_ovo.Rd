@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateModelRegression_ovo}
 \alias{evaluateModelRegression_ovo}
-\title{Evaluates the fitting coefficents of a model object}
+\title{evaluateModelRegression_ovo}
 \usage{
 evaluateModelRegression_ovo(
   mod,
@@ -31,4 +31,7 @@ a model object with the fitting scores evaluated
 }
 \description{
 Evaluates the fitting coefficients of a model object.
+}
+\details{
+Evaluates the fitting coefficents of a model object
 }

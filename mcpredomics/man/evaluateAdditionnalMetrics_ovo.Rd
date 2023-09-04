@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateAdditionnalMetrics_ovo}
 \alias{evaluateAdditionnalMetrics_ovo}
-\title{Compute other prediction scores such as precision, recall and f-score}
+\title{evaluateAdditionnalMetrics_ovo}
 \usage{
 evaluateAdditionnalMetrics_ovo(mod, X, y, clf, mode = "train")
 }
@@ -18,8 +18,11 @@ evaluateAdditionnalMetrics_ovo(mod, X, y, clf, mode = "train")
 \item{mode:}{training or testing mode}
 }
 \value{
-a model whose evaluation parameters are updated
+a list of models whose evaluation parameters are updated
 }
 \description{
 This function computes prediction scores based on the confusion matrix such as accuracy, precision, recall and f-score
+}
+\details{
+Compute other prediction scores such as precision, recall and f-score
 }

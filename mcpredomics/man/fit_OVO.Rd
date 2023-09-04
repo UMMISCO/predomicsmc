@@ -2,7 +2,7 @@
 % Please edit documentation in R/predomics_OVO.R
 \name{fit_OVO}
 \alias{fit_OVO}
-\title{fit: runs the classifier on a dataset}
+\title{fit_OVO}
 \usage{
 fit_OVO(
   X,
@@ -57,4 +57,7 @@ classification results as a sub-element
 \description{
 This function runs a learning experiment based on the classifier
 object and the given dataset.
+}
+\details{
+fit: runs the classifier on a dataset
 }

@@ -70,17 +70,6 @@ y <- as.vector(y)
 ```
 
 
-```{r}
-res <- evaluateModel_ovo(mod = pop_last.mod[[1]],
-                              X = X,
-                              y = y,
-                              clf = clf,
-                              eval.all = eval.all,
-                              force.re.evaluation = force.re.evaluation,
-                              estim.feat.importance = estim.feat.importance,
-                              mode = "train")
-res
-```
 
 
 
@@ -88,21 +77,17 @@ res
 
 
 
-```{r}
-Model_ovo <- evaluateModel_ovo(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, mode = 'train')
-Model_ovo
-```
 
-```{r}
-res_fit <- evaluateFit_ovo(mod = Model_ovo, X=X, y=y, clf=clf, force.re.evaluation = FALSE, mode = "train")
-res_fit
-```
-```{r}
-list <- list()
- for(i in 1:length(pop)){
-   res <- cleanPopulation(pop = pop[[i]], clf = clf)
-   list[[i]] <- res
- }
-list
-```
+
+
+
+
+
+
+
+
+
+
+
+
 

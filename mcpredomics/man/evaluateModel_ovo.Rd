@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateModel_ovo}
 \alias{evaluateModel_ovo}
-\title{Evaluates the fitting score of a model object ovo}
+\title{evaluateModel_ovo}
 \usage{
 evaluateModel_ovo(
   mod,
@@ -34,8 +34,11 @@ evaluateModel_ovo(
 of the model (default:"train") or not "test" for the c("terinter","bininter","ratio") languages}
 }
 \value{
-a model object with the fitting scores evaluated
+a model ovo object with the fitting scores evaluated
 }
 \description{
 Evaluates the fitting score of a model object ovo.
+}
+\details{
+Evaluates the fitting score of a model object ovo
 }

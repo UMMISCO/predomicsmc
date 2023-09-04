@@ -1,6 +1,13 @@
+################################################################
+# @script:  ovoExample.R
+# @author:  Edi Prifti
+# @author:  Fabien KAMBU MBUANGI
+# @author:  Jean-Daniel Zucker
+# @date:    Juin 2023
+################################################################
 
 #' Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function
-#'
+#' @title getSign_ovo
 #' @description Evaluates the sign for a given feature this is the old getMgsVsTraitSignDiscr function, one versus one.
 #' @import foreach
 #' @param X: the data matrix with variables in the rows and observations in the columns
@@ -43,7 +50,7 @@ getSign_ovo <- function(X, y, clf = NULL, parallel.local = FALSE)
 
 
 #' Creates an object individual ovo
-#'
+#' @title individual_ovo
 #' @description Creates an object individual ovo
 #' @param X: the list data matrix with variables in the rows and observations in the columns
 #' @param y: the list vector
@@ -78,7 +85,7 @@ individual_ovo <- function(X, y, clf, coeffs = NULL, ind = NULL, eval.all= FALSE
   }
   for(i in 1:length(list_y)){
     clf$coeffs_     <- listcoeffs[[i]]
-    individual <- individual(X= list_X[[i]], y= list_y[[i]], clf,  ind = ind)
+    individual <- individual(X= list_X[[i]], y= list_y[[i]], clf,  ind=ind )
     list_individual[[i]] = individual
   }
   individual = list_individual
@@ -89,14 +96,14 @@ individual_ovo <- function(X, y, clf, coeffs = NULL, ind = NULL, eval.all= FALSE
 
 
 
-#' Evaluates the fitting scores of a model objects
-#'
-#' @description Evaluates fit scores of model objects.
+#' Evaluates the fitting scores of a model objects one versus one
+#' @title evaluateIntercept_ovo
+#' @description Evaluates fit scores of model objects one versus one.
 #' @param mod : model objects
 #' @param X: the data matrix with variables in the rows and observations in the columns
 #' @param y: the response vector
 #' @param clf: the classifier parameter object
-#' @return model objects with fit scores
+#' @return list model objects with fit scores
 evaluateIntercept_ovo <- function(mod, X, y, clf)
 {
   nClasse <- unique(y)
@@ -132,7 +139,7 @@ evaluateIntercept_ovo <- function(mod, X, y, clf)
 }
 
 #' Computes the predected classification using a given model
-#'
+#' @title evaluateYhat_ovo
 #' @description This function evaluates the predicted classification using (1) a model object list that contains the intercept and the sign or (2) directly the attributes score, intercept, sign
 #' @param mod: a model object to be used in the class prediction
 #' @param X: dataset to classify
@@ -180,7 +187,7 @@ evaluateYhat_ovo <- function(mod = NULL, X, y, clf, score=NULL, intercept=NULL, 
 
 
 #' Evaluates the accuracy of a model
-#'
+#' @title evaluateAccuracy_ovo
 #' @description This function evaluates the accuracy of either (1) a model object that contains intercept and sign or (2) directly the attributes score, intercept, sign.one versus one
 #' @param mod: a model object to be used in the class prediction
 #' @param X: dataset to classify
@@ -228,7 +235,7 @@ evaluateAccuracy_ovo <- function(mod = NULL, X, y, clf, force.re.evaluation = FA
 
 
 #' Computes the AUC of a model
-#'
+#' @title evaluateAUC_ovo
 #' @description Computes the AUC of a model
 #' @param score: the ^y score of the model
 #' @param y: the response vector
@@ -236,7 +243,7 @@ evaluateAccuracy_ovo <- function(mod = NULL, X, y, clf, force.re.evaluation = FA
 #' the median is higher and take the direction accordingly. ">": if the predictor values for the control group
 #' are higher than the values of the case group (controls > t >= cases). "<": if the predictor values for the
 #' control group are lower or equal than the values of the case group (controls < t <= cases).
-#' @return an auc value
+#' @return  a list of auc values
 #' @importFrom pROC roc
 evaluateAUC_ovo <- function(score, y, sign = '>')
 {
@@ -272,14 +279,14 @@ evaluateAUC_ovo <- function(score, y, sign = '>')
 
 
 #' Compute other prediction scores such as precision, recall and f-score
-#'
+#' @title evaluateAdditionnalMetrics_ovo
 #' @description This function computes prediction scores based on the confusion matrix such as accuracy, precision, recall and f-score
 #' @param mod: a model object to be evaluated
 #' @param X: dataset to classify
 #' @param y: variable to predict
 #' @param clf: an object containing the different parameters of the classifier
 #' @param mode: training or testing mode
-#' @return a model whose evaluation parameters are updated
+#' @return a list of models whose evaluation parameters are updated
 evaluateAdditionnalMetrics_ovo <- function(mod, X, y, clf, mode = "train")
 {
   nClasse <- unique(y)
@@ -317,7 +324,7 @@ evaluateAdditionnalMetrics_ovo <- function(mod, X, y, clf, mode = "train")
 
 
 #' Evaluates the fitting coefficents of a model object
-#'
+#' @title evaluateModelRegression_ovo
 #' @description Evaluates the fitting coefficients of a model object.
 #' @param mod: a model object
 #' @param X: the data matrix with variables in the rows and observations in the columns
@@ -363,7 +370,7 @@ evaluateModelRegression_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.
 
 
 #' Evaluates the fitting score of a model object
-#'
+#' @title evaluateFit_ovo
 #' @description Evaluates the fitting score of a model object.
 #' @param mod : a model object
 #' @param X: the data matrix with variables in the rows and observations in the columns
@@ -383,7 +390,7 @@ evaluateModelRegression_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.
 #' @param force.re.evaluation: re-evaluate all the scores even if they exist (default:FALSE)
 #' @param mode: A choice from c("train", "test") indicates wether we wish to learn the threthold
 #' of the model (default:"train") or not "test" for the c("terinter","bininter","ratio") languages
-#' @return a model object with the fitting score
+#' @return a list of model objects with the appropriate score
 evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = "train")
 {
 
@@ -436,8 +443,8 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
 
   # compute the score in the case it is asked to recompute
   for(i in 1: length(list_mod)) {
-  if(force.re.evaluation)
-  {
+    if(force.re.evaluation)
+    {
 
       clf$coeffs_ <- listcoeffs[[i]]
       scorelist[[i]] <- getModelScore(mod = list_mod[[i]], X = list_X[[i]], clf = clf, force.re.evaluation = force.re.evaluation)
@@ -446,9 +453,9 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
       mod[[i]]$neg_score_ <- scorelist[[i]]$neg_score_
 
 
-  }
-  else
-  {
+    }
+    else
+    {
 
 
       # compute the score if it does not exist
@@ -479,7 +486,7 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
           }
         }
       }
-  }
+    }
   }
 
   for(i in 1:length(list_mod)) {
@@ -703,7 +710,7 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
 }
 
 #' Evaluates the fitting score of a model object ovo
-#'
+#' @title evaluateModel_ovo
 #' @description Evaluates the fitting score of a model object ovo.
 #' @param mod: a model object ovo
 #' @param X: the data matrix with variables in the rows and observations in the columns
@@ -714,7 +721,7 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
 #' @param estim.feat.importance: evaluate the importance in the model object (default:FALSE)
 #' @param mode: A choice from c("train", "test") indicates wether we wish to learn the threthold
 #' of the model (default:"train") or not "test" for the c("terinter","bininter","ratio") languages
-#' @return a model object with the fitting scores evaluated
+#' @return a model ovo object with the fitting scores evaluated
 #' @export
 
 evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, mode = 'train')
@@ -776,19 +783,6 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
       }
     }
   }
-
- # for(i in 1:length(list_mod)){
-
-    #if(mod[[i]]$language == "ratio" | mod[[i]]$language == "ter" | mod[[i]]$language == "terinter")
-    #{
-
-     # if(length(table(sign(mod[[i]]$coeffs_))) != 2)
-      #{
-       # return(NULL)
-     # }
-
-   # }
- # }
 
 
   # make a copy of the model object
@@ -910,6 +904,101 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   }
   mod.res <- mod.res
 
+  mod.res <- mod.res
+  nClass = length(mod.res)
+
+  learnerr <- mod.res[[1]]$learner
+  languagee <- mod.res[[1]]$language
+  objectivee <- mod.res[[1]]$objective
+  evalToFitt <- mod.res[[1]]$evalToFit
+  indicess <- list()
+  fit_ovo = 0
+  unpenalized_fit_ovo = 0
+  auc_ovo =0
+  accuracy_ovo = 0
+  intercept_ovo = 0
+  eval.sparsity_ovo = 0
+  precision_ovo = 0
+  recall_ovo = 0
+  f1_ovo = 0
+  confusionMatrix_ovo = 0
+  namess <- list()
+  coeffss <- list()
+  corr <- NA
+  aicc <- NA
+  eval.sparsityy <- list()
+  signn <- list()
+  rsqq <- NA
+  serr <- NA
+  scoree <- list()
+  pos_scoree <- list()
+  neg_scoree <- list()
+
+  for(i in 1:length(mod.res)){
+    indicess[[i]] = mod.res[[i]]$indices_
+    namess[[i]] = mod.res[[i]]$names_
+    coeffss[[i]] = mod.res[[i]]$coeffs_
+    fit_ovo = fit_ovo + mod.res[[i]]$fit_
+    unpenalized_fit_ovo= unpenalized_fit_ovo + mod.res[[i]]$unpenalized_fit_
+    auc_ovo = auc_ovo + mod.res[[i]]$auc_
+    accuracy_ovo = accuracy_ovo + mod.res[[i]]$accuracy_
+    intercept_ovo = intercept_ovo + mod.res[[i]]$intercept_
+    eval.sparsityy[[i]] =  mod.res[[i]]$eval.sparsity
+    signn[[i]] =  mod.res[[i]]$sign_
+    precision_ovo = precision_ovo + mod.res[[i]]$precision_
+    recall_ovo = recall_ovo + mod.res[[i]]$recall_
+    f1_ovo = f1_ovo + mod.res[[i]]$f1_
+    scoree[[i]] = mod.res[[i]]$score_
+    pos_scoree[[i]] = mod.res[[i]]$pos_score_
+    neg_scoree[[i]] = mod.res[[i]]$neg_score_
+    confusionMatrix_ovo = confusionMatrix_ovo + mod.res[[i]]$confusionMatrix_
+  }
+
+  fit_ovo = fit_ovo/nClass
+  unpenalized_fit_ovo = unpenalized_fit_ovo/nClass
+  auc_ovo = auc_ovo/nClass
+  accuracy_ovo = accuracy_ovo/nClass
+  intercept_ovo = intercept_ovo/nClass
+  eval.sparsity_ovo = eval.sparsity_ovo/nClass
+  precision_ovo = precision_ovo/nClass
+  recall_ovo = recall_ovo/nClass
+  f1_ovo = f1_ovo/nClass
+  confusionMatrix_ovo = confusionMatrix_ovo
+
+
+
+  mod.res <- list()
+  mod.res$learner <- learnerr
+  mod.res$language <- languagee
+  mod.res$objective <- objectivee
+  mod.res$evalToFit <- evalToFitt
+  mod.res$indices_ <- indicess
+  mod.res$names_ <- namess
+  mod.res$coeffs_ <- coeffss[[1]]
+  #mod.res$coeffs_ <- coeffss
+  mod.res$fit_ <- fit_ovo
+  mod.res$unpenalized_fit_ <- unpenalized_fit_ovo
+  mod.res$auc_ <-auc_ovo
+  mod.res$accuracy_ <- accuracy_ovo
+  mod.res$intercept_ <- intercept_ovo
+  mod.res$eval.sparsity <- eval.sparsity_ovo
+  mod.res$precision_ <- precision_ovo
+  mod.res$recall_ <- recall_ovo
+  mod.res$f1_ <- f1_ovo
+  mod.res$cor_ <- corr
+  mod.res$aic_ <- aicc
+  mod.res$sign_ <- signn
+  mod.res$rsq_ <- rsqq
+  mod.res$ser_ <- serr
+  mod.res$score_ <- scoree[[1]]
+  mod.res$pos_score_ <- pos_scoree[[1]]
+  mod.res$neg_score_ <- neg_scoree[[1]]
+  #mod.res$score_ <- scoree
+  #mod.res$pos_score_ <- pos_scoree
+  #mod.res$neg_score_ <- neg_scoree
+  mod.res$confusionMatrix_ <- confusionMatrix_ovo
+
+
   return(mod.res)
 }
 
@@ -922,10 +1011,9 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
 
 
 
-
-
+#' evaluate Model one versus one
+#' @title evaluateModel_ovo
 #' @description Evaluates an entire population of models, that be predomics objects or individuals
-#'
 #' @import foreach
 #' @title evaluatePopulation
 #' @name evaluatePopulation
@@ -940,7 +1028,7 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
 #' of each of the models (default:"train") or not "test" for the c("terinter","bininter","ratio") languages
 #' @param delete.null.models: should null indivuals be deleted (default:TRUE)
 #' @param lfolds: compute evaluation in crossval (default:NULL)
-#' @return an individual object
+#' @return an individual ovo object
 #' @export
 evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
                                    force.re.evaluation = FALSE,
@@ -1005,7 +1093,7 @@ evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
     mod <- pop[[i]]
     if(!is.null(mod))
     {
-    res[[i]] <- evaluateModel_ovo(mod = mod,
+      res[[i]] <- evaluateModel_ovo(mod = mod,
                                     X = X,
                                     y = y,
                                     clf = clf,
@@ -1019,24 +1107,24 @@ evaluatePopulation_ovo <- function(X, y, clf, pop, eval.all = FALSE,
   } # end for loop
 
   # clean population after evaluation as well
- if(delete.null.models)
+  if(delete.null.models)
   {
-    res <- cleanPopulation_ovo(pop = res, clf = clf)
+    res <- cleanPopulation(pop = res, clf = clf)
   }
 
   return(res)
 }
 
 #' sparseVecToModel
-#'
-#' @description Builds a model object based on model that is in the sparse (short) format.
+#' @title sparseVecToModel_ovo
+#' @description Builds a model object based on model that is in the sparse (short) format, one versus one.
 #' @param X: dataset
 #' @param y: labels
 #' @param v: A vector of indexes (example v=c(1,11))
 #' @param clf: classifier information
 #' @param eval.all: Should the model be evaluated (default:FALSE)
 #' @param obj: an object model to add to the model (default:NULL)
-#' @return an model object
+#' @return an list of model object one versus one
 sparseVecToModel_ovo <- function(X, y, v, clf, eval.all=FALSE, obj = NULL)
 {
   if(is.null(v))
@@ -1052,7 +1140,7 @@ sparseVecToModel_ovo <- function(X, y, v, clf, eval.all=FALSE, obj = NULL)
 
 
 #' listOfSparseVecToListOfModels
-#'
+#' @title listOfSparseVecToListOfModels_ovo
 #' @description Converts an list of "SparseVec" objects onto a list of predomics objects
 #' @import snow
 #' @param X: dataset
@@ -1061,7 +1149,7 @@ sparseVecToModel_ovo <- function(X, y, v, clf, eval.all=FALSE, obj = NULL)
 #' @param v: list of vectors of coeffs. For example, v=list( c(0.0,1.0,0.0,-1.0) , c(1.0,1.0,0.0,0.0) , c(0.0,1.0,1.0,-1.0) )
 #' @param lobj: a list of objects to add as elements in the model objects if not null (default:NULL)
 #' @param eval.all: evaluate population (default:FALSE)
-#' @return an model object
+#' @return an list of model object one versus one
 #' @export
 listOfSparseVecToListOfModels_ovo <- function(X, y, clf, v, lobj = NULL, eval.all = FALSE)
 {
@@ -1099,7 +1187,7 @@ listOfSparseVecToListOfModels_ovo <- function(X, y, clf, v, lobj = NULL, eval.al
 
 
 #' evaluates the feature importance in a population of models
-#'
+#' @title evaluateFeatureImportanceInPopulation_ovo
 #' @description This function perturbes the dataset by shuffling one at a time a subset of features that appear in a population of models
 #' and recomputes the evaluation of those models. The mean deltas of the score to consider will give a measure of importance. Two methods
 #' are implemented: the first (extensive), will shuffle feature by feature multiple times and will compute the evaluation for the whole
@@ -1131,7 +1219,7 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
   list_X <- list()
   k <- 1
   list_pop <- list()
-  #listcoeffs <- list()
+  listcoeffs <- list()
 
   for (i in 1:(length(nClasse)-1)) {
     for (j in (i+1):length(nClasse)) {
@@ -1151,7 +1239,7 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
 
 
   for(i in 1:(length(list_pop))){
-    #clf$coeffs_ <- listcoeffs[[i]]
+    clf$coeffs_ <- listcoeffs[[i]]
     evalfeauture <- evaluateFeatureImportanceInPopulation(pop = pop,
                                                           X = list_X[[i]],
                                                           y = list_y[[i]],
@@ -1169,79 +1257,6 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
 
   return(res)
 }
-
-
-
-
-#' cleanPopulation
-#'
-#' @description Looks for invalid predomics objects in a population and removes them.
-#' @param pop: is population (a list) of predomics objects
-#' @param clf: the classifier object
-#' @return a list population of predomics objects
-#' @export
-cleanPopulation_ovo <- function(pop, clf)
-{
-  list <- list()
-  for(i in 1:length(pop)){
-    res <- cleanPopulation(pop = pop[[i]], clf = clf)
-    list[[i]] <- res
-  }
-  pop <- list
-
-  return(pop)
-}
-
-
-#' Get the best model from a classifier result
-#'
-#' @description Gets a given attribute from a population of predomics objects
-#' @param element2get: the name of the attribute to get
-#' @param toVec: should the results be unlisted (default:TRUE)
-#' @param na.rm: delete the elements that are NA (default) when returning tovec
-#' @return a vector of attributes
-#' @export
-populationGet_X_ovo <- function(element2get, toVec = TRUE, na.rm = TRUE) {
-  func <- function(pop) {
-    res <- list()  # Créez une liste pour stocker les résultats
-    for (i in 1:length(pop)) {
-      if (length(pop[[i]]) > 0) {
-        res[[i]] <- lapply(pop[[i]], function(indiv) {
-          if (!is.list(indiv)) {
-            NA
-          } else {
-            indiv[[element2get]]
-          }
-        })
-      } else {
-        res[[i]] <- NA
-      }
-    }
-
-    if (toVec) {  # Retourne un vecteur
-      if (na.rm) {
-        ind.na <- which(!is.na(res))
-        return(unlist(res[ind.na]))
-      } else {
-        return(unlist(res))
-      }
-    } else {  # Retourne une liste
-      if (na.rm) {
-        ind.na <- which(!is.na(res))
-        return(res[ind.na])
-      } else {
-        return(res)
-      }
-    }
-  }
-
-  return(func)
-}
-
-
-
-
-
 
 
 

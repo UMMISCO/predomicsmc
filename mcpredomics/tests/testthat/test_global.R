@@ -1,4 +1,3 @@
-
 library(mcpredomics)
 library(predomics)
 library(ggplot2)
@@ -38,38 +37,34 @@ test_that('function getSign_ovo',
 
 test_that('functions listOfSparseVecToListOfModels_ovo and evolve_ovo ',
           {
-pop         <- population(clf = clf,
-                          size_ind = 1,
-                          size_world = nrow(X),
-                          best_ancestor = NULL,
-                          size_pop = clf$params$size_pop,
-                          seed = clf$params$current_seed)
-pop_last      <- evolve_ovo(X, y, clf, pop, seed = clf$params$current_seed)
-pop_last.mod <- listOfSparseVecToListOfModels_ovo(X, y , clf = clf, v = pop_last[[1]])
-mod.res <- evaluateModel_ovo(mod = pop_last.mod[[1]],
-                              X = X,
-                              y = y,
-                              clf = clf,
-                              eval.all = FALSE,
-                              force.re.evaluation = FALSE,
-                              estim.feat.importance = FALSE,
-                              mode = "train")
-res_fit <- evaluateFit_ovo(mod = mod.res, X=X, y=y, clf=clf, force.re.evaluation = FALSE, mode = "train")
-evaluateAddMetric <- evaluateAdditionnalMetrics_ovo(mod=mod.res, X, y, clf, mode = "train")
-evaluateAccuracy_ovo <- evaluateAccuracy_ovo(mod = mod.res, X, y, clf, force.re.evaluation = FALSE, mode = "train")
-expect_length(pop, 100)
-expect_length(pop_last, 6)
-expect_length(pop_last[[1]], 100)
-expect_length(pop_last.mod, 100)
-expect_length(mod.res, 6)
-expect_length(res_fit, 6)
-expect_length(evaluateAddMetric, 6)
-expect_length(evaluateAccuracy_ovo, 6)
+            pop         <- population(clf = clf,
+                                      size_ind = 1,
+                                      size_world = nrow(X),
+                                      best_ancestor = NULL,
+                                      size_pop = clf$params$size_pop,
+                                      seed = clf$params$current_seed)
+            pop_last      <- evolve_ovo(X, y, clf, pop, seed = clf$params$current_seed)
+            pop_last.mod <- listOfSparseVecToListOfModels_ovo(X, y , clf = clf, v = pop_last[[1]])
+            mod.res <- evaluateModel_ovo(mod = pop_last.mod[[1]],
+                                         X = X,
+                                         y = y,
+                                         clf = clf,
+                                         eval.all = FALSE,
+                                         force.re.evaluation = FALSE,
+                                         estim.feat.importance = FALSE,
+                                         mode = "train")
+            pop.last.eval <- evaluatePopulation_ovo(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE)
+            individual_ovo <- individual_ovo(X, y, clf, ind  = pop_last[[1]],  eval.all = eval.all, obj = obj)
+
+            expect_length(pop, 100)
+            expect_length(pop_last, 6)
+            expect_length(pop_last.mod, 100)
+            expect_length(mod.res, 25)
+            expect_length(pop.last.eval, 100)
+            expect_length(individual_ovo, 6)
+
 
 
 
           }
 )
-
-
-

@@ -10,16 +10,16 @@
 ################################################################
 
 ################################################################
-# @script: terga1.R
+# @script: terga5.R
 # @author: Edi Prifti
-# @author: Lucas Robin
-# @date: August 2016
+# @author: Fabien KAMBU MBUANGI
+# @date: Juin 2023
 ################################################################
 
 
 #' terga1: Model search algorithm based on genetic algorithms (GA)
 #'
-#' @title terga1_ova
+#' @title terga1_ovo
 #' @description terga1_ova is a model one versus all search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
 #' @param sparsity: number of features in a given model. This is a vector with multiple lengths.
 #' @param size_pop: the number of individuals in a population to be evolved.
@@ -167,75 +167,75 @@ terga1_ovo <- function(sparsity = c(1:10),
 # Launch the fit classifier routine
 terga1_ovo_fit <- function(X, y, clf) {
 
-    # Setting the language environment
-    switch(clf$params$language,
-           ter=
-             {
-               # ternary language without intercept (maximize the auc)
-               if(clf$params$verbose){print("Setting environment for the language 'ter'")}
-               if(clf$params$objective == "cor")
-               {
-                 clf$params$evalToFit <- "cor_"
-               }else
-               {
-                 # note that here with the ter language we could not use auc to fit since the intercept should be 0
-                 clf$params$intercept = 0
-                 if(clf$params$evalToFit == "auc_")
-                 {
-                   clf$params$evalToFit <- "accuracy_"
-                   warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
-                 }
-               }
-             },
-           terinter=
-             {
-               # ternary language without intercept (maximize the accuracy)
-               if(clf$params$verbose){print("Setting environment for the language 'terinter'")}
-               if(clf$params$objective == "cor")
-               {
-                 clf$params$evalToFit <- "cor_"
-               }
-             },
-           bin=
-             {
-               # ternary language without intercept (maximize the auc)
-               if(clf$params$verbose){print("Setting environment for the language 'bin'")}
-               if(clf$params$objective == "cor")
-               {
-                 clf$params$evalToFit <- "cor_"
-               }else
-               {
-                 # note that here with the ter language we could not use auc to fit since the intercept should be 0
-                 clf$params$intercept = 0
-                 if(clf$params$evalToFit == "auc_")
-                 {
-                   clf$params$evalToFit <- "accuracy_"
-                   warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
-                 }
-               }
-             },
-           bininter=
-             {
-               # ternary language without intercept (maximize the auc)
-               if(clf$params$verbose){print("Setting environment for the language 'bininter'")}
-               if(clf$params$objective == "cor")
-               {
-                 clf$params$evalToFit <- "cor_"
-               }
-             },
-           ratio=
-             {
-               # ternary language without intercept (maximize the auc)
-               if(clf$params$verbose){print("Setting environment for the language 'ratio'")}
-               if(clf$params$objective == "cor")
-               {
-                 clf$params$evalToFit <- "cor_"
-               }
-             },
+  # Setting the language environment
+  switch(clf$params$language,
+         ter=
            {
-             stop(paste("The language",clf$params$language, "is not implemented !"))
-           }
-    )
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'ter'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }else
+             {
+               # note that here with the ter language we could not use auc to fit since the intercept should be 0
+               clf$params$intercept = 0
+               if(clf$params$evalToFit == "auc_")
+               {
+                 clf$params$evalToFit <- "accuracy_"
+                 warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
+               }
+             }
+           },
+         terinter=
+           {
+             # ternary language without intercept (maximize the accuracy)
+             if(clf$params$verbose){print("Setting environment for the language 'terinter'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }
+           },
+         bin=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'bin'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }else
+             {
+               # note that here with the ter language we could not use auc to fit since the intercept should be 0
+               clf$params$intercept = 0
+               if(clf$params$evalToFit == "auc_")
+               {
+                 clf$params$evalToFit <- "accuracy_"
+                 warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
+               }
+             }
+           },
+         bininter=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'bininter'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }
+           },
+         ratio=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'ratio'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }
+           },
+         {
+           stop(paste("The language",clf$params$language, "is not implemented !"))
+         }
+  )
 
 
 
@@ -310,7 +310,6 @@ terga1_ovo_fit <- function(X, y, clf) {
     pop.last.eval <- evaluatePopulation_ovo(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE)
     #for(i in 1:length(pop.last.eva
     # get the evaluation vector
-   ##### for(i in 1:length(pop.last.eval)){
     evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
     # get the evaluation
     evaluation.ord <- order(abs(evaluation), decreasing = TRUE)
@@ -321,10 +320,6 @@ terga1_ovo_fit <- function(X, y, clf) {
     # get the best individuals (should be the first)
     best_individual_index <- which.max(abs(evaluation))
     best_individual <- pop_ordered_mod[[best_individual_index]]
-
-   ##### }
-
-
 
     # print it out
     if(clf$params$verbose)
@@ -353,7 +348,7 @@ terga1_ovo_fit <- function(X, y, clf) {
 
     # save the whole list of models ordered by fitting score. The best is the first
     res[[paste("k",i,sep = "_")]] <- pop_ordered_mod
-    }
+  }
 
   return(res)
 }
@@ -364,14 +359,14 @@ terga1_ovo_fit <- function(X, y, clf) {
 
 
 #' Creates new combinations of features based from a parents.
-#'
-#' @description This function is used in terga1 and is the main engine of the algorithm that allows to cross, mutate and select individuals from one generation to the next.
+#' @title evolve_ovo
+#' @description This function is used in terga1 and is the main engine of the algorithm that allows to cross, mutate and select individuals from one generation to the next (one versus one).
 #' @param X: the data matrix with variables in the rows and observations in the columns
 #' @param y: the response vector
 #' @param clf: the classifier parameter object
 #' @param pop: A population (i.e. list) of index vectors
 #' @param seed: For reproductibility purpose to fix the random generator number.
-#' @return a list population of models, containing parents and children
+#' @return a list population of models, containing parents and children(one versus one)
 #' @export
 evolve_ovo <- function(X, y, clf, pop, seed = NULL)
 {
@@ -392,8 +387,8 @@ evolve_ovo <- function(X, y, clf, pop, seed = NULL)
       k <- k + 1
     }
   }
-listclf= list()
-listclf=clf$coeffs_
+  listclf= list()
+  listclf=clf$coeffs_
   for(i in 1:length(list_y)){
     clf$coeffs_     <- listclf[[i]]
     list_evolved_pop[[i]] <- evolve(X=list_X[[i]], y=list_y[[i]], clf, pop, seed = NULL)
@@ -405,3 +400,8 @@ listclf=clf$coeffs_
 
   return(evolved_pop)
 }
+
+
+
+
+

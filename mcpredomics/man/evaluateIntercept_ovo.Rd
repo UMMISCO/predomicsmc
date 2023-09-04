@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateIntercept_ovo}
 \alias{evaluateIntercept_ovo}
-\title{Evaluates the fitting scores of a model objects}
+\title{evaluateIntercept_ovo}
 \usage{
 evaluateIntercept_ovo(mod, X, y, clf)
 }
@@ -16,8 +16,11 @@ evaluateIntercept_ovo(mod, X, y, clf)
 \item{clf:}{the classifier parameter object}
 }
 \value{
-model objects with fit scores
+list model objects with fit scores
 }
 \description{
-Evaluates fit scores of model objects.
+Evaluates fit scores of model objects one versus one.
+}
+\details{
+Evaluates the fitting scores of a model objects one versus one
 }

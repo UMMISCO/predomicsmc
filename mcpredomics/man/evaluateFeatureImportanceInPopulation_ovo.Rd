@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateFeatureImportanceInPopulation_ovo}
 \alias{evaluateFeatureImportanceInPopulation_ovo}
-\title{evaluates the feature importance in a population of models}
+\title{evaluateFeatureImportanceInPopulation_ovo}
 \usage{
 evaluateFeatureImportanceInPopulation_ovo(
   pop,
@@ -52,4 +52,7 @@ are implemented: the first (extensive), will shuffle feature by feature multiple
 population of models, which can be very time consuming. The second (optimized) and the default approach consists on using a different
 seed when shuffling a given feature and computing the population. In this setting it is not needed to run multiple seeds on the whole
 dataset. This procedure is designed to be applied in cross validation.
+}
+\details{
+evaluates the feature importance in a population of models
 }

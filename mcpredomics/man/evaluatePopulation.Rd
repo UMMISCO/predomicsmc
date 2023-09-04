@@ -3,7 +3,7 @@
 \name{evaluatePopulation}
 \alias{evaluatePopulation}
 \alias{evaluatePopulation_ovo}
-\title{evaluatePopulation}
+\title{evaluateModel_ovo}
 \usage{
 evaluatePopulation_ovo(
   X,
@@ -41,8 +41,11 @@ of each of the models (default:"train") or not "test" for the c("terinter","bini
 \item{lfolds:}{compute evaluation in crossval (default:NULL)}
 }
 \value{
-an individual object
+an individual ovo object
 }
 \description{
 Evaluates an entire population of models, that be predomics objects or individuals
+}
+\details{
+evaluate Model one versus one
 }

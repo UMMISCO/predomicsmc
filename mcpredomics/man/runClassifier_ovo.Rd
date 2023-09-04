@@ -2,7 +2,7 @@
 % Please edit documentation in R/predomics_OVO.R
 \name{runClassifier_ovo}
 \alias{runClassifier_ovo}
-\title{Runs the learning on a dataset}
+\title{runClassifier_ovo}
 \usage{
 runClassifier_ovo(X, y, clf, x_test = NULL, y_test = NULL)
 }
@@ -22,4 +22,7 @@ the classifier along with the classification results as a sub-element
 }
 \description{
 This function runs a classifier in a given dataset
+}
+\details{
+Runs the learning on a dataset
 }

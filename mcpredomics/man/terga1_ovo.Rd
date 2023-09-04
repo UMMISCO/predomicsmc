@@ -2,7 +2,7 @@
 % Please edit documentation in R/terga5.R
 \name{terga1_ovo}
 \alias{terga1_ovo}
-\title{terga1_ova}
+\title{terga1_ovo}
 \usage{
 terga1_ovo(
   sparsity = c(1:10),

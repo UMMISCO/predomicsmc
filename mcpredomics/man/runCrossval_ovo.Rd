@@ -2,7 +2,7 @@
 % Please edit documentation in R/predomics_OVO.R
 \name{runCrossval_ovo}
 \alias{runCrossval_ovo}
-\title{Compute the cross-validation emprirical and generalization scores}
+\title{runCrossval_ovo}
 \usage{
 runCrossval_ovo(X, y, clf, lfolds = NULL, nfolds = 10, return.all = FALSE)
 }
@@ -22,4 +22,7 @@ a list containing empirical, generalisation scores for each fold as well as a ma
 }
 \description{
 Compute the cross-validation emprirical and generalization scores.
+}
+\details{
+Compute the cross-validation emprirical and generalization scores
 }

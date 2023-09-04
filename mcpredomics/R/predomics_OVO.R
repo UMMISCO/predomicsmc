@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 ################################################################
 #  _____       _                   ____            _           #
 # |_   _|     | |                 / __ \          (_)          #
@@ -17,18 +10,15 @@
 ################################################################
 
 ################################################################
-# @script:  predomics.R
+# @script:  predomics_OVO.R
 # @author:  Edi Prifti
-# @author:  Lucas Robin
-# @author:  Shasha Cui
-# @author:  Blaise Hanczar
-# @author:  Yann Chevaleyre
+# @author:  Fabien KAMBU MBUANGI
 # @author:  Jean-Daniel Zucker
-# @date:    May 2016
+# @date:    Juin 2023
 ################################################################
 
 #' fit: runs the classifier on a dataset
-#'
+#' @title fit_OVO
 #' @import doSNOW
 #' @import snow
 #' @import doRNG
@@ -189,13 +179,13 @@ fit_OVO <- function(X,
 
 
       for (i in 1:(length(list_y))) {
-      feature.cor[[i]]     <- filterfeaturesK(data = list_X[[i]],
-                                         trait = list_y[[i]],
-                                         k = max.nb.features,
-                                         type = "wilcoxon",
-                                         sort = TRUE,
-                                         verbose = clf$params$verbose,
-                                         return.data = FALSE) # to avoid having to recompute this all the time
+        feature.cor[[i]]     <- filterfeaturesK(data = list_X[[i]],
+                                                trait = list_y[[i]],
+                                                k = max.nb.features,
+                                                type = "wilcoxon",
+                                                sort = TRUE,
+                                                verbose = clf$params$verbose,
+                                                return.data = FALSE) # to avoid having to recompute this all the time
 
       }
     }
@@ -573,6 +563,7 @@ fit_OVO <- function(X,
 
 
 #' Runs the learning on a dataset
+#' @title runClassifier_ovo
 #' @export
 #' @import doSNOW
 #' @import snow
@@ -693,15 +684,15 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
 
     # for each of the best models in the population compute the importance in the test population
     efip.fold <- evaluateFeatureImportanceInPopulation_ovo(pop = pop.fold,
-                                                       X = x_test,
-                                                       y = y_test,
-                                                       clf = clf,
-                                                       score = "fit_",
-                                                       filter.ci = TRUE,
-                                                       method = "extensive",
-                                                       seed = c(1:10), # 10 times the perturbation for more accurate importance
-                                                       aggregation = "mean",
-                                                       verbose = clf$params$verbose)
+                                                           X = x_test,
+                                                           y = y_test,
+                                                           clf = clf,
+                                                           score = "fit_",
+                                                           filter.ci = TRUE,
+                                                           method = "extensive",
+                                                           seed = c(1:10), # 10 times the perturbation for more accurate importance
+                                                           aggregation = "mean",
+                                                           verbose = clf$params$verbose)
     clf$fip <- efip.fold
   }
 
@@ -736,7 +727,7 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
 
 
 #' Compute the cross-validation emprirical and generalization scores
-#'
+#' @title runCrossval_ovo
 #' @description Compute the cross-validation emprirical and generalization scores.
 #' @param X: the data matrix with variables in the rows and observations in the columns
 #' @param y: the response vector
@@ -1228,3 +1219,4 @@ runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = 
 
   return(res.crossval)
 }
+

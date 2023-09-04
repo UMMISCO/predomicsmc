@@ -2,7 +2,7 @@
 % Please edit documentation in R/ovoExample.R
 \name{evaluateFit_ovo}
 \alias{evaluateFit_ovo}
-\title{Evaluates the fitting score of a model object}
+\title{evaluateFit_ovo}
 \usage{
 evaluateFit_ovo(mod, X, y, clf, force.re.evaluation = FALSE, mode = "train")
 }
@@ -24,10 +24,13 @@ of the model (default:"train") or not "test" for the c("terinter","bininter","ra
 a model object with the fitting score
 Evaluates the fitting score of a model object
 
-a model object with the fitting score
+a list of model objects with the appropriate score
 }
 \description{
 Evaluates the fitting score of a model object.
 
 Evaluates the fitting score of a model object.
+}
+\details{
+Evaluates the fitting score of a model object
 }
