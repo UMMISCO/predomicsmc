@@ -972,8 +972,8 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   mod.res$language <- languagee
   mod.res$objective <- objectivee
   mod.res$evalToFit <- evalToFitt
-  mod.res$indices_ <- indicess
-  mod.res$names_ <- namess
+  mod.res$indices_ <- indicess[[1]]
+  mod.res$names_ <- namess[[1]]
   mod.res$coeffs_ <- coeffss[[1]]
   #mod.res$coeffs_ <- coeffss
   mod.res$fit_ <- fit_ovo
@@ -981,13 +981,13 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   mod.res$auc_ <-auc_ovo
   mod.res$accuracy_ <- accuracy_ovo
   mod.res$intercept_ <- intercept_ovo
-  mod.res$eval.sparsity <- eval.sparsity_ovo
+  mod.res$eval.sparsity <- eval.sparsity_ovo[[1]]
   mod.res$precision_ <- precision_ovo
   mod.res$recall_ <- recall_ovo
   mod.res$f1_ <- f1_ovo
   mod.res$cor_ <- corr
   mod.res$aic_ <- aicc
-  mod.res$sign_ <- signn
+  mod.res$sign_ <- signn[[1]]
   mod.res$rsq_ <- rsqq
   mod.res$ser_ <- serr
   mod.res$score_ <- scoree[[1]]
@@ -1218,7 +1218,6 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
   list_y <- list()
   list_X <- list()
   k <- 1
-  list_pop <- list()
   listcoeffs <- list()
 
   for (i in 1:(length(nClasse)-1)) {
@@ -1234,11 +1233,10 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
     }
   }
   listcoeffs <- clf$coeffs_
-  list_pop <- pop
   listpop <- list()
 
 
-  for(i in 1:(length(list_pop))){
+  for(i in 1:(length(list_X))){
     clf$coeffs_ <- listcoeffs[[i]]
     evalfeauture <- evaluateFeatureImportanceInPopulation(pop = pop,
                                                           X = list_X[[i]],
@@ -1259,4 +1257,150 @@ evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "f
 }
 
 
+
+
+
+
+
+
+#' updateObjectIndex
+#'
+#' @description Update the index of a model, population, or modelCollection.
+#' @param obj: the object can be a model, population, or modelCollection
+#' @param features: the list of features which overrides the clf$data$features if this exists.
+#' @return an the same object type as input, but updated
+#' @export
+updateObjectIndex <- function(obj, features = NULL)
+{
+  if(!(isModelCollection(obj) | isModel(obj) | isPopulation(obj)))
+  {
+    warning("updateIndexes: please provide a model collection or a population or a single model object")
+    return(NULL)
+  }
+
+  if(is.null(features))
+  {
+    stop("updateIndexes: the features object is missing, which is necessary for this function.")
+  }
+
+  # Model
+  if(isModel(obj))
+  {
+    res <- updateModelIndex(obj = obj, features = features)
+  }
+
+  # Population
+  if(isPopulation(obj))
+  {
+    res <- list()
+    for(i in 1:length(obj))
+    {
+      res[[i]] <- updateModelIndex(obj = obj[[i]], features = features)
+    }
+  }
+
+  # Model collection
+  if(isModelCollection(obj))
+  {
+    pop <- modelCollectionToPopulation(obj)
+    pop.new <- list()
+    for(i in 1:length(pop))
+    {
+      pop.new[[i]] <- updateModelIndex(obj = pop[[i]], features = features)
+    }
+    res <- listOfModels2ModelCollection(pop.new)
+  }
+
+  return(res)
+}
+
+
+
+
+
+#' listOfModels2ModelCollection
+#'
+#' @description Structures a list of predomics objects into a structured collection by k_sparsity.
+#' @param pop: is population (a list) of predomics objects
+#' @param nBest: number of elements to return for each sparsity (default:NA)
+#' @return an model collection object
+#' @export
+listOfModels2ModelCollection <- function(pop, nBest = NA)
+{
+  # this is the old select_nBest_BySparsity while the first listOfModels2ModelCollection is deactivated
+  spar <- populationGet_X(element2get = "eval.sparsity", toVec = TRUE, na.rm = TRUE)(pop)
+
+  # get for every sparsity, the indices of the individuals that have this sparsity
+  real.sparsity <- as.numeric(names(table(spar)))
+  real.sparsity <- real.sparsity[real.sparsity != 0] # delete sparsity 0 if any
+
+  # get the index of samples with that sparsity
+  indivBySparsity <- lapply(real.sparsity,
+                            function(x, spar)
+                            {
+                              which(spar == x)
+                            }, spar)
+
+  res <- lapply(seq_along(indivBySparsity),
+                function(x, indivBySparsity)
+                {
+                  pop[indivBySparsity[[x]]]
+                },
+                indivBySparsity)
+  names(res) <- lapply(real.sparsity, function(x) paste("k", x, sep = "_"))
+
+
+  # selection
+  if(!is.na(nBest))
+  {
+    res <- lapply(res, function(x) # for each k_sparsity
+    {
+      x <- sortPopulation(pop = x, evalToOrder = "fit_", decreasing = TRUE)
+
+      # filter by number of elements we would like to keep
+      if(length(x) > nBest)
+        x <- x[1:nBest]
+      return(x)
+    })
+  }
+
+  return(res)
+}
+
+
+#' Transform a model collection to a population (or list of model objects)
+#' @param mod.collection: a modelCollection object organized by k_sparsity
+#' @export
+modelCollectionToPopulation <- function(mod.collection)
+{
+
+  if(!isModelCollection(mod.collection))
+  {
+    warning("modelCollectionToPopulation: unvalid model collection ... returning NULL")
+    return(NULL)
+  }
+
+  k_sparsity <- names(mod.collection)
+
+  res <- list()
+  pop.names <- c()
+  for(i in 1:length(mod.collection))
+  {
+    pop <- mod.collection[[i]]
+    # if pop exists
+    if(!is.null(pop))
+    {
+      # check it out
+      if(!isPopulation(obj = pop))
+      {
+        stop("modelCollectionToPopulation: unvalid population")
+      }
+      pop.names <- c(pop.names, rep(k_sparsity[i],length(pop)))
+      res[(length(res)+1):(length(res) + length(pop))] <- pop
+    }
+  }
+  names(res) <- pop.names
+
+  return(res)
+}
 

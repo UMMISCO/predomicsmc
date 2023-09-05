@@ -120,7 +120,7 @@ terga1_ovo(
 an object containing a list of parameters for this classifier
 }
 \description{
-terga1_ova is a model one versus all search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
+terga1_ovo is a model one versus all search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
 }
 \details{
 terga1: Model search algorithm based on genetic algorithms (GA)

@@ -20,7 +20,7 @@
 #' terga1: Model search algorithm based on genetic algorithms (GA)
 #'
 #' @title terga1_ovo
-#' @description terga1_ova is a model one versus all search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
+#' @description terga1_ovo is a model one versus all search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
 #' @param sparsity: number of features in a given model. This is a vector with multiple lengths.
 #' @param size_pop: the number of individuals in a population to be evolved.
 #' @param size_world: this is the number of features in the dataset.

@@ -701,11 +701,11 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
     cat("=> DBG: after efip\n")
   }
 
-  if(isModelCollection(clf$models))
-  {
+ # if(isModelCollection(clf$models))
+  #{
     # update the final indexes as the input X
-    clf$models <- updateObjectIndex(obj = clf$models, features = clf$data$features)
-  }
+    #clf$models <- updateObjectIndex(obj = clf$models, features = clf$data$features[[1]])
+  #}
 
   clf$execTime <- as.numeric(Sys.time() - startingTime, units = "mins")
 
