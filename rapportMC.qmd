@@ -1,0 +1,277 @@
+---
+title: "Rapport du Package mcpredomics"
+format: pdf
+author: "Fabien KAMBU MBUANGI"
+institute: "Institut de la Recherche pour le Développement"
+editor: visual
+---
+
+## Résumé
+
+Dans ce rapport, nous présentons le package mcpredomics(multiclasse predomics) conçu pour étendre les fonctionnalités du package predomics. Predomics est un package qui recherche des modèles prédictifs simples et interprétables à partir de données omiques et plus spécifiquement métagénomiques. Cependant, l'approche à l'état actuel de predomics ne peut pas classer les données en plusieurs classes.
+
+Ainsi, le package mcpredomics utilise l'approche  one vs one (OVO) qui permet d'étendre les concepts de l'approche predomics en permettant de faire de la classification multiclasses.
+
+## Introduction
+
+Le microbiote intestinal est l'ensemble des microorganismes du tractus digestif humain, c'est-à-dire tout le système gastro-intestinal. Le microbiome intestinal est composé de toutes les bactéries, commensales et pathogènes, résidant dans le tractus gastro-intestinal. Il joue un rôle essentiel dans notre santé,  un microbiote équilibré contribue à rester en bonne santé.
+
+Le microbiome intestinal est impliqué dans un nombre croissant de maladies humaines telles que maladie de Crohn, Obésité, Diabète, Allergies, Cancer colorectal, etc. L'étude du microbiote se fait par une méthode de séquençage appelée métagénomique. La métagénomique consiste à séquencer le matériel génétique de tous les organismes présents dans l'échantillon. Les données métagénomiques sont des informations génétiques provenant d'un échantillon environnemental, souvent utilisées pour étudier les microbiomes et leurs relations avec les hôtes, ces données sont sous forme de tables d'abondance et sont utilisées par des approches d'apprentissage statistique (IA) afin d'apprendre des modèles permettant de classer les échantillons/individus, mais aussi de prédire des évènements futurs à partir du microbiome.
+
+Les nouvelles approches de séquençage 16S rRNA et de séquençage de l'ADN métagénomique ont permis de générer d'énormes quantités de données microbiomiques, ouvrant la voie à de nouvelles opportunités pour la classification multiclasses.
+
+Dans ce rapport, nous présentons le package mcpredomics développé pour étendre les fonctionnalités de predomics afin de pouvoir faire de la classification en multiclasses.
+
+## Méthode utilisée
+
+Deux méthodes sont principalement appliquées aux classifieurs binaire dans le but de faire de la classification multiclasses, OVO (one versus one) et OVA (One versus All). Dans OVA, on entraine un classifieur binaire pour chaque classe par rapport aux autres, ce qui occasionne un déséquilibre de classe dans la classification, quand bien même, qu'ils existent des techniques telles que SMOTE et  ADASYN  qui permettent le sur-échantillonnage  (augmenter la classe minoritaire) et le sous-échantillonnage (diminuer la classe majoritaire) ou une combinaison des deux. Malgré le progrès réalisait, ces techniques ne sont pas totalement efficaces et peuvent créer un biais dans le résultat final.
+
+Contrairement à la méthode OVA, OVO divise l'ensemble de données pour chaque classe par rapport à toutes les autres classes. Ce qui nous a motivé de l'utiliser dans notre contexte.  Nous présentons ci-dessous de manière détaillée le principe de fonctionnement d' OVO.
+
+Par exemple, reconsidérons un problème de classification multiclasses avec quatre classes : « DT2 », « IBM » et « Chron», « CCR ». Ce problème sera réparti en six ensembles de données de classification binaire comme suit : Classification binaire 1 : DT2 contre IBM; Classification binaire 2 : DT2 contre Chron; Classification binaire 3 : DT2 contre CCR; Classification binaire 4 : IBM contre Chron; Classification binaire 5 : IBM contre CCR; Classification binaire 6 : Chron contre CCR.
+
+La formule pour calculer le nombre d'ensembles de données binaires est la suivante : (NumClasses \* (NumClasses -- 1)) / 2.
+
+On voit que pour quatre classes, cela nous donne la valeur attendue de six problèmes de classification binaire : (NumClasses \* (NumClasses -- 1)) / 2
+
+(4 \* (4 -- 1)) / 2
+
+(4\*3)/2
+
+12 / 2
+
+6
+
+```{r}
+#| echo: false
+#| warning: false
+library(mcpredomics)
+library(predomics)
+library(ggplot2)
+library(gridExtra)
+library(pROC)
+library(reshape2)
+```
+
+## Données utilisées
+
+Pour tester notre package, nous avons utilisé un échantillon de données constitué de 4 entérotypes ("Rum", "Bact1", "Bact2", "Prev") extrait de la base de données métacardis.
+
+Nous affichons ici un extrait de notre jeu de données constitué d'un dataframe X qui est le tableau d'abondance et d'un vecteur y constituer des entérotypes.
+
+```{r}
+#| echo: false
+#| warning: false
+setwd("~/Documents/multiclasse_predomics/mcpredomics/vignette")
+load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_train.rda")
+dataset_train <- Data_train
+str(dataset_train, max.level = 1)
+# Filter the non informative variables
+X <- dataset_train$X; y <- dataset_train$y # set global variables
+X <- X[rowSums(X)!=0,]; dim(X) # filter out variables with only zero values
+X <- filterNoSignal(X = X, side = 1, threshold = "auto", verbose = FALSE); dim(X)
+```
+
+## Terga1_OVO
+
+Maintenant que l'ensemble de données est prêt, nous devons préparer le contexte de l'apprenant. Il s'agit de l'objet \`classifieur.  Dans predomics plusieurs algorithme ont été implémenté tels que: \`terga1\`, \`terga2\`, \`terbeam\`, \`terda\` et \`metal\`, Notons que chaque algorithme possède ses propres paramètres. Dans notre package, nous avons créé un nouvel algorithme terga1_ovo qui est dérivé de l'algorithme Terga1 de predomics afin de pouvoir faire de la classification en  multiclasses.  Terga1 est un algorithme qui est  basé sur des algorithmes génétiques. C'est-à-dire, il introduit la notion de population de modèles, qui est un ensemble d'individus/modèles qui peuvent être mutés, croisés, évolués et sélectionnés sur de nombreuses générations (époques). Pour lancer notre expérience, nous avons utilisé les paramètres par défaut et définit uniquement « nCores = 1 ». Si nCores \> 1, l'exécution se déroulera en parallèle, nous avons défini « seed = 1 » (si plusieurs graines sont fournies, l'algorithme s'exécutera plusieurs fois) enfin, nous avons fixé plot à TRUE.  Lorsque \`plot = TRUE\`, les graphiques avec le processus d'évolution sont fournis au format pdf.
+
+```{r}
+#| echo: false
+#| warning: false
+y <- as.vector(y)
+# classifier one versus one
+clf <- terga1_ovo(nCores = 1,
+              seed = 1,
+              plot = TRUE
+)
+printy(clf) # print the object for more information
+isClf(clf)  # test whether the object is a classifier
+class(clf)  # the class of the classifier object
+```
+
+```{r running experiment, echo=TRUE, fig.width=5}
+#| echo: false
+#| warning: false
+  setwd("~/Documents/multiclasse_predomics/mcpredomics/vignette")
+ load(file = "res_clf.rda")
+ res_clf <- res_clf
+
+```
+
+## Peformance du modèle
+
+Les figures ci-dessous  présentent nos premiers résultats après digestion de l'expérience de l'apprenant. Nous constatons que la performance de notre modèle sur ces différentes métriques (accuracy: 0.80, auc: 0.838, recall: 0.783, precision: 0.7511.
+
+```{r  fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+#| echo: false
+#| warning: false
+res_clf.dig <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
+```
+
+## Visualiser le meilleur modèle
+
+Nous visualisons notre modèle à partir de la figure ci-dessous.
+
+```{r best model, fig.width=7, warning=FALSE}
+#| echo: false
+#| warning: false
+nClasse <- unique(y)
+  list_y <- list()
+  list_X <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+
+# get the best model
+best.model <- res_clf.dig$best$model
+printy(best.model)
+grid.arrange(plotModel(best.model, X=list_X[[1]], y=list_y[[1]], sort.features = FALSE, feature.name = TRUE),
+             plotModel(best.model, X=list_X[[1]], y=list_y[[1]], sort.features = FALSE, feature.name = TRUE, importance = TRUE),
+             ncol=2)
+```
+
+## Tester le modèle avec un jeu de données test
+
+À présent, nous allons visualiser notre modèle avec un jeu de données de test. On peut constater que la performance de notre meilleur modèle de test est faible par rapport à notre modèle d'entrainement avec un accuracy de 0.60
+
+```{r}
+#| echo: false
+#| warning: false
+ load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_test.rda")
+X.test <- Data_test$X[rownames(X),]
+all(rownames(X) == rownames(X.test)) # test ordering
+y.test <- as.vector(Data_test$y)
+
+best.model.test <- evaluateModel_ovo(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
+printy(best.model.test)
+```
+
+## Affichage de la famille de meilleures modèles
+
+Les figures ci-dessous nous permettent de visualiser la famille de nos meilleurs modèles extraits de notre population. La famille des meilleurs modèles (FBM) est composé de modèle avec des performances le plus élevés.
+
+```{r family of best models, fig.height=3.5, fig.width=7, message=FALSE, warning=FALSE}
+#| echo: false
+#| warning: false
+# get the population of models scrambled by model size
+pop <- modelCollectionToPopulation(res_clf$classifier$models)
+printy(pop)
+pop.df <- populationToDataFrame(pop)
+head(pop.df[,-c(3,4,7,8,14)])
+pop.df.melt <- melt(pop.df, id.vars = c("accuracy_","eval.sparsity"))
+
+g.before <- ggplot(data = pop.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
+  geom_boxplot(notch = FALSE, outlier.shape = " ", position = position_dodge(width=0.9), alpha = 0.3) + 
+  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+  ylim(c(0,1)) +
+  xlab("Model parsimony") +
+  ggtitle("Original population") +
+  theme_bw() +
+  theme(legend.position="bottom", legend.direction="horizontal") +
+  guides(colour="none")
+
+# select the best 
+fbm <- selectBestPopulation(pop)
+printy(fbm)
+fbm.df <- populationToDataFrame(fbm)
+fbm.df.melt <- melt(fbm.df, id.vars = c("accuracy_","eval.sparsity"))#; head(fbm.df.melt)
+
+g.after <- ggplot(data = fbm.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
+  geom_boxplot(notch = FALSE, position = position_dodge(width=0.9), alpha = 0.3) + 
+  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+  ylim(c(0,1)) +
+  xlab("Model parsimony") +
+  ggtitle("FBM") +
+  theme_bw() +
+  theme(legend.position="bottom", legend.direction="horizontal") +
+  guides(colour="none")
+
+grid.arrange(g.before, g.after, ncol =2)
+```
+
+## Analyse de la famille des meilleures modèles
+
+L'analyse du FBM peut être très informative pour découvrir les variables les plus importantes dans le processus de prédiction. Voyons d'abord l'utilisation des variables dans les modèles FBM. Nous exécutons pour cela la fonction \`?makeFeatureAnnot_ovo\` pour obtenir la distribution des fonctionnalités dans la matrice du modèle, qui est l'élément \`pop.noz\`. Les modèles du FBM sont classés par précision et le même ordre sera propagé dans la trame de données des coefficients. Il existe 44 fonctionnalités dans les modèles FBM. La figure ci-dessous indique que certaines de ces fonctionnalités sont très répandues dans le FBM, et sont probablement importantes. L'abondance et la distribution de prévalence de ces caractéristiques peuvent être explorées respectivement avec \`?plotAbundanceByCalss\` et \`?plotPrevalence\`. Les étoiles grises sur le côté droit des graphiques indiquent des différences significatives entre les groupes de prédiction.
+
+```{r  fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+#| echo: false
+#| warning: false
+fa <- makeFeatureAnnot_ovo(pop = fbm, 
+                       X = X, 
+                       y = y, 
+                       clf = clf)
+dim(fa[[1]]$pop.noz)
+(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[1]]$pop.noz))
+(g2 <- plotAbundanceByClass(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
+(g3 <- plotPrevalence(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
+
+```
+
+## Comparaison des performances de notre modèle avec RandomForest
+
+Affichage de la matrice de confusion et de l'accuracy de random forest après la phase d'entrainement.
+
+```{r feature exploration, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+#| echo: false
+#| warning: false
+library(randomForest)
+
+ setwd("~/Documents/multiclasse_predomics/mcpredomics/vignette")
+load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_train.rda")
+#load(file = "dataset_train.rda")
+Data_train <- Data_train
+str(Data_train, max.level = 1)
+# Filter the non informative variables
+X <- Data_train$X; y <- Data_train$y # set global variables
+X <- X[rowSums(X)!=0,]; dim(X) # filter out variables with only zero values
+X <- filterNoSignal(X = X, side = 1, threshold = "auto", verbose = FALSE); dim(X)
+X_train <- X
+y_train <- y
+model_rf <- randomForest(x = t(X_train), y = factor(y_train), ntree = 500)
+model_rf
+```
+
+```{r}
+#| echo: false
+#| warning: false
+pre <- predict(model_rf,x = t(X_train) )
+tab = table(predictions = pre, actuelles =y_train)
+round(sum(diag(tab))/sum(tab),2)
+tab
+```
+
+Nous pouvons constater que le résultat de la matrice de random forest est aussi faible que le nôtre 0.74, d'où nous allons procéder à un test avec un nouveau jeu de données pour vérification.
+
+## Resultat avec le jeu de données test
+
+Le résultat sur les figures ci-dessous nous rassure que notre modèle ne fait pas de la classification d'une manière aléatoire.
+
+```{r  fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+#| echo: false
+#| warning: false
+#Données Test
+ load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_test.rda")
+X.test <- Data_test$X[rownames(X),]
+all(rownames(X) == rownames(X.test)) # test ordering
+y.test <- as.vector(Data_test$y)
+X_test = t(X.test)
+pred_test <- predict(model_rf,X_test )
+tab2 = table(predictions = pred_test, actuelles =y.test  )
+round(sum(diag(tab2))/sum(tab2),2)
+tab2
+```
+
+## Discussion
+
+Nous comptons expérimenter notre modèle avec un autre jeu de données, car nous estimons que les données test utilisées présente de biais. Ce nouveau jeu de données nous permettra afin de pouvoir émettre des vraies hypothèses. Cette première expérience nous a permis de confirmer que notre modèle fonctionne très bien.
