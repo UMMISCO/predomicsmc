@@ -1,7 +1,8 @@
 library(mcpredomics)
 library(predomics)
-setwd("~/Documents/multiclasse_predomics/mcpredomics/data")
-load("~/Documents/multiclasse_predomics/mcpredomics/data/mc.input.Rda")
+path =getwd()
+setwd(path)
+load("mc.input.Rda")
 clf <- terga1_ovo(nCores = 1,
                   seed = 1,
                   plot = TRUE

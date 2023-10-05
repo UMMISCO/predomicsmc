@@ -454,10 +454,6 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
   }
 
 
-
-
-
-
   switch(clf$params$objective,
          # THE AUC objective
          auc = {
@@ -465,9 +461,11 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
            if(mode == 'train')
            {
              for(i in 1: length(list_mod)){
+               clf$coeffs_ <- listcoeffs[[i]]
                if((mod[[i]]$language != "ter" & mod[[i]]$language != "bin") & !isModelSota(mod[[i]]))
                {
-                 mod                <- evaluateIntercept_ovo(X = X, y = y, clf = clf, mod = mod)
+
+                 mod[[i]]                <- evaluateIntercept(X  = list_X[[i]], y  = list_y[[i]], clf = clf, mod = mod[[i]])
                }else
                {
                  # force intercept to NA for sota
@@ -497,12 +495,10 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
                if(clf$params$evalToFit == "auc_") # in this case the auc will be computed in evaluate other metrics
                {
                  # compute the auc
-                 for(j in 1:length(mod)){
-                   scorelist[[j]] <- mod[[j]]$score
-                 }
-                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+
+                 aucg                 <- evaluateAUC(score = mod[[i]]$score, y = list_y[[i]], sign = ">")
+                 aucl                 <- evaluateAUC(score = mod[[i]]$score, y = list_y[[i]], sign = "<")
+                 mod[[i]]$auc_             <- max(aucg, aucl)
                  mod[[i]]$unpenalized_fit_ <- mod[[i]]$auc_
 
                }
@@ -510,33 +506,37 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
                # in case it is accuracy
                if(clf$params$evalToFit == "accuracy_") # in this case the auc will be computed in evaluate other metrics
                {
-                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 mod[[i]] <- evaluateAccuracy(mod=mod[[i]], X=list_X[[i]], y=list_y[[i]], clf, force.re.evaluation = force.re.evaluation, mode = mode)
                  mod[[i]]$unpenalized_fit_ <- mod[[i]]$accuracy_
                }
 
                # otherwise compute the rest
                if(clf$params$evalToFit != "auc_" & clf$params$evalToFit != "accuracy_")
                {
-                 mod <- evaluateAdditionnalMetrics_ovo(mod = mod, X = X, y = y, clf = clf, mode = mode)
+                 mod[[i]] <- evaluateAdditionnalMetrics(mod = mod[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf, mode = mode)
                  mod[[i]]$unpenalized_fit_ <- mod[[i]][[clf$params$evalToFit]]
                  # compte accuracy also
-                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 mod[[i]] <- evaluateAccuracy(mod = mod[[i]], X=list_X[[i]], y=list_y[[i]], clf, force.re.evaluation = force.re.evaluation, mode = mode)
                  # and auc, since these are helpful information
 
 
-                 for(j in 1:length(mod)){
-                   scorelist[[j]] <- mod[[j]]$score
-                 }
-
-                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+                 aucg                 <- evaluateAUC(score =  mod[[i]]$score, y = list_y[[i]], sign = ">")
+                 aucl                 <- evaluateAUC(score = mod[[i]]$score, y =list_y[[i]], sign = "<")
+                 mod[[i]]$auc_             <- max(aucg, aucl)
                }
              }
-           } # if test mode, we don't recompute the intercept
+           }
+
+
+
+
+
+
+           # if test mode, we don't recompute the intercept
            else
            {
              for(i in 1:length(list_mod)) {
+               clf$coeffs_ <- listcoeffs[[i]]
                # sanity check
                if(!clf$params$evalToFit %in% names(mod[[i]]))
                {
@@ -553,41 +553,40 @@ evaluateFit_ovo <- function(mod, X, y, clf, force.re.evaluation = FALSE, mode = 
                if(clf$params$evalToFit == "auc_") # in this case the auc will be computed in evaluate other metrics
                {
                  # compute the auc
-                 for(j in 1:length(mod)){
-                   scorelist[[j]] <- mod[[j]]$score
-                 }
 
-                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+
+                 aucg                 <- evaluateAUC(score = mod[[i]]$score, y = list_y[[i]], sign = ">")
+                 aucl                 <- evaluateAUC(score = mod[[i]]$score, y = list_y[[i]], sign = "<")
+                 mod[[i]]$auc_             <- max(aucg, aucl)
                  mod[[i]]$unpenalized_fit_ <- mod[[i]]$auc_
                }
 
                # in case it is accuracy
                if(clf$params$evalToFit == "accuracy_") # in this case the auc will be computed in evaluate other metrics
                {
-                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 mod[[i]] <- evaluateAccuracy(mod = mod[[i]], X= list_X[[i]], y= list_y[[i]], clf, force.re.evaluation = force.re.evaluation, mode = mode)
                  mod[[i]]$unpenalized_fit_ <- mod[[i]]$accuracy_
                }
 
                # otherwise compute the rest
                if(clf$params$evalToFit != "auc_" & clf$params$evalToFit != "accuracy_")
                {
-                 mod <- evaluateAdditionnalMetrics_ovo(mod = mod, X = X, y = y, clf = clf, mode = mode)
+                 mod[[i]] <- evaluateAdditionnalMetrics(mod = mod[[i]], X  = list_X[[i]], y =  list_y[[i]], clf = clf, mode = mode)
                  mod[[i]]$unpenalized_fit_ <- mod[[i]][[clf$params$evalToFit]]
                  # compte accuracy also
-                 mod <- evaluateAccuracy_ovo(mod, X, y, clf, force.re.evaluation = force.re.evaluation, mode = mode)
+                 mod[[i]] <- evaluateAccuracy(mod=mod[[i]], X= list_X[[i]], y= list_y[[i]], clf, force.re.evaluation = force.re.evaluation, mode = mode)
                  # and auc, since these are helpful information
                  for(j in 1:length(mod)){
                    scorelist[[j]] <- mod[[j]]$score
                  }
 
-                 aucg                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = ">")
-                 aucl                 <- evaluateAUC_ovo(score = scorelist, y = y, sign = "<")
-                 mod[[i]]$auc_             <- max(aucg[[i]], aucl[[i]])
+                 aucg                 <- evaluateAUC(score = mod[[i]]$score, y = list_y[[i]], sign = ">")
+                 aucl                 <- evaluateAUC(score = mod[[i]]$score, y = list_y[[i]], sign = "<")
+                 mod[[i]]$auc_             <- max(aucg, aucl)
                }
              }
            } # end mode = test
+
 
          },
          # THE REGRESSION correlation method

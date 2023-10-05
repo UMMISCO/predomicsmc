@@ -13,7 +13,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load the packages, message=FALSE, warning=FALSE}
 library(mcpredomics)
 library(predomics)
-
+library(ggplot2)
+library(gridExtra)
+library(pROC)
+library(reshape2)
 ```
 
 
@@ -101,24 +104,20 @@ res_clf.dig <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
 ```
 
 ### Visualizing the best model
-```{r best model, fig.width=7, warning=FALSE}
 
+
+```{r best model, fig.width=7, warning=FALSE}
 
 # get the best model
 best.model <- res_clf.dig$best$model
 printy(best.model)
-grid.arrange(plotModel_ovo(best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE),
+ grid.arrange(plotModel_ovo(best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE),
 plotModel_ovo(best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE, importance = TRUE),ncol=2)
 ```
 
 
 ### Testing the model in another dataset
 ```{r}
-
-
-X.test <- dataset_test$X[rownames(dataset_test$X),]
-all(rownames(dataset_test$X) == rownames(X.test)) # test ordering
-y.test <- dataset_test$y
 
 best.model.test <- evaluateModel_ovo(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
 printy(best.model.test)
@@ -271,6 +270,17 @@ tab2 = table(predictions = pred_test, actuelles =y.test)
 round(sum(diag(tab2))/sum(tab2),2)
 tab2
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
