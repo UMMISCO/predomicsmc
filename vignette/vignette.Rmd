@@ -269,18 +269,9 @@ tab2 = table(predictions = pred_test, actuelles =y.test)
 #Matrix, Accuracy
 round(sum(diag(tab2))/sum(tab2),2)
 tab2
+
+
 ```
-
-
-
-
-
-
-
-
-
-
-
 
 
 
