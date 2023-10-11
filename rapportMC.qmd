@@ -22,25 +22,7 @@ Les nouvelles approches de séquençage 16S rRNA et de séquençage de l'ADN mé
 
 Dans ce rapport, nous présentons le package mcpredomics développé pour étendre les fonctionnalités de predomics afin de pouvoir faire de la classification en multiclasses.
 
-## Méthode utilisée
-
-Deux méthodes sont principalement appliquées aux classifieurs binaire dans le but de faire de la classification multiclasses, OVO (one versus one) et OVA (One versus All). Dans OVA, on entraine un classifieur binaire pour chaque classe par rapport aux autres, ce qui occasionne un déséquilibre de classe dans la classification, quand bien même, qu'ils existent des techniques telles que SMOTE et  ADASYN  qui permettent le sur-échantillonnage  (augmenter la classe minoritaire) et le sous-échantillonnage (diminuer la classe majoritaire) ou une combinaison des deux. Malgré le progrès réalisait, ces techniques ne sont pas totalement efficaces et peuvent créer un biais dans le résultat final.
-
-Contrairement à la méthode OVA, OVO divise l'ensemble de données pour chaque classe par rapport à toutes les autres classes. Ce qui nous a motivé de l'utiliser dans notre contexte.  Nous présentons ci-dessous de manière détaillée le principe de fonctionnement d' OVO.
-
-Par exemple, reconsidérons un problème de classification multiclasses avec quatre classes : « DT2 », « IBM » et « Chron», « CCR ». Ce problème sera réparti en six ensembles de données de classification binaire comme suit : Classification binaire 1 : DT2 contre IBM; Classification binaire 2 : DT2 contre Chron; Classification binaire 3 : DT2 contre CCR; Classification binaire 4 : IBM contre Chron; Classification binaire 5 : IBM contre CCR; Classification binaire 6 : Chron contre CCR.
-
-La formule pour calculer le nombre d'ensembles de données binaires est la suivante : (NumClasses \* (NumClasses -- 1)) / 2.
-
-On voit que pour quatre classes, cela nous donne la valeur attendue de six problèmes de classification binaire : (NumClasses \* (NumClasses -- 1)) / 2
-
-(4 \* (4 -- 1)) / 2
-
-(4\*3)/2
-
-12 / 2
-
-6
+## 
 
 ```{r}
 #| echo: false
@@ -55,26 +37,69 @@ library(reshape2)
 
 ## Données utilisées
 
-Pour tester notre package, nous avons utilisé un échantillon de données constitué de 4 entérotypes ("Rum", "Bact1", "Bact2", "Prev") extrait de la base de données métacardis.
-
-Nous affichons ici un extrait de notre jeu de données constitué d'un dataframe X qui est le tableau d'abondance et d'un vecteur y constituer des entérotypes.
+Pour tester notre package, nous avons utilisé un échantillon de taille de 894 constitué de 4 entérotypes ("Rum : 183", "Bact1: 299", "Bact2 : 168", "Prev : 244") extrait de la base de données métacardis.
 
 ```{r}
 #| echo: false
 #| warning: false
-setwd("~/Documents/multiclasse_predomics/mcpredomics/vignette")
-load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_train.rda")
-dataset_train <- Data_train
-str(dataset_train, max.level = 1)
-# Filter the non informative variables
-X <- dataset_train$X; y <- dataset_train$y # set global variables
-X <- X[rowSums(X)!=0,]; dim(X) # filter out variables with only zero values
-X <- filterNoSignal(X = X, side = 1, threshold = "auto", verbose = FALSE); dim(X)
+# Charger le jeu de données
+data("mc.input")
+
+# Récupérer le vecteur y
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+
+# Définir une graine pour la reproductibilité
+set.seed(123)
+
+# Diviser le jeu de données en ensembles d'entraînement et de test
+proportion_test <- 0.3
+taille_test <- round(proportion_test * ncol(mc.input$X))
+indices_test <- sample(1:ncol(mc.input$X), taille_test)
+
+X <- mc.input$X[,-indices_test]
+X.test <- mc.input$X[,indices_test]
+y <- as.vector(yvec[-indices_test])
+y.test <- as.vector(yvec[indices_test])
+
+# Afficher la taille de l'ensemble de données
+
+Data_set <- yvec
+length(Data_set)
+table(Data_set)
+
 ```
 
-## Terga1_OVO
+## Méthode utilisée
 
-Maintenant que l'ensemble de données est prêt, nous devons préparer le contexte de l'apprenant. Il s'agit de l'objet \`classifieur.  Dans predomics plusieurs algorithme ont été implémenté tels que: \`terga1\`, \`terga2\`, \`terbeam\`, \`terda\` et \`metal\`, Notons que chaque algorithme possède ses propres paramètres. Dans notre package, nous avons créé un nouvel algorithme terga1_ovo qui est dérivé de l'algorithme Terga1 de predomics afin de pouvoir faire de la classification en  multiclasses.  Terga1 est un algorithme qui est  basé sur des algorithmes génétiques. C'est-à-dire, il introduit la notion de population de modèles, qui est un ensemble d'individus/modèles qui peuvent être mutés, croisés, évolués et sélectionnés sur de nombreuses générations (époques). Pour lancer notre expérience, nous avons utilisé les paramètres par défaut et définit uniquement « nCores = 1 ». Si nCores \> 1, l'exécution se déroulera en parallèle, nous avons défini « seed = 1 » (si plusieurs graines sont fournies, l'algorithme s'exécutera plusieurs fois) enfin, nous avons fixé plot à TRUE.  Lorsque \`plot = TRUE\`, les graphiques avec le processus d'évolution sont fournis au format pdf.
+One-vs-all (ova) et One-v-one (ovo) sont les deux principales approches d'apprentissage automatique pour résoudre un problème de classification multiclasse. Dans ces deux approches, le choix est transparent et le résultat renvoyé à l'utilisateur sera toujours les valeurs ou classes finales. Mais il est très important de comprendre ces deux approches pour optimiser un modèle d'apprentissage automatique et toujours choisir la meilleure approche lors de la résolution d'un problème de classification multiclasse.
+
+One-vs-all est probablement la stratégie la plus courante. Dans cette approche, le nombre n de modèles de classification est entraîné en parallèle avec le nombre n de classes de sortie en considérant qu'il existe toujours une séparation entre la classe réelle et les classes restantes.
+
+One-vs-one est une approche alternative au One-vs-all. Cela signifie former un modèle d'apprentissage automatique pour chaque paire de classes. La complexité temporelle de cette approche n'est donc pas linéaire et la bonne classe est déterminée par la classe majoritaire. En général, le modèle One-v-one est plus coûteux que le modèle One-vs-all et ne doit être adopté que lorsqu'une comparaison de l'ensemble complet des données n'est pas préférable. Dans ce package, nous avons utilisé l'approche One-vs-one pour rechercher les variables entre chacune des paires des classes de notre échantillon.
+
+Par exemple, considérons notre jeu de données multiclasse avec quatre classes : « Bact1 », «Bact2» et «Rum », «Prev ». Cela pourrait être divisé en six ensembles de données de classification binaire comme suit :
+
+-   **Problème de classification binaire 1** : Bact1 contre Bact2
+
+-   **Problème de classification binaire 2** : Bact1 contre Rum
+
+-   **Problème de classification binaire 3** : Bact1 contre Prev
+
+-   **Problème de classification binaire 4** : Bact2 contre Rum
+
+-   **Problème de classification binaire 5** : Bact2 contre Prev
+
+-   **Problème de classification binaire 6** : Rum contre Prev
+
+La formule pour calculer le nombre d'ensembles de données binaires, et donc de modèles, est la suivante :
+
+-   (NumClasses \* (NumClasses -- 1)) / 2
+
+Chaque modèle de classification binaire peut prédire une étiquette de classe et la moyenne de ce modèle est prédit par la stratégie un contre un.
+
+## Algorithme Terga1_OVO
+
+Dans predomics plusieurs algorithme ont été implémenté tels que: \`terga1\`, \`terga2\`, \`terbeam\`, \`terda\` et \`metal\`, Notons que chaque algorithme possède ses propres paramètres. Dans notre package, nous avons développé un nouvel algorithme terga1_ovo qui est dérivé de l'algorithme Terga1 de predomics afin de pouvoir faire de la classification en  multiclasse.  Terga1 est un algorithme qui est  basé sur des algorithmes génétiques. C'est-à-dire, il introduit la notion de population de modèles, qui est un ensemble d'individus/modèles qui peuvent être mutés, croisés, évolués et sélectionnés sur de nombreuses générations (époques). Pour lancer notre expérience, nous avons utilisé les paramètres par défaut et définit uniquement « nCores = 1 ». Si nCores \> 1, l'exécution se déroulera en parallèle, nous avons défini « seed = 1 » (si plusieurs graines sont fournies, l'algorithme s'exécutera plusieurs fois) enfin, nous avons fixé plot à TRUE.  Lorsque \`plot = TRUE\`, les graphiques avec le processus d'évolution sont fournis au format pdf.
 
 ```{r}
 #| echo: false
@@ -90,18 +115,30 @@ isClf(clf)  # test whether the object is a classifier
 class(clf)  # the class of the classifier object
 ```
 
+## Expérience de l'apprenant
+
+```         
+Après avoir configuré le classificateur, nous pouvons exécuter l'expérience d'apprentissage. Pour cela, nous exécutons simplement `?fit()` avec `X`, `y` et `clf` comme spécifié dans le code ci-dessous. L'algorithme enregistre les détails des étapes d'exécution (chaque point correspond à une génération (c'est-à-dire une itération de l'algorithme génétique) et chaque ligne à une étape de validation croisée, dont la première qui est l'apprentissage de l'ensemble des données).Nous avons utilisé 70% de données pour l'entrainement et 30% pour le test.
+```
+
 ```{r running experiment, echo=TRUE, fig.width=5}
 #| echo: false
 #| warning: false
-  setwd("~/Documents/multiclasse_predomics/mcpredomics/vignette")
- load(file = "res_clf.rda")
- res_clf <- res_clf
 
+runit = TRUE
+if(runit)
+{
+  res_clf <- fit_OVO(X = X, y = y, clf = clf, cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  # save results
+  save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
+}
 ```
+
+Le temps d'exécution de notre expérience était de 30.20973 minutes. Il y a eu 862 modèles dans cette population. Après filtrage de la population, 11 modèles ont été retenus. La prévalence des fonctionnalités était calculée et, il y a au final 37 fonctionnalités à considérer.
 
 ## Peformance du modèle
 
-Les figures ci-dessous  présentent nos premiers résultats après digestion de l'expérience de l'apprenant. Nous constatons que la performance de notre modèle sur ces différentes métriques (accuracy: 0.80, auc: 0.838, recall: 0.783, precision: 0.7511.
+Les figures ci-dessous  présentent nos premiers résultats après digestion de l'expérience de l'apprenant. La performance de notre modèle sur ces différentes métriques (accuracy: 0.82, auc: 0.85, recall: 0.85, precision: 0.74.
 
 ```{r  fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 #| echo: false
@@ -111,7 +148,7 @@ res_clf.dig <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
 
 ## Visualiser le meilleur modèle
 
-Nous visualisons notre modèle à partir de la figure ci-dessous.
+Le meilleur modèle appris a été imprimée avec des informations résumées sur les performances et la taille du modèle. De plus, nous pouvons explorer davantage le modèle en le visualisant à l'aide du tracé de code-barres \`?plotModel\`. Enfin, l'importance de chaque fonctionnalité peut également être affichée en utilisant la même fonction, comme illustré dans la figure ci-dessous.
 
 ```{r best model, fig.width=7, warning=FALSE}
 #| echo: false
@@ -143,23 +180,89 @@ grid.arrange(plotModel(best.model, X=list_X[[1]], y=list_y[[1]], sort.features =
 
 ## Tester le modèle avec un jeu de données test
 
-À présent, nous allons visualiser notre modèle avec un jeu de données de test. On peut constater que la performance de notre meilleur modèle de test est faible par rapport à notre modèle d'entrainement avec un accuracy de 0.60
+Maintenant, testons ce modèle avec le 30% restant de  données réservé pour le test. Pour cela, nous devons travailler dans le même espace de fonctionnalités que celui avec lequel nous avons travaillé jusqu'à présent. L'accuracy du modèle dans l'ensemble de données d'entraînement est de 0,82, tandis que dans l'ensemble de données de test, elle est de 0,65.
 
 ```{r}
 #| echo: false
 #| warning: false
- load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_test.rda")
-X.test <- Data_test$X[rownames(X),]
-all(rownames(X) == rownames(X.test)) # test ordering
-y.test <- as.vector(Data_test$y)
 
 best.model.test <- evaluateModel_ovo(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
 printy(best.model.test)
 ```
 
+## Visualisation des performances du modèle AUC
+
+Les performances du modèle peuvent être visualisées à l'aide de la fonction \`?plotAUC\` qui utilise le jeu d'outils du package pROC. Il fournit également l'intervalle de confiance de l'aire sous la courbe pour l'analyse des caractéristiques de fonctionnement du récepteur. Nous pouvons également comparer plusieurs modèles en un seul en utilisant \`?ggroc\` du package \*pROC\*. Pour cela, nous devons créer des objets roc pour chaque modèle et les lister ensemble avant le tracé. Il convient de noter que les performances du modèle dans l'ensemble de données de test correspondent à l'intervalle de confiance du premier graphique ci-dessous.
+
+```{r}
+#| echo: false
+#| warning: false
+  nClasse <- unique(y)
+  list_y <- list()
+  list_X <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+  nClasse <- unique(y.test)
+  list_y.test <- list()
+  list_X.test <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indicess <- which(y.test == class_i | y.test == class_j)
+      y_paire <- y[indicess]
+      X_paire <- X[,indicess]
+      list_y.test[[k]] <- y_paire
+      list_X.test[[k]] <- X_paire
+      k <- k + 1
+    }
+  }
+```
+
+```{r}
+#| echo: false
+#| warning: false
+ # we recover the first output to apply the plot
+  X <- list_X[[1]]
+  y <- list_y[[1]]
+  X.test <- list_X.test[[1]]
+  y.test <- list_y.test[[1]]
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#|
+tmp <- plotAUC(best.model$score_, y, percent = TRUE); rm(tmp)
+# create the roc objects
+rocobj.train <- roc(y ~ best.model$score_)
+rocobj.test <- roc(y.test ~ best.model.test$score_)
+
+# make the plot
+ggroc(list(train = rocobj.train, test = rocobj.test))
+```
+
 ## Affichage de la famille de meilleures modèles
 
-Les figures ci-dessous nous permettent de visualiser la famille de nos meilleurs modèles extraits de notre population. La famille des meilleurs modèles (FBM) est composé de modèle avec des performances le plus élevés.
+Une famille des meilleurs modèles est définie comme l'ensemble des modèles renvoyés par l'algorithme prédomique, dont la précision se situe dans une fenêtre donnée de précision du meilleur modèle. Cette fenêtre est définie en calculant un seuil de signification en supposant que la précision suit une distribution binomiale (p\<0,05). Un FBM peut être analysé en détail pour distiller des informations biologiques dans un contexte prédictif. Tout d'abord, nous regroupons tous les modèles de l'objet d'expérience avec \`?modelCollectionToPopulation\`. Une population de 862 modèles est obtenue, qui peut être transformée avec « ?populationToDataFrame » sur une trame de données pour une exploration plus approfondie. Ensuite, nous sélectionnons le FBM composé de 13 modèles avec \`?selectBestPopulation\`. La figure ci-dessous affiche la distribution de l'accuracy par taille de modèle avant et après la sélection.
 
 ```{r family of best models, fig.height=3.5, fig.width=7, message=FALSE, warning=FALSE}
 #| echo: false
@@ -207,71 +310,220 @@ L'analyse du FBM peut être très informative pour découvrir les variables les 
 ```{r  fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 #| echo: false
 #| warning: false
-fa <- makeFeatureAnnot_ovo(pop = fbm, 
+fa <- makeFeatureAnnot(pop = fbm, 
                        X = X, 
                        y = y, 
                        clf = clf)
-dim(fa[[1]]$pop.noz)
-(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[1]]$pop.noz))
-(g2 <- plotAbundanceByClass(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
-(g3 <- plotPrevalence(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
+dim(fa$pop.noz)
+(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa$pop.noz))
+(g2 <- plotAbundanceByClass(features = rownames(fa$pop.noz), X = X, y = y))
+(g3 <- plotPrevalence(features = rownames(fa$pop.noz), X = X, y = y))
 
 ```
 
-## Comparaison des performances de notre modèle avec RandomForest
+## RandomForest
 
-Affichage de la matrice de confusion et de l'accuracy de random forest après la phase d'entrainement.
-
-```{r feature exploration, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-#| echo: false
-#| warning: false
-library(randomForest)
-
- setwd("~/Documents/multiclasse_predomics/mcpredomics/vignette")
-load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_train.rda")
-#load(file = "dataset_train.rda")
-Data_train <- Data_train
-str(Data_train, max.level = 1)
-# Filter the non informative variables
-X <- Data_train$X; y <- Data_train$y # set global variables
-X <- X[rowSums(X)!=0,]; dim(X) # filter out variables with only zero values
-X <- filterNoSignal(X = X, side = 1, threshold = "auto", verbose = FALSE); dim(X)
-X_train <- X
-y_train <- y
-model_rf <- randomForest(x = t(X_train), y = factor(y_train), ntree = 500)
-model_rf
-```
+Nous avons entrainé le modèle RandomForest avec les mêmes données utilisées dans notre modèle mcpredomics. Les figures ci-dessous représentent les résultats de différentes métriques obtenues après calculs.
 
 ```{r}
 #| echo: false
 #| warning: false
-pre <- predict(model_rf,x = t(X_train) )
-tab = table(predictions = pre, actuelles =y_train)
-round(sum(diag(tab))/sum(tab),2)
-tab
+# Création du modèle de forêt aléatoire multiclasse
+library(randomForest)
+X <- mc.input$X[,-indices_test]
+X.test <- mc.input$X[,indices_test]
+y <- yvec[-indices_test]
+y.test <- yvec[indices_test]
+
+X = t(X)
+X.test = t(X.test)
+# Création du modèle de forêt aléatoire multiclasse
+model <- randomForest(y ~ ., data = X, ntree = 500)
+
+# Prédiction sur l'ensemble d'entraînement et de test
+train_predictions <- predict(model, X)
+test_predictions <- predict(model, X.test)
+
+# Conversion des étiquettes en facteur
+train_labels <- as.factor(y)
+test_labels <- as.factor(y.test)
+
+# Fonction pour calculer les performances
+calculate_performance <- function(labels, predictions) {
+  class_names <- levels(labels)
+  auc_values <- numeric(length(class_names))
+  recall_values <- numeric(length(class_names))
+  precision_values <- numeric(length(class_names))
+  
+  for (i in 1:length(class_names)) {
+    class_name <- class_names[i]
+    binary_labels <- as.numeric(labels == class_name)
+    binary_predictions <- as.numeric(predictions == class_name)
+    
+    # Calcul de la courbe ROC pour chaque classe
+    roc_obj <- roc(binary_labels, binary_predictions)
+    
+    # Calcul de l'AUC pour chaque classe
+    auc_values[i] <- auc(roc_obj)
+    
+    # Calcul du rappel (recall) pour chaque classe
+    recall_values[i] <- sum(binary_labels == 1 & binary_predictions == 1) / sum(binary_labels == 1)
+    
+    # Calcul de la précision (precision) pour chaque classe
+    precision_values[i] <- sum(binary_labels == 1 & binary_predictions == 1) / sum(binary_predictions == 1)
+  }
+  
+  # Calcul de l'AUC moyen (macro-average)
+  auc_mean <- mean(auc_values)
+  
+  # Calcul du rappel moyen (macro-average)
+  recall_mean <- mean(recall_values)
+  
+  # Calcul de la précision moyenne (macro-average)
+  precision_mean <- mean(precision_values)
+  
+  # Calcul de l'exactitude (accuracy)
+  accuracy <- sum(predictions == labels) / length(predictions)
+  
+  performance_summary <- data.frame(
+    Performance = c("AUC", "Rappel", "Precision", "Accuracy"),
+    Valeur = c(auc_mean, recall_mean, precision_mean, accuracy)
+  )
+  
+  return(performance_summary)
+}
+
+# Calcul des performances pour l'ensemble d'entraînement
+train_performance <- calculate_performance(train_labels, train_predictions)
+
+# Calcul des performances pour l'ensemble de test
+test_performance <- calculate_performance(test_labels, test_predictions)
+
+# Création d'une fonction pour générer un graphique de performance
+generate_performance_plot <- function(performance_df, title) {
+  ggplot(performance_df, aes(x = Performance, y = Valeur, fill = Performance)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = round(Valeur, 2)), vjust = -0.3, size = 4) +
+    ylim(0, 1) +
+    labs(title = title, x = "Mesures", y = "Valeurs") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# Création des graphiques pour l'ensemble d'entraînement et de test
+train_plot <- generate_performance_plot(train_performance, "Performances sur l'ensemble d'entraînement RandomForest")
+test_plot <- generate_performance_plot(test_performance, "Performances sur l'ensemble de test RandomForest")
+
+# Affichage des graphiques séparément
+print(train_plot)
+print(test_plot)
+
 ```
 
-Nous pouvons constater que le résultat de la matrice de random forest est aussi faible que le nôtre 0.74, d'où nous allons procéder à un test avec un nouveau jeu de données pour vérification.
+## Importance des variables
 
-## Resultat avec le jeu de données test
+La figure ci-dessous affiche les variables importantes sélectionnées par le modèle RandomForest.
 
-Le résultat sur les figures ci-dessous nous rassure que notre modèle ne fait pas de la classification d'une manière aléatoire.
-
-```{r  fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r  fig.height=8, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 #| echo: false
 #| warning: false
-#Données Test
- load("~/Documents/multiclasse_predomics/mcpredomics/vignette/Data_test.rda")
-X.test <- Data_test$X[rownames(X),]
-all(rownames(X) == rownames(X.test)) # test ordering
-y.test <- as.vector(Data_test$y)
-X_test = t(X.test)
-pred_test <- predict(model_rf,X_test )
-tab2 = table(predictions = pred_test, actuelles =y.test  )
-round(sum(diag(tab2))/sum(tab2),2)
-tab2
+
+varImpPlot(model)
+
+
+
 ```
+
+## Comparaison des résultats mcpredomics et RandomForest
+
+## Phase d'entrainement
+
+Les performances des différentes métriques sont évaluées à 100% pour RandomForest  dans la phase d\'entrainement, par contre mcpredomic a des performances estimées à 0.83% d'accuracy, 0.74% de précision, 0.86% d'auc et 0.86% recall.
+
+```{r fig.height=5, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+#| echo: false
+#| warning: false
+print(train_plot)
+best.model.train <- list(
+  Accuracy = best.model$accuracy_,
+  Precision = best.model$precision_,
+  AUC = best.model$auc_,
+  Recall = best.model$recall_
+)
+
+# Définir les noms des métriques et leurs valeurs
+mesures <- names(best.model.train)
+
+# Définir les couleurs pour chaque métrique
+couleurs <- c("blue", "green", "red", "purple")
+
+# Créer un vecteur de valeurs pour l'affichage
+valeurs <- unlist(best.model.train)
+
+# Créer un graphique à barres
+barplot(valeurs, names.arg = mesures, col = couleurs, 
+        main = "Performances sur l'ensemble d'entrainement mcpredomics", beside = TRUE, ylim = c(0, 1))
+
+# Ajouter les noms des métriques en dessous de chaque barre
+####text(x = 1:4, y = -0.15, labels = mesures, srt = 0, pos = 2, xpd = TRUE, cex = 0.7)
+
+# Ajouter les valeurs au-dessus des barres
+text(x = rep(1:4, each = 1), y = valeurs, label = round(valeurs, 2), pos = 3, cex = 0.7)
+
+# Supprimer l'axe des y
+axis(2, at = c(0, 1), labels = FALSE)
+
+# Ajouter un titre à l'axe y
+mtext("Valeurs", side = 2, line = 2)
+
+
+
+```
+
+## Phase de Test
+
+Les performances de nos deux modèles de tests sont évaluées comme suit : accuracy 0.82 RF contre 0.66 mcpredomics, AUC 0.86 RF contre 0.88 mcpredomics, precision 0.83 RF contre 0.69 mcpredomics et recall 0.79 RF contre 0.56 mcpredomics. Les figures ci-dessous présentent ces différentes performances.
+
+```{r fig.height=5, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+#| echo: false
+#| warning: false
+best.model.testo <- list(
+  Accuracy = best.model.test$accuracy_,
+  Precision = best.model.test$precision_,
+  AUC = best.model.test$auc_,
+  Recall = best.model.test$recall_
+)
+
+# Définir les noms des métriques et leurs valeurs
+mesures <- names(best.model.testo)
+
+# Définir les couleurs pour chaque métrique
+couleurs <- c("blue", "green", "red", "purple")
+
+# Créer un vecteur de valeurs pour l'affichage
+valeurs <- unlist(best.model.testo)
+
+# Créer un graphique à barres
+barplot(valeurs, names.arg = mesures, col = couleurs, 
+        main = "Performances sur l'ensemble de test mcpredomics", beside = TRUE, ylim = c(0, 1))
+
+# Ajouter les noms des métriques en dessous de chaque barre
+####text(x = 1:4, y = -0.15, labels = mesures, srt = 0, pos = 2, xpd = TRUE, cex = 0.7)
+
+# Ajouter les valeurs au-dessus des barres
+text(x = rep(1:4, each = 1), y = valeurs, label = round(valeurs, 2), pos = 3, cex = 0.7)
+
+# Supprimer l'axe des y
+axis(2, at = c(0, 1), labels = FALSE)
+
+# Ajouter un titre à l'axe y
+mtext("Valeurs", side = 2, line = 2)
+
+print(test_plot)
+
+```
+
+Bien que RandomForest nous ait généré les meilleures performances dans l\'ensemble, elle ne peut  être utilisée à des fins explicatives.
 
 ## Discussion
 
-Nous comptons expérimenter notre modèle avec un autre jeu de données, car nous estimons que les données test utilisées présente de biais. Ce nouveau jeu de données nous permettra afin de pouvoir émettre des vraies hypothèses. Cette première expérience nous a permis de confirmer que notre modèle fonctionne très bien.
+Le package mcpredomics à aider à faire de la classification  multiclasses interprétable sur les données du microbiome. Nous comptons expérimenter notre modèle avec d\'autres jeux de données afin d\'émettre des vraies hypothèses. Les résultats obtenus pour notre première expérience nous rassure pour la suite.

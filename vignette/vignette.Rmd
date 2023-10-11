@@ -25,6 +25,7 @@ library(reshape2)
 ```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
 # load the data
 data("mc.input")
+set.seed(123)
 #recover the vector y
 yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
 #Divide the dataset into training and testing
@@ -274,4 +275,101 @@ tab2
 ```
 
 
+```{r}
+importance_scores <- importance(rf)
+
+```
+
+```{r}
+
+library(ggplot2)
+library(dplyr)  # Load the dplyr package
+
+importance_scores <- as.data.frame(importance(rf))
+importance_scores$Variable <- rownames(importance_scores)
+importance_scores <- importance_scores %>%
+  select(Variable, MeanDecreaseAccuracy)  # Select the appropriate importance measure
+
+importance_scores <- importance_scores %>%
+  arrange(desc(MeanDecreaseAccuracy))  # Sort by importance scores
+
+# Create the Variable Importance Plot with ggplot2
+ggplot(importance_scores, aes(x = reorder(Variable, MeanDecreaseAccuracy), y = MeanDecreaseAccuracy)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(
+    title = "Variable Importance Plot (Multiclass)",
+    x = "Variable",
+    y = "Mean Decrease Accuracy"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+```
+
+```{r}
+
+#training
+library(randomForest)
+X <- mc.input$X[,-indices_test]
+X.test <- mc.input$X[,indices_test]
+y <- yvec[-indices_test]
+y.test <- yvec[indices_test]
+rf <-randomForest(y ~ ., data = t(X),mtry = 4, ntree = 500, importance=TRUE) 
+pre <- predict(rf,x = t(X) )
+tab = table(predictions = pre, actuelles =y)
+#matrix, Accuracy, training
+round(sum(diag(tab))/sum(tab),2)
+tab
+#testing
+X.test = t(X.test)
+pred_test <- predict(rf,X.test )
+tab2 = table(predictions = pred_test, actuelles =y.test)
+#Matrix, Accuracy, test
+round(sum(diag(tab2))/sum(tab2),2)
+tab2
+
+```
+```{r warning=FALSE}
+# Installer et charger les packages nécessaires
+
+
+# Exemple de données (vous pouvez utiliser vos propres données)
+set.seed(123)
+data(iris)
+
+# Séparation des données en ensemble d'entraînement et de test
+sample_indices <- sample(1:nrow(iris), nrow(iris) * 0.7)
+train_data <- iris[sample_indices, ]
+
+# Création du modèle de forêt aléatoire multiclasse
+model <- randomForest(Species ~ ., data = train_data, ntree = 100)
+
+# Obtenir l'importance des fonctionnalités
+feature_importance <- importance(model, type = 2)
+
+# Créer un dataframe pour les données d'importance
+importance_df <- data.frame(
+  Feature = row.names(feature_importance),
+  Importance = feature_importance
+)
+
+# Tri des fonctionnalités par importance décroissante
+importance_df <- importance_df[order(importance_df$Importance, decreasing = TRUE), ]
+
+# Tracé de la courbe d'importance des fonctionnalités avec ggplot2
+ggplot(importance_df, aes(x = reorder(Feature, -Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  coord_flip() +
+  labs(title = "Importance des Fonctionnalités", x = "Fonctionnalité", y = "Importance")
+
+
+
+```
+
+```{r}
+best.model.test
+```
 
