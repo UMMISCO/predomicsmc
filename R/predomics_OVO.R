@@ -395,6 +395,8 @@ fit_OVO <- function(X,
            {
              cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
            },
+
+
          terga2=
            {
              cat('... Second and faster version of terga fitting based on Genetic Algorithm heuristics ...\n')
@@ -415,6 +417,12 @@ fit_OVO <- function(X,
            {
              cat('... SOTA: state of the art Ranfom Forest fitting ...\n')
            },
+
+         sota.rf_ovo =
+           {
+             cat('... SOTA: state of the art Ranfom Forest fitting MC ...\n')
+           },
+
          {
            warning('This method does not exist !')
          }
@@ -549,19 +557,6 @@ fit_OVO <- function(X,
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 #' Runs the learning on a dataset
 #' @title runClassifier_ovo
 #' @export
@@ -647,6 +642,12 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
              if(clf$params$verbose) cat('... SOTA: state of the art Ranfom Forest fitting ...\n')
              res <- sota.rf_fit(X, y, clf)
            },
+
+         sota.rf_ovo=
+           {
+             if(clf$params$verbose) cat('... SOTA: state of the art Ranfom Forest fitting ...\n')
+             res <- sota.rf_fit_ovo(X, y, clf)
+           },
          {
            warning('This method does not exist !')
          }
@@ -716,14 +717,6 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
 
   return(clf)
 }
-
-
-
-
-
-
-
-
 
 
 #' Compute the cross-validation emprirical and generalization scores

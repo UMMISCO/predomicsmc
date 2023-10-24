@@ -437,7 +437,7 @@ varImpPlot(model)
 
 ## Phase d'entrainement
 
-Les performances des différentes métriques sont évaluées à 100% pour RandomForest  dans la phase d\'entrainement, par contre mcpredomic a des performances estimées à 0.83% d'accuracy, 0.74% de précision, 0.86% d'auc et 0.86% recall.
+Les performances des différentes métriques sont évaluées à 100% pour RandomForest  dans la phase d'entrainement, par contre mcpredomic a des performances estimées à 0.83% d'accuracy, 0.74% de précision, 0.86% d'auc et 0.86% recall.
 
 ```{r fig.height=5, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 #| echo: false
@@ -522,8 +522,8 @@ print(test_plot)
 
 ```
 
-Bien que RandomForest nous ait généré les meilleures performances dans l\'ensemble, elle ne peut  être utilisée à des fins explicatives.
+Bien que RandomForest nous ait généré les meilleures performances dans l'ensemble, elle ne peut  être utilisée à des fins explicatives.
 
 ## Discussion
 
-Le package mcpredomics à aider à faire de la classification  multiclasses interprétable sur les données du microbiome. Nous comptons expérimenter notre modèle avec d\'autres jeux de données afin d\'émettre des vraies hypothèses. Les résultats obtenus pour notre première expérience nous rassure pour la suite.
+Le package mcpredomics à aider à faire de la classification  multiclasses interprétable sur les données du microbiome. Nous comptons expérimenter notre modèle avec d'autres jeux de données afin d'émettre des vraies hypothèses. Les résultats obtenus pour notre première expérience nous rassure pour la suite.

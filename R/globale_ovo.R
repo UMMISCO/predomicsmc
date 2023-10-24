@@ -1,4 +1,3 @@
-
 ################################################################
 # @script:  ovoExample.R
 # @author:  Edi Prifti
@@ -707,6 +706,23 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
   }
 
 
+  if(isModelSota(mod)){
+
+    for(i in 1:(length(list_y))){
+      list_mod[[i]]$obj <-  mod$obj[[i]]
+      list_mod[[i]]$names_ <-  mod$names_[[i]]
+      list_mod[[i]]$indices_ <-  mod$indices_[[i]]
+    }
+
+  }
+
+
+
+
+
+mod_res <- list()
+mod_res <- mod
+
   # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
   for(i in 1:length(list_mod)){
     if(!isModelSota(list_mod[[i]]))
@@ -906,32 +922,39 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
 
   #generate a single model output
   mod.res <- list()
-  mod.res$learner <- learnerr
-  mod.res$language <- languagee
-  mod.res$objective <- objectivee
-  mod.res$evalToFit <- evalToFitt
-  mod.res$indices_ <- indicess[[1]]
-  mod.res$names_ <- namess[[1]]
-  mod.res$coeffs_ <- coeffss[[1]]
-  mod.res$fit_ <- fit_ovo
-  mod.res$unpenalized_fit_ <- unpenalized_fit_ovo
-  mod.res$auc_ <-auc_ovo
-  mod.res$accuracy_ <- accuracy_ovo
-  mod.res$intercept_ <-  intercept_ovo
-  mod.res$eval.sparsity <- eval.sparsity_ovo
-  mod.res$precision_ <- precision_ovo
-  mod.res$recall_ <- recall_ovo
-  mod.res$f1_ <- f1_ovo
-  mod.res$cor_ <- corr
-  mod.res$aic_ <- aicc
-  mod.res$sign_ <- signn[[1]]
-  mod.res$rsq_ <- rsqq
-  mod.res$ser_ <- serr
-  mod.res$score_ <- scoree[[1]]
-  mod.res$pos_score_ <- pos_scoree[[1]]
-  mod.res$neg_score_ <- neg_scoree[[1]]
-  mod.res$confusionMatrix_ <- confusionMatrix_ovo
 
+
+  mod_res$learner <- learnerr
+  mod_res$language <- languagee
+  mod_res$objective <- objectivee
+  mod_res$evalToFit <- evalToFitt
+
+  if(!isModelSota(mod_res)){
+
+    mod_res$coeffs_ <- coeffss[[1]]
+    mod_res$indices_ <- indicess[[1]]
+    mod_res$names_ <- namess[[1]]
+  }
+
+  mod_res$fit_ <- fit_ovo
+  mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
+  mod_res$auc_ <-auc_ovo
+  mod_res$accuracy_ <- accuracy_ovo
+  mod_res$intercept_ <-  intercept_ovo
+  mod_res$eval.sparsity <- eval.sparsity_ovo
+  mod_res$precision_ <- precision_ovo
+  mod_res$recall_ <- recall_ovo
+  mod_res$f1_ <- f1_ovo
+  mod_res$cor_ <- corr
+  mod_res$aic_ <- aicc
+  mod_res$sign_ <- signn[[1]]
+  mod_res$rsq_ <- rsqq
+  mod_res$ser_ <- serr
+  mod_res$score_ <- scoree[[1]]
+  mod_res$pos_score_ <- pos_scoree[[1]]
+  mod_res$neg_score_ <- neg_scoree[[1]]
+  mod_res$confusionMatrix_ <- confusionMatrix_ovo
+  mod.res <- mod_res
 
   return(mod.res)
 }
@@ -1140,7 +1163,7 @@ listOfSparseVecToListOfModels_ovo <- function(X, y, clf, v, lobj = NULL, eval.al
 evaluateFeatureImportanceInPopulation_ovo <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
                                                       seed = c(1:10), aggregation = "mean", verbose = TRUE)
 {
- #One-versus-one class distribution
+  #One-versus-one class distribution
   nClasse <- unique(y)
   list_y <- list()
   list_X <- list()
