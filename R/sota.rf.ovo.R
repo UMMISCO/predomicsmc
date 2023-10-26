@@ -164,7 +164,7 @@ sota.rf_ovo <- function(sparsity = c(1:30), # when sparsityis null it means that
   return(clf)
 }
 
-#### Version qui marche
+#### Version pris en multiclasse
 ##sota.rf_fit_ovo <- function(X, y, clf) {
 ## x <- as.matrix(t(X))
 ##  feature.cor <- list()
@@ -310,7 +310,7 @@ sota.rf_ovo <- function(sparsity = c(1:30), # when sparsityis null it means that
 ##}
 
 
-## Sota qui ne marche pas
+## Version One Versus One
 
 sota.rf_fit_ovo <- function(X, y, clf) {
   x <- as.matrix(t(X))

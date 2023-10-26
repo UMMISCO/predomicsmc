@@ -25,7 +25,8 @@ library(randomForest())
 
 ```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
 # load the data
-data("mc.input")
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
 set.seed(123)
 #recover the vector y
 yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]

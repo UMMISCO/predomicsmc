@@ -1,7 +1,10 @@
 library(mcpredomics)
 library(predomics)
 # load the data
-data("mc.input")
+
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
+
 clf <- terga1_ovo(nCores = 1,
                   seed = 1,
                   plot = TRUE
