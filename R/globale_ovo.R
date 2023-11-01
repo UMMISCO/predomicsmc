@@ -716,20 +716,6 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
 
   }
 
-  #for(i in 1:(length(list_y))){
-  # Créez un vecteur avec des valeurs uniques de list_y[[1]]
-  #valeurs_uniques <- unique(unlist(list_y[[i]]))
-  #for(i in 1:(length(list_mod))){
-  # Créez un vecteur avec des valeurs uniques de list_mod[[1]]$obj$y
-  #boo <- unique(as.vector(list_mod[[i]]$obj$y))
-
-  # Vérifiez si les vecteurs contiennent les mêmes éléments
-  #if (all(valeurs_uniques %in% boo) && all(boo %in% valeurs_uniques)) {
-    #obj = list_mod[[i]]$obj
-  #}
-  #}
-  #list_mod[[i]]$obj = obj
-  #}
 
 
   if (mode == "test") {
