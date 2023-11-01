@@ -708,7 +708,7 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
 
   if(isModelSota(mod)){
 
-    for(i in 1:(length(list_y))){
+    for(i in 1:(length(list_mod))){
       list_mod[[i]]$obj <-  mod$obj[[i]]
       list_mod[[i]]$names_ <-  mod$names_[[i]]
       list_mod[[i]]$indices_ <-  mod$indices_[[i]]
@@ -716,9 +716,58 @@ evaluateModel_ovo <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluat
 
   }
 
+  #for(i in 1:(length(list_y))){
+  # Créez un vecteur avec des valeurs uniques de list_y[[1]]
+  #valeurs_uniques <- unique(unlist(list_y[[i]]))
+  #for(i in 1:(length(list_mod))){
+  # Créez un vecteur avec des valeurs uniques de list_mod[[1]]$obj$y
+  #boo <- unique(as.vector(list_mod[[i]]$obj$y))
+
+  # Vérifiez si les vecteurs contiennent les mêmes éléments
+  #if (all(valeurs_uniques %in% boo) && all(boo %in% valeurs_uniques)) {
+    #obj = list_mod[[i]]$obj
+  #}
+  #}
+  #list_mod[[i]]$obj = obj
+  #}
 
 
+  if (mode == "test") {
+    if (isModelSota(mod)) {
+      for (i in 1:length(list_y)) {
+        # Créez un vecteur avec des valeurs uniques de list_y[[i]]
+        valeurs_uniques <- unique(unlist(list_y[[i]]))
 
+        # Initialisez les variables obj, names_, indices_ à NULL
+        obj <- NULL
+        names_ <- NULL
+        indices_ <- NULL
+
+        for (j in 1:length(list_y)) {
+          # Créez un vecteur avec des valeurs uniques de list_mod[[j]]$obj$y
+          boo <- unique(as.vector(mod$obj[[j]]$y))
+
+          # Vérifiez si les vecteurs contiennent les mêmes éléments
+          if (all(valeurs_uniques %in% boo) && all(boo %in% valeurs_uniques)) {
+            obj <- mod$obj[[j]]
+            names_ <- mod$names_[[j]]
+            indices_ <- mod$indices_[[j]]
+            break  # Sortez de la boucle intérieure dès qu'une correspondance est trouvée
+          }
+        }
+
+        # Mettez à jour list_mod[[i]]$obj avec la correspondance trouvée
+        if (!is.null(obj)) {
+          list_mod[[i]]$obj <- obj
+          list_mod[[i]]$names_ <- names_
+          list_mod[[i]]$indices_ <- indices_
+        } else {
+          # Gérez le cas où aucune correspondance n'a été trouvée
+          print(paste("Aucune correspondance trouvée pour list_y[", i, "]."))
+        }
+      }
+    }
+  }
 
 mod_res <- list()
 mod_res <- mod
