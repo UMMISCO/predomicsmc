@@ -165,8 +165,8 @@ printy(best.model.test)
       class_i <- nClasse[i]
       class_j <- nClasse[j]
       indicess <- which(y.test == class_i | y.test == class_j)
-      y_paire <- y[indicess]
-      X_paire <- X[,indicess]
+      y_paire <- y.test[indicess]
+      X_paire <- X.test[,indicess]
       list_y.test[[k]] <- y_paire
       list_X.test[[k]] <- X_paire
       k <- k + 1
@@ -313,6 +313,14 @@ printy(best.model)
 
 ```
 
+```{r best model, fig.width=7, warning=FALSE}
+ n_best.model = best.model
+ n_best.model$names_ = best.model$names_[[1]]
+ n_best.model$indices_ = best.model$indices_[[1]]
+ n_best.model$obj = best.model$obj[[1]]
+grid.arrange(plotModel_ovo(n_best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE),
+plotModel_ovo(n_best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE, importance = TRUE),ncol=2)
+```
 
 
 
@@ -322,9 +330,117 @@ printy(best.model)
 best.model.test <- evaluateModel_ovo(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
 printy(best.model.test)
 ```
+###One-versus-one class distribution train
+```{r One-versus-one class distribution}
+  nClasse <- unique(y)
+  list_y <- list()
+  list_X <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      X_pair <- X[,indices]
+      list_y[[k]] <- y_pair
+      list_X[[k]] <- X_pair
+      k <- k + 1
+    }
+  }
+```
 
 
+###One-versus-one class distribution test
+```{r One-versus-one class distribution}
+ nClasse <- unique(y.test)
+  list_y.test <- list()
+  list_X.test <- list()
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indicess <- which(y.test == class_i | y.test == class_j)
+      y_paire <- y.test[indicess]
+      X_paire <- X.test[,indicess]
+      list_y.test[[k]] <- y_paire
+      list_X.test[[k]] <- X_paire
+      k <- k + 1
+    }
+  }
+```
+
+```{r}
+  # we recover the first output to apply the plot
+  X <- list_X[[1]]
+  y <- list_y[[1]]
+  X.test <- list_X.test[[1]]
+  y.test <- list_y.test[[1]]
+```
 
 
+### Visualizing model performance AUC
+```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALS}
+tmp <- plotAUC(best.model$score_, y, percent = TRUE); rm(tmp)
 
+# create the roc objects
+rocobj.train <- roc(y ~ best.model$score_)
+rocobj.test <- roc(y.test ~ best.model.test$score_)
+
+# make the plot
+ggroc(list(train = rocobj.train, test = rocobj.test))
+```
+
+###Family of Best Models (FBM)
+```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+# get the population of models scrambled by model size
+pop <- modelCollectionToPopulation(res_clf$classifier$models)
+printy(pop)
+pop.df <- populationToDataFrame(pop)
+head(pop.df[,-c(3,4,7,8,14)])
+pop.df.melt <- melt(pop.df, id.vars = c("accuracy_","eval.sparsity"))
+
+g.before <- ggplot(data = pop.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
+  geom_boxplot(notch = FALSE, outlier.shape = " ", position = position_dodge(width=0.9), alpha = 0.3) + 
+  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+  ylim(c(0,1)) +
+  xlab("Model parsimony") +
+  ggtitle("Original population") +
+  theme_bw() +
+  theme(legend.position="bottom", legend.direction="horizontal") +
+  guides(colour="none")
+
+# select the best 
+fbm <- selectBestPopulation(pop)
+printy(fbm)
+fbm.df <- populationToDataFrame(fbm)
+fbm.df.melt <- melt(fbm.df, id.vars = c("accuracy_","eval.sparsity"))#; head(fbm.df.melt)
+
+g.after <- ggplot(data = fbm.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
+  geom_boxplot(notch = FALSE, position = position_dodge(width=0.9), alpha = 0.3) + 
+  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+  ylim(c(0,1)) +
+  xlab("Model parsimony") +
+  ggtitle("FBM") +
+  theme_bw() +
+  theme(legend.position="bottom", legend.direction="horizontal") +
+  guides(colour="none")
+
+grid.arrange(g.before, g.after, ncol =2)
+```
+
+###Analyzing the FBM
+
+
+```{r  feature exploration, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+fa <- makeFeatureAnnot(pop = fbm, 
+                       X = X, 
+                       y = y, 
+                       clf = clf)
+dim(fa$pop.noz)
+(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa$pop.noz))
+(g2 <- plotAbundanceByClass(features = rownames(fa$pop.noz), X = X, y = y))
+(g3 <- plotPrevalence(features = rownames(fa$pop.noz), X = X, y = y))
+```
 
