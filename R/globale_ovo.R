@@ -996,7 +996,7 @@ mod.res = list_mod
   auc_ovo =0
   accuracy_ovo = 0
   intercept_ovo <- 0
-  list_intercept_ovo <- list()
+  list_intercept_mc <- list()
   eval.sparsity_ovo <- 0
   precision_ovo = 0
   recall_ovo = 0
@@ -1022,7 +1022,7 @@ mod.res = list_mod
     auc_ovo = auc_ovo + mod.res[[i]]$auc_
     accuracy_ovo = accuracy_ovo + mod.res[[i]]$accuracy_
     intercept_ovo =  mod.res[[i]]$intercept_[[1]]
-    list_intercept_ovo[[i]] =  mod.res[[i]]$intercept_
+    list_intercept_mc[[i]] =  mod.res[[i]]$intercept_
     eval.sparsity_ovo = eval.sparsity_ovo + mod.res[[i]]$eval.sparsity
     signn[[i]] =  mod.res[[i]]$sign_
     precision_ovo = precision_ovo + mod.res[[i]]$precision_
@@ -1075,7 +1075,7 @@ mod.res = list_mod
   mod_res$auc_ <-auc_ovo
   mod_res$accuracy_ <- accuracy_ovo
   mod_res$intercept_ <-  intercept_ovo
-  mod_res$list_intercept_ovo <- list_intercept_ovo
+  mod_res$list_intercept_mc <- list_intercept_mc
   mod_res$eval.sparsity <- eval.sparsity_ovo
   mod_res$precision_ <- precision_ovo
   mod_res$recall_ <- recall_ovo
@@ -3917,7 +3917,7 @@ listOfModels2ModelCollection <- function(pop, nBest = NA)
 #' @return list of class predict
 #' @export
 predict_ova <- function(mod, class_names) {
-  intercept_list <- mod$intercept_
+  intercept_list <- mod$list_intercept_mc
   score_list <- mod$score_
 
   # List of prediction vectors for each combination.

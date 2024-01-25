@@ -183,6 +183,22 @@ best.model_terga1_mcovo <- res_clf.dig_terga1ova$best$model
 
 ```
 
+
+
+```{r}
+class_names = unique(y)
+predict_ova <- predict_ova(mod = best.model_terga1_mcovo, class_names)
+predict_ova 
+```
+
+
+
+
+
+
+
+
+
 ```{r}
 best.model.test_terga1ovo <- evaluateModel_ovo(mod = best.model_terga1_mcovo, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test", approch="ova")
 best.model.test_terga1ovo
