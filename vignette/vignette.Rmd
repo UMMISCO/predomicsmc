@@ -3,12 +3,13 @@ title: "vignette"
 author: "Fabien"
 date: "2023-10-04"
 output: html_document
+knitr: 
+  duplicate.label: "allow"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 ```{r load the packages, message=FALSE, warning=FALSE}
 library(mcpredomics)
@@ -17,36 +18,101 @@ library(ggplot2)
 library(gridExtra)
 library(pROC)
 library(reshape2)
-library(randomForest())
+library(randomForest)
+library(caret)
+library(gtools)
 ```
 
-
-
+## Setting the learner context
 
 ```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
-# load the data
 chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
 load(chemin_du_dataset)
 set.seed(123)
 #recover the vector y
 yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-#Divide the dataset into training and testing
-proportion_test <- 0.2
-taille_test <- round(proportion_test * ncol(mc.input$X))
-indices_test <- sample(1:ncol(mc.input$X), taille_test)
-X <- mc.input$X[,-indices_test]
-X.test <- mc.input$X[,indices_test]
-y <- as.vector(yvec[-indices_test])
-y.test <- as.vector(yvec[indices_test])
+indices_tries <- order(yvec)
+yvec_trie <- yvec[indices_tries]
+X_general  <- mc.input$X[,indices_tries]
+# Créer un vecteur d'indices pour la division des données
+set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
+indices_division <- createDataPartition(yvec_trie, p = 0.8, list = FALSE)
 
+# Diviser yvec_trie en 80% train et 20% test
+y <- as.vector(yvec_trie[indices_division])
+y.test <- as.vector(yvec_trie[-indices_division])
+X <- X_general[,indices_division]
+X.test <- X_general[,-indices_division]
+
+# Vérifier la répartition dans chaque ensemble
+table(y)
+table(y.test)
+dim(X)
+dim(X.test)
 
 ```
 
-## Setting the learner context
+`
+```{r}
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
+set.seed(123)
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+indices_tries <- order(yvec)
+yvec_trie <- yvec[indices_tries]
+X_general  <- mc.input$X[,indices_tries]
+# Créer un vecteur d'indices pour la division des données
+set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
+y = as.vector(yvec_trie)
+X = X_general
+
+# Nombre d'échantillons désiré dans chaque classe
+nombre_echantillons_par_classe <- min(table(y))
+
+# Fonction pour équilibrer les classes
+equilibrer_classes <- function(y, X, nombre_echantillons_par_classe,seed =123) {
+  classes <- unique(y)
+  indices_equilibres <- integer(0)
+  
+  for (classe in classes) {
+    indices_classe <- which(y == classe)
+    set.seed(seed)
+    indices_equilibres <- c(indices_equilibres, sample(indices_classe, nombre_echantillons_par_classe))
+  }
+  
+  return(list(y = y[indices_equilibres], X = X[, indices_equilibres]))
+}
+
+# Équilibrer les classes dans l'ensemble d'entraînement
+donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
+
+# Utiliser les données équilibrées
+y_equilibre <- donnees_equilibrees$y
+X_equilibre <- donnees_equilibrees$X
+
+# Vérifier la répartition après équilibrage
+#table(y_equilibre)
+
+set.seed(42)
+indices_division <- createDataPartition(y_equilibre, p = 0.8, list = FALSE)
+
+# Diviser yvec_trie en 80% train et 20% test
+y <- as.vector(y_equilibre[indices_division])
+y.test <- as.vector(y_equilibre[-indices_division])
+X <- X_equilibre[,indices_division]
+X.test <- X_equilibre[,-indices_division]
+
+# Vérifier la répartition dans chaque ensemble
+table(y)
+table(y.test)
+dim(X)
+dim(X.test)
+```
+
 
 ```{r setting the classifier}
 
-clf <- terga1_ovo(nCores = 1,
+clf <- terga1_mc(nCores = 1,
               seed = 1,
               plot = TRUE
 )
@@ -56,11 +122,12 @@ class(clf)  # the class of the classifier object
 ```
 
 ## Running the learner experiment
-```{r running experiment, echo=TRUE, fig.width=5}
+
+```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_OVO(X = X, y = y, clf = clf, cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
   # save results
   save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
 }
@@ -94,8 +161,6 @@ if(runit)
 
 ```
 
-
-
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 if(!runit)
 {
@@ -104,89 +169,162 @@ if(!runit)
 ```
 
 ### Digesting the results
-```{r digesting results, fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
+
+```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
+res_clf.dig_terga1ova <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
 ```
 
 ### Visualizing the best model
 
-
 ```{r best model, fig.width=7, warning=FALSE}
 
 # get the best model
-best.model <- res_clf.dig$best$model
-printy(best.model)
- grid.arrange(plotModel_ovo(best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE),
-plotModel_ovo(best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE, importance = TRUE),ncol=2)
+best.model_terga1_mcovo <- res_clf.dig_terga1ova$best$model
+
 ```
 
-
-### Testing the model in another dataset
 ```{r}
-
-best.model.test <- evaluateModel_ovo(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
-printy(best.model.test)
-```
-### One-versus-one class distribution train
-
-```{r One-versus-one class distribution}
-  nClasse <- unique(y)
-  list_y <- list()
-  list_X <- list()
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      X_pair <- X[,indices]
-      list_y[[k]] <- y_pair
-      list_X[[k]] <- X_pair
-      k <- k + 1
-    }
-  }
-
-
-
+best.model.test_terga1ovo <- evaluateModel_ovo(mod = best.model_terga1_mcovo, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test", approch="ova")
+best.model.test_terga1ovo
 ```
 
-###One-versus-one class distribution test
-
-
-```{r One-versus-one class distribution}
- 
-  nClasse <- unique(y.test)
-  list_y.test <- list()
-  list_X.test <- list()
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indicess <- which(y.test == class_i | y.test == class_j)
-      y_paire <- y.test[indicess]
-      X_paire <- X.test[,indicess]
-      list_y.test[[k]] <- y_paire
-      list_X.test[[k]] <- X_paire
-      k <- k + 1
-    }
-  }
-
- 
+```{r}
+model_test_terga1 <- list()
+model_test_terga1$accuracy_ =best.model.test_terga1ovo$accuracy_
+model_test_terga1$auc_ = best.model.test_terga1ovo$auc_
+model_test_terga1$recall_ = best.model.test_terga1ovo$recall_
+model_test_terga1$precision_ = best.model.test_terga1ovo$precision_
 ```
 
 
 ```{r}
-  # we recover the first output to apply the plot
-  X <- list_X[[1]]
-  y <- list_y[[1]]
-  X.test <- list_X.test[[1]]
-  y.test <- list_y.test[[1]]
+
+
+# Sélectionner uniquement les métriques nécessaires
+model_test_terga1 <- list(
+  accuracy_ = model_test_terga1$accuracy_,
+  auc_ = model_test_terga1$auc_,
+  recall_ = model_test_terga1$recall_,
+  precision_ = model_test_terga1$precision_
+)
+
+# Convertir la liste en un data frame
+df <- data.frame(
+  Metric = names(model_test_terga1),
+  Value = unlist(model_test_terga1)
+)
+
+# Modifier la couleur pour chaque métrique
+df$Color <- c("red", "green", "blue", "orange")
+
+# Créer le graphique de barres avec ggplot2
+library(ggplot2)
+plot <- ggplot(df, aes(x = Metric, y = Value, fill = Color)) +
+  geom_bar(stat = "identity", alpha = 0.7) +
+  geom_text(aes(label = round(Value, 3)), vjust = -0.3) +
+  ylim(0, 1) +
+  labs(title = "Performance of model test terbeam one versus all",
+       x = "Metrics",
+       y = "Values") +
+  theme_minimal()
+
+# Afficher le graphique
+print(plot)
+
 ```
 
 
-### Visualizing model performance AUC
+
+
+
+```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
+set.seed(123)
+#recover the vector y
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+indices_tries <- order(yvec)
+yvec_trie <- yvec[indices_tries]
+X_general  <- mc.input$X[,indices_tries]
+# Créer un vecteur d'indices pour la division des données
+set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
+indices_division <- createDataPartition(yvec_trie, p = 0.8, list = FALSE)
+
+# Diviser yvec_trie en 80% train et 20% test
+y <- as.vector(yvec_trie[indices_division])
+y.test <- as.vector(yvec_trie[-indices_division])
+X <- X_general[,indices_division]
+X.test <- X_general[,-indices_division]
+
+# Vérifier la répartition dans chaque ensemble
+table(y)
+table(y.test)
+```
+
+
+```{r}
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+indices_tries <- order(yvec)
+yvec_trie <- yvec[indices_tries]
+X_general  <- mc.input$X[,indices_tries]
+# Créer un vecteur d'indices pour la division des données
+set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
+#indices_division <- createDataPartition(yvec_trie, p = 0.8, list = FALSE)
+
+# Diviser yvec_trie en 80% train et 20% test
+#y <- as.vector(yvec_trie[indices_division])
+#y.test <- as.vector(yvec_trie[-indices_division])
+#X <- X_general[,indices_division]
+#X.test <- X_general[,-indices_division]
+
+# Vérifier la répartition dans chaque ensemble
+#table(y)
+#table(y.test)
+y = as.vector(yvec_trie)
+X = X_general
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 
 tmp <- plotAUC(best.model$score_, y, percent = TRUE); rm(tmp)
@@ -240,33 +378,23 @@ grid.arrange(g.before, g.after, ncol =2)
 ```
 
 ###Analyzing the FBM
+
 ```{r feature exploration, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-fa <- makeFeatureAnnot(pop = fbm, 
+fa <- makeFeatureAnnot_ovo(pop = fbm, 
                        X = X, 
                        y = y, 
                        clf = clf)
-dim(fa$pop.noz)
-(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa$pop.noz))
-(g2 <- plotAbundanceByClass(features = rownames(fa$pop.noz), X = X, y = y))
-(g3 <- plotPrevalence(features = rownames(fa$pop.noz), X = X, y = y))
+dim(fa[[1]]$pop.noz)
+(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[1]]$pop.noz))
+(g2 <- plotAbundanceByClass(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
+(g3 <- plotPrevalence(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
 ```
+
 ### Random Forest sota
 
-
-```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
-set.seed(123)
-yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-#Divide the dataset into training and testing
-proportion_test <- 0.2
-taille_test <- round(proportion_test * ncol(mc.input$X))
-indices_test <- sample(1:ncol(mc.input$X), taille_test)
-X <- mc.input$X[,-indices_test]
-X.test <- mc.input$X[,indices_test]
-y <- as.vector(yvec[-indices_test])
-y.test <- as.vector(yvec[indices_test])
+```{r}
+fa[[1]]$feature.df
 ```
-
-
 
 ```{r}
 clf <- sota.rf_ovo(sparsity = c(2:10, 50, 70, 100, 150, 200, 300), 
@@ -284,53 +412,42 @@ clf <- sota.rf_ovo(sparsity = c(2:10, 50, 70, 100, 150, 200, 300),
   printy(clf) # 
 
 ```
+
 ### Running the learner experiment sota.RF ovo
-
-
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_OVO(X = X, y = y, clf = clf, cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  res_clf_sota <- fit_OVO(X = X, y = y, clf = clf, cross.validate = TRUE, nfolds = 1); # class(res_clf)
   # save results
-  save(res_clf, clf, file = "res_clf_sota.rda", compression_level = 9)
+  save(res_clf_sota, clf, file = "res_clf_sota.rda", compression_level = 9)
 }
 ```
 
 ##Digesting the results
 
 ```{r digesting results, fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
+res_clf.dig_sota <- digest(obj = res_clf_sota, penalty = 0.75/100, plot = TRUE)
 ```
-
 
 ```{r}
 # get the best model sota.rf_ovo
 # get the best model
-best.model <- res_clf.dig$best$model
-printy(best.model)
+best.modelsota <- res_clf.dig_sota$best$model
+##printy(best.model)
 
 ```
-
-```{r best model, fig.width=7, warning=FALSE}
- n_best.model = best.model
- n_best.model$names_ = best.model$names_[[1]]
- n_best.model$indices_ = best.model$indices_[[1]]
- n_best.model$obj = best.model$obj[[1]]
-grid.arrange(plotModel_ovo(n_best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE),
-plotModel_ovo(n_best.model, X=X, y=y, sort.features = FALSE, feature.name = TRUE, importance = TRUE),ncol=2)
-```
-
-
-
 
 ### Testing the model in another dataset
+
 ```{r}
-best.model.test <- evaluateModel_ovo(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
-printy(best.model.test)
+best.model.test_sota <- evaluateModel_ovo(mod = best.modelsota, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
+##printy(best.model.test)
 ```
+
 ###One-versus-one class distribution train
+
 ```{r One-versus-one class distribution}
   nClasse <- unique(y)
   list_y <- list()
@@ -350,8 +467,8 @@ printy(best.model.test)
   }
 ```
 
-
 ###One-versus-one class distribution test
+
 ```{r One-versus-one class distribution}
  nClasse <- unique(y.test)
   list_y.test <- list()
@@ -379,8 +496,8 @@ printy(best.model.test)
   y.test <- list_y.test[[1]]
 ```
 
-
 ### Visualizing model performance AUC
+
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALS}
 tmp <- plotAUC(best.model$score_, y, percent = TRUE); rm(tmp)
 
@@ -393,6 +510,7 @@ ggroc(list(train = rocobj.train, test = rocobj.test))
 ```
 
 ###Family of Best Models (FBM)
+
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 # get the population of models scrambled by model size
 pop <- modelCollectionToPopulation(res_clf$classifier$models)
@@ -432,15 +550,43 @@ grid.arrange(g.before, g.after, ncol =2)
 
 ###Analyzing the FBM
 
-
-```{r  feature exploration, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-fa <- makeFeatureAnnot(pop = fbm, 
-                       X = X, 
-                       y = y, 
-                       clf = clf)
-dim(fa$pop.noz)
-(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa$pop.noz))
-(g2 <- plotAbundanceByClass(features = rownames(fa$pop.noz), X = X, y = y))
-(g3 <- plotPrevalence(features = rownames(fa$pop.noz), X = X, y = y))
+```{r}
+clf <- terBeam_mc(sparsity = c( 2, 3, 4, 5), 
+                                   max.nb.features = 1000,
+                                   seed = 1,
+                                   nCores = 1,
+                                   evalToFit = "accuracy_",
+                                   objective = "auc",
+                                   experiment.id = "terBeam_mc",
+                                   experiment.save = "nothing")
+  
+                      
+  printy(clf) # 
 ```
+
+```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
+runit = TRUE
+if(runit)
+{
+  res_clfterbeamova <- fit_OVO(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
+
+}
+```
+
+```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
+res_clf.dig_terbeamova <- digest(obj = res_clfterbeamova, penalty = 0.75/100, plot = TRUE)
+```
+
+```{r}
+best.modelterbeamova <- res_clf.dig_terbeamova$best$model
+```
+
+
+
+
+
+
+
+
+
 

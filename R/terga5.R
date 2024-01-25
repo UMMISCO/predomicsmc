@@ -62,7 +62,7 @@
 #' @param experiment.save: Data from an experiment can be saved with different levels of completness, with options to be selected from c("nothing", "minimal", "full"), default is "minimal"
 #' @return an object containing a list of parameters for this classifier
 #' @export
-terga1_ovo <- function(sparsity = c(1:10),
+terga1_mc <- function(sparsity = c(1:10),
                        # population options
                        size_pop = 100, size_world = "NULL", max.nb.features = 1000, popSourceFile = "NULL", popSaveFile = "NULL",
                        # language in {bin, bininter, ter, terinter, ratio}
@@ -87,7 +87,7 @@ terga1_ovo <- function(sparsity = c(1:10),
                        experiment.id = "NULL", experiment.description = "NULL", experiment.save = "nothing")
 {
   clf <- list() # create a classifier object
-  clf$learner <- "terga1_ovo" # name of the method
+  clf$learner <- "terga1_mc" # name of the method
   clf$params <- list() # parameter list
   clf$experiment <- list() # information about the experiment
 
@@ -165,7 +165,7 @@ terga1_ovo <- function(sparsity = c(1:10),
 
 
 # Launch the fit classifier routine
-terga1_ovo_fit <- function(X, y, clf) {
+terga1_ovo_fit <- function(X, y, clf, approch="ovo") {
 
   # Setting the language environment
   switch(clf$params$language,
@@ -296,18 +296,31 @@ terga1_ovo_fit <- function(X, y, clf) {
       }
 
       # then we evolve
-      pop_last      <- evolve_ovo(X, y, clf, pop, seed = clf$params$current_seed)
-    }
+      pop_last      <- evolve_mc(X, y, clf, pop, seed = clf$params$current_seed,approch = approch)
+      list_indices <- list() # list of indices
 
+      # through the indices
+      for (i in 1:length(pop_last[[1]])) {
+        # Initialize the list of indices for each iteration
+        list_indices[[i]] <- list()
+
+        # Iterate through the different lists in list_evolved_pop.
+        for (j in 1:length(pop_last)) {
+          if (i <= length(pop_last[[j]])) {
+            list_indices[[i]][[j]] <- pop_last[[j]][[i]]
+          } else {
+            list_indices[[i]][[j]] <- list_indices[[i - 1]][[j]]
+          }
+        }
+      }
+    }
+    pop_last = list_indices
     # evaluate the fitting function for all the models of the populaion
     # transform to a population of model objects
     #pop_last.mod <- list()
-
-    pop_last.mod <- listOfSparseVecToListOfModels_ovo(X, y , clf = clf, v = pop_last[[1]])
-
-
+    pop_last.mod <- listOfSparseVecToListOfModels_mc(X, y , clf = clf, v = pop_last,approch = approch)
     # evaluate the population
-    pop.last.eval <- evaluatePopulation_ovo(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE)
+    pop.last.eval <- evaluatePopulation_mc(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE, approch=approch)
     #for(i in 1:length(pop.last.eva
     # get the evaluation vector
     evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
@@ -326,14 +339,14 @@ terga1_ovo_fit <- function(X, y, clf) {
     {
       if(isModel(best_individual))
       {
-        try(cat(paste("gen =",i,"\t", printModel(mod = best_individual, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
+        try(cat(paste("gen =",i,"\t", printModel_mc(mod = best_individual, method = clf$params$print_ind_method, score = "fit_"),"\n")), silent = TRUE)
       }
     }
 
     # transform the indexes into models
     if(!isPopulation(obj = pop_ordered_mod))
     {
-      pop_ordered_mod <- evaluatePopulation_ovo(X, y, clf, pop_ordered_mod, force.re.evaluation = TRUE, eval.all = TRUE)
+      pop_ordered_mod <- evaluatePopulation_mc(X, y, clf, pop_ordered_mod, force.re.evaluation = TRUE, approch = approch, eval.all = TRUE)
     }
     #for(i in 1:length(pop_ordered_mod)){
     # keep only models that are unique
@@ -352,14 +365,9 @@ terga1_ovo_fit <- function(X, y, clf) {
 
   return(res)
 }
-## End of the function terga_fit
-#######################################################
-
-
-
 
 #' Creates new combinations of features based from a parents.
-#' @title evolve_ovo
+#' @title evolve_mc
 #' @description This function is used in terga1 and is the main engine of the algorithm that allows to cross, mutate and select individuals from one generation to the next (one versus one).
 #' @param X: the data matrix with variables in the rows and observations in the columns
 #' @param y: the response vector
@@ -368,36 +376,60 @@ terga1_ovo_fit <- function(X, y, clf) {
 #' @param seed: For reproductibility purpose to fix the random generator number.
 #' @return a list population of models, containing parents and children(one versus one)
 #' @export
-evolve_ovo <- function(X, y, clf, pop, seed = NULL)
+evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
 {
-  #One-versus-one class distribution
   nClasse <- unique(y)
-  list_evolved_pop <- list()
-  list_y <- list()
-  list_X <- list()
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
+  list_evolved_pop <- list() # List of different combinations of evolved
+  list_y <- list() # List of different combinations of y
+  list_X <- list() # List of different combinations of X
+  listcoeffs <- list() # List of different combinations of coeffs
+  listX <- list()
+  listXmin <- list() # List min of X
+  listXmax <- list() # List max of X
+  listy <- list()
+  listcoeffs <- clf$coeffs_
+  listX <- clf$data$X
+  listXmin <- clf$data$X.min
+  listXmax <- clf$data$X.max
+  listy <- clf$data$y
+  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse)-1)) {
+      for (j in (i+1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        X_pair <- X[, indices]
+        list_y[[k]] <- as.vector(y_pair)
+        list_X[[k]] <- X_pair
+        k <- k + 1
+      }
+    }
+  } else {
+    for (i in 1:length(nClasse)) {
       class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      X_pair <- X[,indices]
-      list_y[[k]] <- y_pair
-      list_X[[k]] <- X_pair
-      k <- k + 1
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
     }
   }
-  listclf= list()
-  listclf=clf$coeffs_
-  for(i in 1:length(list_y)){
-    clf$coeffs_     <- listclf[[i]]
-    list_evolved_pop[[i]] <- evolve(X=list_X[[i]], y=list_y[[i]], clf, pop, seed = NULL)
 
+  for (i in 1:length(list_X)) {
+    clf$coeffs_ <- listcoeffs[[i]]
+    clf$data$X <- listX[[i]]
+    clf$data$X.min <- listXmin[[i]]
+    clf$data$X.max <- listXmax[[i]]
+    clf$data$y <- listy[[i]]
+    list_evolved_pop[[i]] <- evolve(X = list_X[[i]], y = list_y[[i]], clf, pop, seed = NULL)
   }
 
   evolved_pop <- list_evolved_pop
 
-
   return(evolved_pop)
 }
+
+
+
+

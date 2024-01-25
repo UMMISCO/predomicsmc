@@ -58,7 +58,6 @@
 #' @param experiment.save: Data from an experiment can be saved with different levels of completness, with options to be selected from c("nothing", "minimal", "full"), default is "minimal"
 #' @return an object containing a list of parameters for this classifier
 #' @export
-
 # initialize the functions
 sota.rf_ovo <- function(sparsity = c(1:30), # when sparsityis null it means that we can not fix it and the learner will use all the features.
                     objective = "auc",
@@ -163,182 +162,40 @@ sota.rf_ovo <- function(sparsity = c(1:30), # when sparsityis null it means that
 
   return(clf)
 }
-
-#### Version pris en multiclasse
-##sota.rf_fit_ovo <- function(X, y, clf) {
-## x <- as.matrix(t(X))
-##  feature.cor <- list()
-##  list_rf <- list()
-##  nClasse <- unique(y)
-##  list_y <- list()
-##  list_X <- list()
-##  k <- 1
-##  clf$feature.cor <- NA
-##  list_selected_ <- list()
-##  rows_list <- list()
-##  listing_ <- list()
-
-##  for (i in 1:(length(nClasse)-1)) {
-##   for (j in (i+1):length(nClasse)) {
-##      class_i <- nClasse[i]
-##      class_j <- nClasse[j]
-##      indices <- which(y == class_i | y == class_j)
-##      y_pair <- y[indices]
-##      y_pair <- as.vector(y_pair)
-##      X_pair <- X[,indices]
-##      list_y[[k]] <- y_pair
-##      list_X[[k]] <- X_pair
-
-##      k <- k+1
-##    }
-##  }
-
-##  for(j in 1:length(list_y)){
-##    yy <- list_y[[j]]
-##    xx <- list_X[[j]]
-##    # compute the feature correlation for feature selection
-##    feature.cor[[j]] <- filterfeaturesK(data = xx, trait = yy, k = nrow(X), sort = TRUE) # to avoid having to recompute this all the time
-##  }
-##  clf$feature.cor <- feature.cor
-##  listing_ <- clf$feature.cor
-
-
-
-##  # initialize some parameteres
-##  if(is.null(clf$params$mtry))
-##  {
-##    clf$params$mtry = if(!is.null(y) && !is.factor(y))
-##      max(floor(ncol(x)/3), 1) else floor(sqrt(ncol(x)))
-##  }
-
-##  if(is.null(clf$params$sampsize))
-##  {
-##    clf$params$sampsize = if(clf$params$replace) nrow(x) else ceiling(.632*nrow(x))
-##  }
-
-##  if(is.null(clf$params$nodesize))
-##  {
-##    clf$params$nodesize = if(!is.null(y) && !is.factor(y)) 5 else 1
-##  }
-
-##  if(is.null(clf$params$sparsity))
-##  {
-##    clf$params$sparsity <- nrow(X)
-##  }
-
-##  model_collection <- list()
-
-##  for(i in 1:length(clf$params$sparsity))  # sparsity is = k, i.e. the number of features in a model
-##  {
-##    k <- clf$params$sparsity[i]
-##    if(clf$params$verbose) cat("... ... Resolving problem with\t", k, "\tvariables ...\n")
-
-##   for (o in 1:length(clf$feature.cor)){
-##    #xi <- list_X[[o]]
-##    #yi <- list_y[[o]]
-##    #xi <- as.matrix(t(xi))
-##    y = as.factor(y)
-
-##    selected.features <- rownames(clf$feature.cor[[o]])[order(clf$feature.cor[[o]]$p)][1:k]
-##    x.reduced <- x[,selected.features]
-
-
-##   ### Launch randomForest with the parameters from the clf
-##    set.seed(clf$params$seed)
-##    rf <- randomForest(x = x.reduced, y=y,
-##                      ntree=clf$params$ntree,
-##                       mtry=clf$params$mtry,
-##                       replace=clf$params$replace,
-##                       classwt=clf$params$classwt,
-##                       maxnodes = clf$params$maxnodes,
-##                       importance=clf$params$importance,
-##                       localImp=clf$params$localImp,
-##                       nPerm=nPerm,
-##                       norm.votes=clf$params$norm.votes,
-##                       do.trace=clf$params$do.trace,
-##                       keep.forest=clf$params$keep.forest,
-##                       corr.bias=clf$params$corr.bias,
-##                       keep.inbag=clf$params$keep.inbag
-##    )
-
-##    }
-
-##    # build the model for this given sparsity
-##    mod.res                  <- list() # to send the results
-##    # Fill the object up with the rest of the values
-##    mod.res$learner          <- clf$learner
-##    mod.res$language         <- clf$params$language
-##    mod.res$names_           <- selected.features
-##    # match the index
-##    mod.res$indices_         <- match(selected.features, rownames(X))
-##    mod.res$eval.sparsity    <- length(unique(mod.res$names_))
-
-##    # Add the rf object
-##    mod.res$obj              <- rf
-##    mod.res$auc_             <- NA
-##    mod.res$cor_             <- NA
-##    mod.res$aic_             <- NA
-##    mod.res$score_           <- NA
-##    mod.res$fit_             <- NA
-##    mod.res$unpenalized_fit_ <- NA
-##    mod.res$intercept_       <- NA
-##    mod.res$sign_            <- NA
-##    # evaluate all
-##    mod.res                  <- evaluateModel_ovo(mod = mod.res,
-##                                              X = X,
-##                                              y = y,
-##                                              clf = clf,
-##                                              eval.all = TRUE,
-##                                              force.re.evaluation = TRUE,
-##                                              estim.feat.importance = TRUE)
-##    if(clf$params$verbose)
-##    {
-##      try(printModel(mod = mod.res, method = clf$params$print_ind_method, score = "fit_"), silent = TRUE)
-##    }
-##    # Create a resulting model collection object
-##    model_collection[[i]]    <- list(mod.res)
-
-##  }# end of sparsity loop
-
-##  # names(model_collection) <- paste("k",clf$params$sparsity, sep="_")
-##  # list(model_collection=model_collection, best.model.id=best.model)
-##  names(model_collection)    <- paste("k",clf$params$sparsity, sep="_")
-
-##  return(model_collection)
-
-
-##}
-
-
 ## Version One Versus One
 
-sota.rf_fit_ovo <- function(X, y, clf) {
+sota.rf_fit_ovo <- function(X, y, clf, approch = "ovo") {
   x <- as.matrix(t(X))
   feature.cor <- list()
   list_rf <- list()
   nClasse <- unique(y)
   list_y <- list()
   list_X <- list()
-  k <- 1
   clf$feature.cor <- NA
   list_selected_ <- list()
   list_indices <- list()
   collect_rf <- list()
-
-
-
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      y_pair <- as.vector(y_pair)
-      X_pair <- X[,indices]
-      list_y[[k]] <- y_pair
-      list_X[[k]] <- X_pair
-
-      k <- k+1
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse)-1)) {
+      for (j in (i+1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        X_pair <- X[, indices]
+        list_y[[k]] <- as.vector(y_pair)
+        list_X[[k]] <- X_pair
+        k <- k + 1
+      }
+    }
+  } else {
+    list_y <- list()
+    list_X <- list()
+    for (i in 1:length(nClasse)) {
+      y_temp <- ifelse(y == nClasse[i], 1, -1)
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
     }
   }
 
@@ -350,9 +207,6 @@ sota.rf_fit_ovo <- function(X, y, clf) {
   }
   clf$feature.cor <- feature.cor
   listing_ <- clf$feature.cor
-
-
-
   # initialize some parameteres
   if(is.null(clf$params$mtry))
   {
@@ -434,36 +288,45 @@ sota.rf_fit_ovo <- function(X, y, clf) {
     mod.res$unpenalized_fit_ <- NA
     mod.res$intercept_       <- NA
     mod.res$sign_            <- NA
+
+    liste_model_sota <- list()
+    for (j in 1:(length(collect_rf))){
+
+      liste_model_sota[[j]] = mod.res
+    }
+
+      for(ko in 1:(length(liste_model_sota))){
+        liste_model_sota[[ko]]$obj <-  collect_rf[[ko]]
+        liste_model_sota[[ko]]$names_ <-  list_selected_[[ko]]
+        liste_model_sota[[ko]]$indices_ <-  list_indices[[ko]]
+      }
+
+
+    mod.res = liste_model_sota
+
+
     # evaluate all
     mod.res                  <- evaluateModel_ovo(mod = mod.res,
                                                   X = X,
                                                   y = y,
                                                   clf = clf,
+                                                  approch = approch,
                                                   eval.all = TRUE,
                                                   force.re.evaluation = TRUE,
                                                   estim.feat.importance = TRUE)
     if(clf$params$verbose)
     {
-      try(printModel(mod = mod.res, method = clf$params$print_ind_method, score = "fit_"), silent = TRUE)
+      ##try(printModel(mod = mod.res, method = clf$params$print_ind_method, score = "fit_"), silent = TRUE)
     }
     # Create a resulting model collection object
     model_collection[[i]]    <- list(mod.res)
 
   }# end of sparsity loop
-
   # names(model_collection) <- paste("k",clf$params$sparsity, sep="_")
   # list(model_collection=model_collection, best.model.id=best.model)
   names(model_collection)    <- paste("k",clf$params$sparsity, sep="_")
-
   return(model_collection)
-
-
 }
-
-
-
-
-
 
 # NOTE to print a random forrest object we used the code written by Rafael Zambrano here in stacks exchange https://stats.stackexchange.com/questions/41443/how-to-actually-plot-a-sample-tree-from-randomforestgettree
 
@@ -598,17 +461,6 @@ tree_func <- function(final_model,
 
   return(plot)
 }
-
-#tree_func(final_model = obj, 100)
-
-
-
-
-
-
-
-
-
 
 
 

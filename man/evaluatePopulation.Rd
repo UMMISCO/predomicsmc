@@ -2,10 +2,10 @@
 % Please edit documentation in R/globale_ovo.R
 \name{evaluatePopulation}
 \alias{evaluatePopulation}
-\alias{evaluatePopulation_ovo}
-\title{evaluateModel_ovo}
+\alias{evaluatePopulation_mc}
+\title{evaluateModel_mc}
 \usage{
-evaluatePopulation_ovo(
+evaluatePopulation_mc(
   X,
   y,
   clf,
@@ -15,6 +15,7 @@ evaluatePopulation_ovo(
   estim.feat.importance = FALSE,
   mode = "train",
   delete.null.models = TRUE,
+  approch = "ovo",
   lfolds = NULL
 )
 }
@@ -47,5 +48,5 @@ an individual ovo object
 Evaluates an entire population of models, that be predomics objects or individuals
 }
 \details{
-evaluate Model one versus one
+evaluate Model multi class
 }

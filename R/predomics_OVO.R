@@ -18,7 +18,7 @@
 ################################################################
 
 #' fit: runs the classifier on a dataset
-#' @title fit_OVO
+#' @title fit_mc
 #' @import doSNOW
 #' @import snow
 #' @import doRNG
@@ -47,20 +47,19 @@
 #' @return An experiment object containing the classifier along with the
 #' classification results as a sub-element
 #' @export
-fit_OVO <- function(X,
+fit_mc <- function(X,
                     y,
                     clf,
                     cross.validate = FALSE,
                     lfolds = NULL,
-                    nfolds = 10,
+                    nfolds = 2,
                     parallelize.folds = TRUE,
                     compute.importance = TRUE,
                     return.all = FALSE,
                     log.file = "parallel.log",
+                    approch ="ovo",
                     path = NULL)
 {
-
-
   # test the classifier object
   if(!isClf(clf))
   {
@@ -153,30 +152,33 @@ fit_OVO <- function(X,
                                          return.data = FALSE) # to avoid having to recompute this all the time
     }else # classification
     {
-
+      # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
       nClasse <- unique(y)
-      feature.cor   <- list()
-      list_y <- list()
-      list_X <- list()
-      k <- 1
-
-
-
-      for (i in 1:(length(nClasse)-1)) {
-        for (j in (i+1):length(nClasse)) {
+      feature.cor   <- list() # List of different combinations of feature.cor
+      list_y <- list() #  List of different combinations of y
+      list_X <- list() #  List of different combinations of X
+      if (approch == "ovo") {
+        k <- 1
+        for (i in 1:(length(nClasse)-1)) {
+          for (j in (i+1):length(nClasse)) {
+            class_i <- nClasse[i]
+            class_j <- nClasse[j]
+            indices <- which(y == class_i | y == class_j)
+            y_pair <- y[indices]
+            X_pair <- X[, indices]
+            list_y[[k]] <- as.vector(y_pair)
+            list_X[[k]] <- X_pair
+            k <- k + 1
+          }
+        }
+      } else {
+        for (i in 1:length(nClasse)) {
           class_i <- nClasse[i]
-          class_j <- nClasse[j]
-          indices <- which(y == class_i | y == class_j)
-          y_pair <- y[indices]
-          y_pair <- as.vector(y_pair)
-          X_pair <- X[,indices]
-          list_y[[k]] <- y_pair
-          list_X[[k]] <- X_pair
-
-          k <- k+1
+          y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+          list_y[[i]] <- as.vector(y_temp)
+          list_X[[i]] <- X
         }
       }
-
 
       for (i in 1:(length(list_y))) {
         feature.cor[[i]]     <- filterfeaturesK(data = list_X[[i]],
@@ -206,37 +208,14 @@ fit_OVO <- function(X,
     warning("runClassifier: does not seem to have produced a pvalue")
   }
 
-
-
   # store the initial order and indexes
   clf$data          <- list()
-  list_y <- list()
-  list_X <- list()
   list_features <- list()
-  k <- 1
-  y <- as.vector(y)
-  nClasse <- unique(y)
-
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      X_pair <- X[,indices]
-      list_y[[k]] <- y_pair
-      list_X[[k]] <- X_pair
-      list_features[[k]] <- as.character(rownames(X_pair))
-      k <- k + 1
-    }
-  }
-
-
   clf$data$features <- list_features
   names(clf$data$features) <- clf$data$features
-  list_XX <- list()
-  list_min <- list()
-  list_max <- list()
+  list_XX <- list() # List of X combinations
+  list_min <- list() # List min of X
+  list_max <- list() # List max of X
 
   for (i in 1:(length(list_X))) {
     Xi <- list_X[[i]][rownames(clf$feature.cor[[i]])[1:max.nb.features],]
@@ -253,7 +232,7 @@ fit_OVO <- function(X,
 
   # compute the coefficients once for all to improve performance
   cat("... Computing ternary coefficients for speedup\n")
-  coeffs          <- getSign_ovo(X = X, y = y, clf = clf, parallel.local = FALSE)
+  coeffs          <- getSign_mc(X = X, y = y, clf = clf, approch = approch, parallel.local = FALSE)
   clf$coeffs_     <- coeffs # add them to the clf
 
 
@@ -391,7 +370,7 @@ fit_OVO <- function(X,
              cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
            },
 
-         terga1_ovo=
+         terga1_mc=
            {
              cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
            },
@@ -405,6 +384,13 @@ fit_OVO <- function(X,
            {
              cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
            },
+
+         terBeam_mc=
+           {
+             cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
+           },
+
+
          metal=
            {
              cat('... model fitting based on aggregating different Heuristics ...\n')
@@ -439,15 +425,16 @@ fit_OVO <- function(X,
   {
     cat("... No cross validation mode\n")
     res.clf               <- list()
-    res.clf$classifier    <- runClassifier_ovo(X, y, clf)
+    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch)
 
   } else
   {
     cat("... Cross validation mode\n")
     res.clf               <- list()
     res.clf$classifier    <- list()
+    res.clf$lfolds        <- lfolds
 
-    res.clf$crossVal      <- runCrossval_ovo(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all)
+    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch)
 
     # store the whole dataset results in the right place
     res.clf$classifier    <- res.clf$crossVal$whole
@@ -488,25 +475,40 @@ fit_OVO <- function(X,
         }
 
         # for each model add a vector with feature importance
-        for(i in 1:length(pop))
-        {
+
+        for (i in 1:length(pop)) {
           # MDA generalization
           pop[[i]]$mda.cv_ <- rep(0, length(pop[[i]]$names_))
           names(pop[[i]]$mda.cv_) <- pop[[i]]$names_
-          ind.features <- intersect(pop[[i]]$names_, names(feature.importance.cv))
-          pop[[i]]$mda.cv_[ind.features] <- feature.importance.cv[ind.features]
+          for (j in 1:length(pop[[i]]$names_)) {
+            name <- pop[[i]]$names_[[j]]
+            ind.feature <- match(name, names(feature.importance.cv))
+            if (!is.na(ind.feature) && length(ind.feature) == 1) {
+              pop[[i]]$mda.cv_[j] <- feature.importance.cv[[ind.feature]]
+            }
+          }
 
           # prevalence in top models in the folds
           pop[[i]]$prev.cv_ <- rep(0, length(pop[[i]]$names_))
           names(pop[[i]]$prev.cv_) <- pop[[i]]$names_
-          ind.features <- intersect(pop[[i]]$names_, names(feature.prevalence.cv))
-          pop[[i]]$prev.cv_[ind.features] <- feature.prevalence.cv[ind.features]
+          for (j in 1:length(pop[[i]]$names_)) {
+            name <- pop[[i]]$names_[[j]]
+            ind.feature <- match(name, names(feature.prevalence.cv))
+            if (!is.na(ind.feature) && length(ind.feature) == 1) {
+              pop[[i]]$prev.cv_[j] <- feature.prevalence.cv[[ind.feature]]
+            }
+          }
 
           # MDA empirical
           pop[[i]]$mda_ <- rep(0, length(pop[[i]]$names_))
           names(pop[[i]]$mda_) <- pop[[i]]$names_
-          ind.features <- intersect(pop[[i]]$names_, names(feature.importance))
-          pop[[i]]$mda_[ind.features] <- feature.importance[ind.features]
+          for (j in 1:length(pop[[i]]$names_)) {
+            name <- pop[[i]]$names_[[j]]
+            ind.feature <- match(name, names(feature.importance))
+            if (!is.na(ind.feature) && length(ind.feature) == 1) {
+              pop[[i]]$mda_[j] <- feature.importance[[ind.feature]]
+            }
+          }
         }
 
         # convert to model collection and put back
@@ -549,13 +551,8 @@ fit_OVO <- function(X,
   class(res.clf) <- c("experiment","predomics")
 
   return(res.clf)
+
 }
-
-
-
-
-
-
 
 #' Runs the learning on a dataset
 #' @title runClassifier_ovo
@@ -569,7 +566,7 @@ fit_OVO <- function(X,
 #' @param x_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @param y_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @return the classifier along with the classification results as a sub-element
-runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
+runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo")
 {
 
   if(clf$params$verbose) cat("... Entering runClassifier\n")
@@ -612,10 +609,10 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
              res <- terga1_fit(X, y, clf)
            },
 
-         terga1_ovo=
+         terga1_mc=
            {
              if(clf$params$verbose) cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
-             res <- terga1_ovo_fit(X, y, clf)
+             res <- terga1_ovo_fit(X, y, clf,approch = approch)
            },
          terga2=
            {
@@ -627,6 +624,13 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
              if(clf$params$verbose) cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
              res <- terBeam_fit(X, y, clf)
            },
+
+         terBeam_mc=
+           {
+             if(clf$params$verbose) cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
+             res <- terBeam_fit_ovo(X, y, clf,approch = approch)
+           },
+
          metal=
            {
              if(clf$params$verbose)  cat('... model fitting based on aggregating different Heuristics ...\n')
@@ -684,7 +688,7 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
     }
 
     # for each of the best models in the population compute the importance in the test population
-    efip.fold <- evaluateFeatureImportanceInPopulation_ovo(pop = pop.fold,
+    efip.fold <- evaluateFeatureImportanceInPopulation_mc(pop = pop.fold,
                                                            X = x_test,
                                                            y = y_test,
                                                            clf = clf,
@@ -693,6 +697,7 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
                                                            method = "extensive",
                                                            seed = c(1:10), # 10 times the perturbation for more accurate importance
                                                            aggregation = "mean",
+                                                           approch = approch,
                                                            verbose = clf$params$verbose)
     clf$fip <- efip.fold
   }
@@ -702,11 +707,6 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
     cat("=> DBG: after efip\n")
   }
 
-  # if(isModelCollection(clf$models))
-  #{
-  # update the final indexes as the input X
-  #clf$models <- updateObjectIndex(obj = clf$models, features = clf$data$features[[1]])
-  #}
 
   clf$execTime <- as.numeric(Sys.time() - startingTime, units = "mins")
 
@@ -718,7 +718,6 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
   return(clf)
 }
 
-
 #' Compute the cross-validation emprirical and generalization scores
 #' @title runCrossval_ovo
 #' @description Compute the cross-validation emprirical and generalization scores.
@@ -729,7 +728,7 @@ runClassifier_ovo <- function(X, y, clf, x_test = NULL, y_test = NULL)
 #' @param return.all: return all results from the crossvalidation for feature stability testing
 #' @return a list containing empirical, generalisation scores for each fold as well as a matrix with the mean values.
 #' @export
-runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = FALSE)
+runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE)
 {
 
   # test the classifier object
@@ -867,12 +866,12 @@ runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = 
 
             cat("=> DBG: before runclassifier\n")
 
-            runClassifier_ovo(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch)
           }else
           {
             try(
               {
-                runClassifier_ovo(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test)
+                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch)
               }, silent = TRUE
             )
           }
@@ -938,12 +937,12 @@ runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = 
 
       if(clf$params$debug)
       {
-        res.all[[i]]                    <- runClassifier_ovo(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test)
+        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch)
       }else
       {
         res.all[[i]]                    <- try(
           {
-            runClassifier_ovo(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch)
           }, silent = FALSE
         ) # end try
       } # end else debug
@@ -953,14 +952,19 @@ runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = 
   if(clf$params$verbose) cat("... Cross validation finished\n")
 
   # store the empirical result separately
+
+
   res.crossval$whole <- res.all[[1]]
   # omit it from the empirical results as they will be extracted separately and
   res.all <- res.all[-1]
   # also clean the lfolds object
   lfolds  <- lfolds[-1]
 
+
+
   # results for FEATURE IMPORTANCE
   # the MDA for each fold
+
   mda.all <- as.data.frame(matrix(NA, nrow = nrow(X), ncol = length(res.all)))
   rownames(mda.all) <- rownames(X); colnames(mda.all) <- names(res.all)
   # create also results for the standard deviation and the prevalence in the folds
@@ -1030,10 +1034,10 @@ runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = 
         k_sparse.name     <- names(res_train.digest$best_models)[k]
         mod               <- res_train.digest$best_models[[k_sparse.name]]
         # update the final indexes as the input X
-        mod               <- updateObjectIndex(obj = mod, features = rownames(X))
+        mod               <- updateObjectIndex_mc(obj = mod, features = rownames(X))
         #mod.train         <- evaluateModel(mod = mod, X=x_train, y=y_train, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, mode='train')
         mod.train         <- mod # since this is the same as computed above
-        mod.test          <- evaluateModel_ovo(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, mode='test')
+        mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test')
 
         if(!is.null(mod.train) & !is.null(mod.test))
         {
@@ -1091,22 +1095,22 @@ runCrossval_ovo <- function(X, y, clf, lfolds = NULL, nfolds = 10, return.all = 
       if(isClf(res.all[[i]]))
       {
         # if results are valid
-        if(!is.null(res.all[[i]]$fip))
+        if(!is.null(res.all[[i]]$fip[[1]]))
         {
           # if object exist
-          if(!is.null(res.all[[i]]$fip$mda))
+          if(!is.null(res.all[[i]]$fip[[1]]$mda))
           {
-            mda.all[res.all[[i]]$fip$feat.catalogue,i] <- res.all[[i]]$fip$mda
+            mda.all[res.all[[i]]$fip[[1]]$feat.catalogue,i] <- res.all[[i]]$fip[[1]]$mda
           }
           # if object exist
-          if(!is.null(res.all[[i]]$fip$sda))
+          if(!is.null(res.all[[i]]$fip[[1]]$sda))
           {
-            sda.all[res.all[[i]]$fip$feat.catalogue,i] <- res.all[[i]]$fip$sda
+            sda.all[res.all[[i]]$fip[[1]]$feat.catalogue,i] <- res.all[[i]]$fip[[1]]$sda
           }
           # if object exist
-          if(!is.null(res.all[[i]]$fip$pda))
+          if(!is.null(res.all[[i]]$fip[[1]]$pda))
           {
-            pda.all[res.all[[i]]$fip$feat.catalogue,i] <- res.all[[i]]$fip$pda
+            pda.all[res.all[[i]]$fip[[1]]$feat.catalogue,i] <- res.all[[i]]$fip[[1]]$pda
           }
         }
       }else
