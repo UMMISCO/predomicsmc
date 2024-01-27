@@ -3932,3 +3932,56 @@ predict_ova <- function(mod, class_names) {
 }
 
 
+#' Function to predict the class for each "Class 1 vs Class 2" combination.
+#' @title predict_ovo
+#' @description Function to predict the class for each "Class1 vs Class2" combination.
+#' @param y: the response vector
+#' @param mod: object model
+#' @return list of class predict
+#' @export
+predict_ovo <- function(mod, y) {
+
+  list_y <- list()
+  nClasse <- unique(y)
+  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
+  k <- 1
+  for (i in 1:(length(nClasse)-1)) {
+    for (j in (i+1):length(nClasse)) {
+      class_i <- nClasse[i]
+      class_j <- nClasse[j]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
+      list_y[[k]] <- as.vector(y_pair)
+      k <- k + 1
+    }
+  }
+
+  num_combinations <- length(list_y)
+  predictions_list <- list()
+
+  for (comb_index in 1:num_combinations) {
+    intercept <- model$intercept[[comb_index]]
+    scores <- model$score[[comb_index]]
+    num_samples <- length(scores)
+
+    # Get the unique values of the current combination.
+    class_values <- list_y[[comb_index]]
+    unique_classes <- unique(class_values)
+
+    # Initialize the prediction vector for this combination
+    predictions <- character(length = num_samples)
+
+    for (sample_index in 1:num_samples) {
+      # Prediction for the current sample
+      decision_value <- scores[sample_index]
+      predictions[sample_index] <- ifelse(decision_value > intercept,unique_classes[2],unique_classes[1])
+    }
+
+    # Add the prediction vector to the list.
+    predictions_list[[comb_index]] <- predictions
+  }
+
+  return(predictions_list)
+}
+
+
