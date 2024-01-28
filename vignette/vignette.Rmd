@@ -94,7 +94,7 @@ X_equilibre <- donnees_equilibrees$X
 #table(y_equilibre)
 
 set.seed(42)
-indices_division <- createDataPartition(y_equilibre, p = 0.98, list = FALSE)
+indices_division <- createDataPartition(y_equilibre, p = 0.96, list = FALSE)
 
 # Diviser yvec_trie en 80% train et 20% test
 y <- as.vector(y_equilibre[indices_division])
@@ -127,7 +127,7 @@ class(clf)  # the class of the classifier object
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_mc(X = X.test, y = y.test, clf = clf,approch="ovo", cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  res_clf <- fit_mc(X = X.test, y = y.test, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
   # save results
   save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
 }
@@ -702,10 +702,11 @@ print(confusion_matrix)
 
 
 ```{r}
-# voici les résultats de mon modele avec one versus one
-print(mod)
-#voici les différentes combinaison de l'approche one versus one
-print(list_y)
+# Using the function to aggregate predictions.
+aggregated_predictions <- aggregate_predictions(classes_list, score_list)
+
+# Affichage des prédictions agrégées
+print(aggregated_predictions)
 ```
 
 

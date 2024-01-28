@@ -3985,3 +3985,50 @@ predict_ovo <- function(mod, y) {
 }
 
 
+
+
+
+#' One versus all predictions aggregation function.
+#' @title aggregate_predictions
+#' @description One versus all predictions aggregation function.
+#' @param classes_list: List of one versus all predictions
+#' @param score_list: List of one versus all score
+#' @return vector of class aggregate
+#' @export
+aggregate_predictions <- function(classes_list, score_list) {
+  # Initialization of the aggregation vector
+  aggregated_predictions <- character(length = length(classes_list[[1]]))
+
+  # Loop for each position
+  for (i in seq_along(aggregated_predictions)) {
+    # Retrieve classes and scores for this position
+    current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
+    scores <- sapply(score_list, function(score_vector) score_vector[i])
+
+    # Check if 'ALL' is present in the classes
+    if ("ALL" %in% current_classes) {
+      # Filter the classes that are not 'ALL
+      non_all_classes <- current_classes[current_classes != "ALL"]
+
+      # If non-'ALL' classes are present, choose the one with the highest score.
+      if (length(non_all_classes) > 0) {
+        max_score_index <- which.max(scores[current_classes %in% non_all_classes])
+        predicted_class <- non_all_classes[max_score_index]
+      } else {
+        # If all classes are 'ALL,' choose either 'ALL' or another class at random.
+        predicted_class <- "ALL"
+      }
+    } else {
+      # If 'ALL' is not present, choose the class with the highest score.
+      max_score_index <- which.max(scores)
+      predicted_class <- current_classes[max_score_index]
+    }
+
+    # Fill the aggregation vector at position i.
+    aggregated_predictions[i] <- predicted_class
+  }
+
+  return(aggregated_predictions)
+}
+
+
