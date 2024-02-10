@@ -431,15 +431,18 @@ evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
 }
 
 
+# Créer un data frame pour ggplot
+##data <- data.frame(Distance = unlist(normalize_scores),
+                  ## Models = rep(c("Bact1_vs_All", "Bact2_vs_All", "Prev_vs_All", "Rum_vs_All"), each = length(normalize_scores[[1]])))
 
+# Créer le graphique de points dispersés
+##library(ggplot2)
 
-
-
-
-
-
-
-
+##ggplot(data, aes(x = Models, y = Distance, color = Models)) +
+ ## geom_jitter(position = position_jitter(width = 0.2, height = 0), size = 2) +
+ ## labs(title = "Plot of normalized score distances ", x = "Combinaisons", y = "Distances") +
+ ## scale_color_discrete(name = "Combinaisons") +
+  ##theme_minimal()
 
 
 

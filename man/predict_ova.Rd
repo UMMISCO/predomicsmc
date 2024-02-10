@@ -4,7 +4,7 @@
 \alias{predict_ova}
 \title{predict_ova}
 \usage{
-predict_ova(mod, class_names)
+predict_ova(mod, y)
 }
 \arguments{
 \item{y:}{the response vector}

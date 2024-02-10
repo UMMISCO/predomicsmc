@@ -94,7 +94,7 @@ X_equilibre <- donnees_equilibrees$X
 #table(y_equilibre)
 
 set.seed(42)
-indices_division <- createDataPartition(y_equilibre, p = 0.96, list = FALSE)
+indices_division <- createDataPartition(y_equilibre, p = 0.1, list = FALSE)
 
 # Diviser yvec_trie en 80% train et 20% test
 y <- as.vector(y_equilibre[indices_division])
@@ -127,7 +127,7 @@ class(clf)  # the class of the classifier object
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_mc(X = X.test, y = y.test, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
   # save results
   save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
 }
@@ -187,6 +187,9 @@ best.model_terga1_mcovo <- res_clf.dig_terga1ova$best$model
 
 
 
+```{r}
+normalize_scores
+```
 
 
 
@@ -599,101 +602,15 @@ mod <- res_clf.dig_terbeamova$best$model
 
 
 ```{r}
-# Vecteur original
-y <- c("BACT1", "BACT1", "BACT2", "BACT2", "PREV", "PREV", "RUM", "RUM")
 
-# Prédictions de différents modèles
-model1 <- c("ALL", "BACT1", "ALL", "ALL", "ALL", "ALL", "ALL", "ALL")
-model2 <- c("ALL", "ALL", "BACT2", "BACT2", "ALL", "ALL", "ALL", "BACT2")
-model3 <- c("ALL", "ALL", "ALL", "ALL", "PREV", "PREV", "ALL", "ALL")
-model4 <- c("ALL", "ALL", "ALL", "ALL", "ALL", "ALL", "RUM", "RUM")
-
-# Liste des prédictions des modèles
-predictions_list <- list(model1, model2, model3, model4)
-
-# Fonction pour agréger les prédictions par vote majoritaire
-aggregate_predictions <- function(predictions_list) {
-  num_models <- length(predictions_list)
-  num_samples <- length(predictions_list[[1]])
-
-  aggregated_predictions <- character(num_samples)
-
-  for (i in 1:num_samples) {
-    votes <- table(unlist(lapply(predictions_list, function(model) model[i])))
-    aggregated_predictions[i] <- names(votes)[which.min(votes)]
-  }
-
-  return(aggregated_predictions)
-}
-
-# Utilisation de la fonction avec vos prédictions
-final_predictions <- aggregate_predictions(predictions_list)
-
-# Afficher les prédictions agrégées
-print(final_predictions)
 
 
 
 ```
 
 ```{r}
-# Fonction pour agréger les prédictions en utilisant la méthode du score maximum
-aggregate_predictions <- function(predictions) {
-  result <- character(length(predictions[[1]]))
-  
-  for (i in seq_along(predictions[[1]])) {
-    # Extraire les scores pour chaque classe
-    scores <- sapply(predictions, `[`, i)
-    
-    # Vérifier si tous les scores sont égaux ou manquants
-    if (length(unique(scores[!is.na(scores)])) == 1) {
-      result[i] <- "TIE"
-    } else {
-      # Obtenir les fréquences des scores
-      score_counts <- table(scores)
-      
-      # Trouver les indices des scores les plus fréquents
-      max_indices <- which(score_counts == max(score_counts))
-      
-      # Choisir de manière aléatoire parmi les scores les plus fréquents
-      selected_score <- as.numeric(names(sample(score_counts[max_indices], 1)))
-      
-      # Trouver l'indice de la classe correspondante pour le score choisi
-      selected_index <- which(scores == selected_score)
-      
-      # Récupérer le nom de la classe correspondante
-      result[i] <- names(predictions[[1]])[selected_index[1]]
-    }
-  }
-  
-  return(result)
-}
-
-
-
-# Exemple de prédictions one-versus-all avec des scores aléatoires
-set.seed(123)  # Pour la reproductibilité des résultats
-predictions_list <- list(
-  runif(4),  # Scores pour BACT1
-  runif(4),  # Scores pour BACT2
-  runif(4),  # Scores pour PREV
-  runif(4)   # Scores pour RUM
-)
-
-# Appliquer la méthode du score maximum à chaque observation
-aggregated_predictions <- aggregate_predictions(predictions_list)
-
-# Vraies valeurs (remplacez par vos vraies valeurs)
-true_values <- c("BACT1", "BACT2", "PREV", "RUM")
-
-# Assurer que les prédictions agrégées ont la même longueur que les vraies valeurs
-aggregated_predictions <- aggregated_predictions[1:length(true_values)]
-
-# Créer la table de contingence
-confusion_matrix <- table(Prédiction = aggregated_predictions, Réalité = true_values)
-
-# Afficher la table de contingence
-print(confusion_matrix)
+class_names = unique(y)
+classes_list <- predict_ova(mod, class_names)
 
 
 ```
@@ -702,10 +619,9 @@ print(confusion_matrix)
 
 
 ```{r}
-# Using the function to aggregate predictions.
+
 aggregated_predictions <- aggregate_predictions(classes_list, score_list)
 
-# Affichage des prédictions agrégées
 print(aggregated_predictions)
 ```
 
@@ -713,4 +629,42 @@ print(aggregated_predictions)
 
 
 
+```{r}
+aggregate_predictions <- function(classes_list, score_list, list_intercept) {
+  # Initialization of the aggregation vector
+  aggregated_predictions <- character(length = length(classes_list[[1]]))
+
+  # Loop for each position
+  for (i in seq_along(aggregated_predictions)) {
+    # Retrieve classes and scores for this position
+    current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
+    scores <- sapply(score_list, function(score_vector) score_vector[i])
+
+    # Check if all classes are 'ALL'
+    if (all(current_classes == "ALL")) {
+      # If all classes are 'ALL,' choose the one with the highest score.
+      max_score_index <- which.max(scores)
+      predicted_class <- unique(y[max_score_index])
+    } else {
+      # If 'ALL' is not the only class, choose the class with the highest score.
+      non_all_classes <- current_classes[current_classes != "ALL"]
+      if (length(non_all_classes) > 0) {
+        max_score_index <- which.max(scores[current_classes %in% non_all_classes])
+        predicted_class <- non_all_classes[max_score_index]
+      } else {
+        # If no non-'ALL' classes, choose either 'ALL' or another class with the highest score.
+        max_score_index <- which.max(scores)
+        predicted_class <- unique(y[max_score_index])
+      }
+    }
+
+    # Fill the aggregation vector at position i.
+    aggregated_predictions[i] <- predicted_class
+  }
+
+  return(aggregated_predictions)
+}
+
+
+```
 

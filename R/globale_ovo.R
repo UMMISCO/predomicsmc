@@ -734,7 +734,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     }
   }
 
-list_mod = mod
+  list_mod = mod
 
   if (mode == "test") {
     if (isModelSota(mod)) {
@@ -788,59 +788,59 @@ list_mod = mod
       }
     } else{
 
-    liste_indicess <- list()
-    liste_namess <- list()
-    liste_coeffss <- list()
-    liste_signn <- list()
-    liste_scoree <- list()
-    liste_pos <- list()
-    liste_neg <- list()
-    liste_matrix <- list()
-    list_mod <- list()
-    liste_indicess = mod$indices_
-    liste_namess = mod$names_
-    liste_coeffss = mod$coeffs_
-    liste_signn = mod$sign_
-    liste_scoree = mod$score_
-    liste_pos = mod$pos_score_
-    liste_neg = mod$neg_score_
-    liste_matrix = mod$confusionMatrix_
+      liste_indicess <- list()
+      liste_namess <- list()
+      liste_coeffss <- list()
+      liste_signn <- list()
+      liste_scoree <- list()
+      liste_pos <- list()
+      liste_neg <- list()
+      liste_matrix <- list()
+      list_mod <- list()
+      liste_indicess = mod$indices_
+      liste_namess = mod$names_
+      liste_coeffss = mod$coeffs_
+      liste_signn = mod$sign_
+      liste_scoree = mod$score_
+      liste_pos = mod$pos_score_
+      liste_neg = mod$neg_score_
+      liste_matrix = mod$confusionMatrix_
 
-for (j in 1:(length(list_y))){
-  temp_list <- list(
-    learner = mod$learner,
-    language = mod$language,
-    objective = mod$objective,
-    evalToFit = mod$evalToFit,
-    indices_ = liste_indicess[[j]],
-    names_ = liste_namess[[j]],
-    coeffs_ = liste_coeffss[[j]],
-    fit_ = mod$fit_,
-    unpenalized_fit_ = mod$unpenalized_fit_,
-    auc_ = mod$auc_,
-    accuracy_ = mod$accuracy_,
-    cor_ = mod$cor_,
-    aic_ = mod$aic_,
-    intercept_ = mod$intercept_,
-    eval.sparsity = mod$eval.sparsity,
-    precision_ = mod$precision_,
-    recall_ = mod$recall_,
-    f1_ = mod$f1_,
-    sign_ = liste_signn[[j]],
-    rsq_ = mod$rsq_,
-    ser_ = mod$ser_,
-    score_ = liste_scoree[[j]],
-    pos_score_ = liste_pos[[j]],
-    neg_score_ = liste_neg[[j]],
-    confusionMatrix_ = liste_matrix[[j]]
-  )
-  list_mod[[j]] <- temp_list
-}
-}
+      for (j in 1:(length(list_y))){
+        temp_list <- list(
+          learner = mod$learner,
+          language = mod$language,
+          objective = mod$objective,
+          evalToFit = mod$evalToFit,
+          indices_ = liste_indicess[[j]],
+          names_ = liste_namess[[j]],
+          coeffs_ = liste_coeffss[[j]],
+          fit_ = mod$fit_,
+          unpenalized_fit_ = mod$unpenalized_fit_,
+          auc_ = mod$auc_,
+          accuracy_ = mod$accuracy_,
+          cor_ = mod$cor_,
+          aic_ = mod$aic_,
+          intercept_ = mod$intercept_,
+          eval.sparsity = mod$eval.sparsity,
+          precision_ = mod$precision_,
+          recall_ = mod$recall_,
+          f1_ = mod$f1_,
+          sign_ = liste_signn[[j]],
+          rsq_ = mod$rsq_,
+          ser_ = mod$ser_,
+          score_ = liste_scoree[[j]],
+          pos_score_ = liste_pos[[j]],
+          neg_score_ = liste_neg[[j]],
+          confusionMatrix_ = liste_matrix[[j]]
+        )
+        list_mod[[j]] <- temp_list
+      }
+    }
   }
-mod_res <- list()
-mod_res <- list_mod[[1]]
-mod.res = list_mod
+  mod_res <- list()
+  mod_res <- list_mod[[1]]
+  mod.res = list_mod
 
   # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
   for(i in 1:length(list_mod)){
@@ -983,132 +983,132 @@ mod.res = list_mod
   #mod.res <- mod.res
   if(mode == "train"){
 
-  mod.res <- mod.res
-  nClass = length(mod.res)
+    mod.res <- mod.res
+    nClass = length(mod.res)
 
-  learnerr <- mod.res[[1]]$learner
-  languagee <- mod.res[[1]]$language
-  objectivee <- mod.res[[1]]$objective
-  evalToFitt <- mod.res[[1]]$evalToFit
-  indicess <- list()
-  fit_ovo = 0
-  unpenalized_fit_ovo = 0
-  auc_ovo =0
-  accuracy_ovo = 0
-  intercept_ovo <- 0
-  list_intercept_mc <- list()
-  eval.sparsity_ovo <- 0
-  precision_ovo = 0
-  recall_ovo = 0
-  f1_ovo = 0
-  confusionMatrix_ovo <- list()
-  namess <- list()
-  coeffss <- list()
-  corr <- NA
-  aicc <- NA
-  signn <- list()
-  rsqq <- NA
-  serr <- NA
-  scoree <- list()
-  pos_scoree <- list()
-  neg_scoree <- list()
+    learnerr <- mod.res[[1]]$learner
+    languagee <- mod.res[[1]]$language
+    objectivee <- mod.res[[1]]$objective
+    evalToFitt <- mod.res[[1]]$evalToFit
+    indicess <- list()
+    fit_ovo = 0
+    unpenalized_fit_ovo = 0
+    auc_ovo =0
+    accuracy_ovo = 0
+    intercept_ovo <- list()
+    #list_intercept_mc <- list()
+    eval.sparsity_ovo <- 0
+    precision_ovo = 0
+    recall_ovo = 0
+    f1_ovo = 0
+    confusionMatrix_ovo <- list()
+    namess <- list()
+    coeffss <- list()
+    corr <- NA
+    aicc <- NA
+    signn <- list()
+    rsqq <- NA
+    serr <- NA
+    scoree <- list()
+    pos_scoree <- list()
+    neg_scoree <- list()
 
-  for(i in 1:length(mod.res)){
-    indicess[[i]] = mod.res[[i]]$indices_
-    namess[[i]] = mod.res[[i]]$names_
-    coeffss[[i]] = mod.res[[i]]$coeffs_
-    fit_ovo = fit_ovo + mod.res[[i]]$fit_
-    unpenalized_fit_ovo= unpenalized_fit_ovo + mod.res[[i]]$unpenalized_fit_
-    auc_ovo = auc_ovo + mod.res[[i]]$auc_
-    accuracy_ovo = accuracy_ovo + mod.res[[i]]$accuracy_
-    intercept_ovo =  mod.res[[i]]$intercept_[[1]]
-    list_intercept_mc[[i]] =  mod.res[[i]]$intercept_
-    eval.sparsity_ovo = eval.sparsity_ovo + mod.res[[i]]$eval.sparsity
-    signn[[i]] =  mod.res[[i]]$sign_
-    precision_ovo = precision_ovo + mod.res[[i]]$precision_
-    recall_ovo = recall_ovo + mod.res[[i]]$recall_
-    f1_ovo = f1_ovo + mod.res[[i]]$f1_
-    scoree[[i]] = mod.res[[i]]$score_
-    pos_scoree[[i]] = mod.res[[i]]$pos_score_
-    neg_scoree[[i]] = mod.res[[i]]$neg_score_
-    confusionMatrix_ovo[[i]] = mod.res[[i]]$confusionMatrix_
-  }
-  # retrieve average of evaluation metric
-  fit_ovo = fit_ovo/nClass
-  unpenalized_fit_ovo = unpenalized_fit_ovo/nClass
-  auc_ovo = auc_ovo/nClass
-  accuracy_ovo = accuracy_ovo/nClass
-  intercept_ovo = intercept_ovo
-  eval.sparsity_ovo =  eval.sparsity_ovo/nClass
-  precision_ovo = precision_ovo/nClass
-  recall_ovo = recall_ovo/nClass
-  f1_ovo = f1_ovo/nClass
-  confusionMatrix_ovo = confusionMatrix_ovo
+    for(i in 1:length(mod.res)){
+      indicess[[i]] = mod.res[[i]]$indices_
+      namess[[i]] = mod.res[[i]]$names_
+      coeffss[[i]] = mod.res[[i]]$coeffs_
+      fit_ovo = fit_ovo + mod.res[[i]]$fit_
+      unpenalized_fit_ovo= unpenalized_fit_ovo + mod.res[[i]]$unpenalized_fit_
+      auc_ovo = auc_ovo + mod.res[[i]]$auc_
+      accuracy_ovo = accuracy_ovo + mod.res[[i]]$accuracy_
+      intercept_ovo[[i]] =  mod.res[[i]]$intercept_
+      #list_intercept_mc[[i]] =  mod.res[[i]]$intercept_
+      eval.sparsity_ovo = eval.sparsity_ovo + mod.res[[i]]$eval.sparsity
+      signn[[i]] =  mod.res[[i]]$sign_
+      precision_ovo = precision_ovo + mod.res[[i]]$precision_
+      recall_ovo = recall_ovo + mod.res[[i]]$recall_
+      f1_ovo = f1_ovo + mod.res[[i]]$f1_
+      scoree[[i]] = mod.res[[i]]$score_
+      pos_scoree[[i]] = mod.res[[i]]$pos_score_
+      neg_scoree[[i]] = mod.res[[i]]$neg_score_
+      confusionMatrix_ovo[[i]] = mod.res[[i]]$confusionMatrix_
+    }
+    # retrieve average of evaluation metric
+    fit_ovo = fit_ovo/nClass
+    unpenalized_fit_ovo = unpenalized_fit_ovo/nClass
+    auc_ovo = auc_ovo/nClass
+    accuracy_ovo = accuracy_ovo/nClass
+    #intercept_ovo = intercept_ovo
+    eval.sparsity_ovo =  eval.sparsity_ovo/nClass
+    precision_ovo = precision_ovo/nClass
+    recall_ovo = recall_ovo/nClass
+    f1_ovo = f1_ovo/nClass
+    confusionMatrix_ovo = confusionMatrix_ovo
 
-  #generate a single model output
-  mod_res$learner <- learnerr
-  mod_res$language <- languagee
-  mod_res$objective <- objectivee
-  mod_res$evalToFit <- evalToFitt
+    #generate a single model output
+    mod_res$learner <- learnerr
+    mod_res$language <- languagee
+    mod_res$objective <- objectivee
+    mod_res$evalToFit <- evalToFitt
 
-  if(isModelSota(mod.res[[1]])){
+    if(isModelSota(mod.res[[1]])){
 
-    list_obj <- list()
-    for(ko in 1:(length(mod.res))){
-      list_obj[[ko]] <-  mod.res[[ko]]$obj
+      list_obj <- list()
+      for(ko in 1:(length(mod.res))){
+        list_obj[[ko]] <-  mod.res[[ko]]$obj
+      }
+
     }
 
-  }
-
-  mod_res$coeffs_ <- coeffss
-  mod_res$indices_ <- indicess
-  mod_res$names_ <- namess
+    mod_res$coeffs_ <- coeffss
+    mod_res$indices_ <- indicess
+    mod_res$names_ <- namess
 
 
-  if(isModelSota(mod_res)){
-    mod_res$obj <- list_obj
+    if(isModelSota(mod_res)){
+      mod_res$obj <- list_obj
 
-  }
+    }
 
-  mod_res$fit_ <- fit_ovo
-  mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
-  mod_res$auc_ <-auc_ovo
-  mod_res$accuracy_ <- accuracy_ovo
-  mod_res$intercept_ <-  intercept_ovo
-  mod_res$list_intercept_mc <- list_intercept_mc
-  mod_res$eval.sparsity <- eval.sparsity_ovo
-  mod_res$precision_ <- precision_ovo
-  mod_res$recall_ <- recall_ovo
-  mod_res$f1_ <- f1_ovo
-  mod_res$cor_ <- corr
-  mod_res$aic_ <- aicc
-  mod_res$sign_ <- signn
-  mod_res$rsq_ <- rsqq
-  mod_res$ser_ <- serr
-  mod_res$score_ <- scoree
-  mod_res$pos_score_ <- pos_scoree
-  mod_res$neg_score_ <- neg_scoree
-  mod_res$confusionMatrix_ <- confusionMatrix_ovo
-  mod.res <- list()
-  mod.res <- mod_res
+    mod_res$fit_ <- fit_ovo
+    mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
+    mod_res$auc_ <-auc_ovo
+    mod_res$accuracy_ <- accuracy_ovo
+    mod_res$intercept_ <-  intercept_ovo
+    #mod_res$list_intercept_mc <- list_intercept_mc
+    mod_res$eval.sparsity <- eval.sparsity_ovo
+    mod_res$precision_ <- precision_ovo
+    mod_res$recall_ <- recall_ovo
+    mod_res$f1_ <- f1_ovo
+    mod_res$cor_ <- corr
+    mod_res$aic_ <- aicc
+    mod_res$sign_ <- signn
+    mod_res$rsq_ <- rsqq
+    mod_res$ser_ <- serr
+    mod_res$score_ <- scoree
+    mod_res$pos_score_ <- pos_scoree
+    mod_res$neg_score_ <- neg_scoree
+    mod_res$confusionMatrix_ <- confusionMatrix_ovo
+    mod.res <- list()
+    mod.res <- mod_res
   }
 
   else {
 
     mod_f1 <- numeric(length(mod.res))  # Initialize a vector to store the f1
 
-  # Loop to retrieve the f1 for each model.
-  for (i in seq_along(mod.res)) {
-    mod_f1[i] <- mod.res[[i]]$f1_
-  }
+    # Loop to retrieve the f1 for each model.
+    for (i in seq_along(mod.res)) {
+      mod_f1[i] <- mod.res[[i]]$f1_
+    }
 
-  # Find the index of the model with the highest f1
-  index_best_model <- which.max(mod_f1)
+    # Find the index of the model with the highest f1
+    index_best_model <- which.max(mod_f1)
 
-  # Access the model with the highest f1
-  best_model <- mod.res[[index_best_model]]
-  mod.res <- list()
-  mod.res = best_model
+    # Access the model with the highest f1
+    best_model <- mod.res[[index_best_model]]
+    mod.res <- list()
+    mod.res = best_model
   }
   return(mod.res)
 }
@@ -1134,12 +1134,12 @@ mod.res = list_mod
 #' @return an individual ovo object
 #' @export
 evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
-                                   force.re.evaluation = FALSE,
-                                   estim.feat.importance = FALSE,
-                                   mode = "train",
-                                   delete.null.models = TRUE,
-                                   approch = "ovo",
-                                   lfolds = NULL)
+                                  force.re.evaluation = FALSE,
+                                  estim.feat.importance = FALSE,
+                                  mode = "train",
+                                  delete.null.models = TRUE,
+                                  approch = "ovo",
+                                  lfolds = NULL)
 {
   # test the classifier object
   if(!isClf(clf))
@@ -1162,29 +1162,29 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
       if(mode == "train")
       {
         pop.lfolds[[f]] <- evaluatePopulation_mc(X[,-lfolds[[f]]],
-                                                  y[-lfolds[[f]]],
-                                                  clf,
-                                                  pop,
-                                                  eval.all = eval.all,
-                                                  force.re.evaluation = force.re.evaluation,
-                                                  estim.feat.importance = estim.feat.importance,
-                                                  mode = mode,
-                                                  delete.null.models = delete.null.models,
-                                                  approch = approch,
-                                                  lfolds = NULL)
+                                                 y[-lfolds[[f]]],
+                                                 clf,
+                                                 pop,
+                                                 eval.all = eval.all,
+                                                 force.re.evaluation = force.re.evaluation,
+                                                 estim.feat.importance = estim.feat.importance,
+                                                 mode = mode,
+                                                 delete.null.models = delete.null.models,
+                                                 approch = approch,
+                                                 lfolds = NULL)
       }else # test
       {
         pop.lfolds[[f]] <- evaluatePopulation_mc(X[,lfolds[[f]]],
-                                                  y[lfolds[[f]]],
-                                                  clf,
-                                                  pop,
-                                                  eval.all = eval.all,
-                                                  force.re.evaluation = force.re.evaluation,
-                                                  estim.feat.importance = estim.feat.importance,
-                                                  mode = mode,
-                                                  delete.null.models = delete.null.models,
-                                                  approch = approch,
-                                                  lfolds = NULL)
+                                                 y[lfolds[[f]]],
+                                                 clf,
+                                                 pop,
+                                                 eval.all = eval.all,
+                                                 force.re.evaluation = force.re.evaluation,
+                                                 estim.feat.importance = estim.feat.importance,
+                                                 mode = mode,
+                                                 delete.null.models = delete.null.models,
+                                                 approch = approch,
+                                                 lfolds = NULL)
       }
     }
     names(pop.lfolds) <- names(lfolds)
@@ -1200,14 +1200,14 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
     if(!is.null(mod))
     {
       res[[i]] <- evaluateModel_mc(mod = mod,
-                                    X = X,
-                                    y = y,
-                                    clf = clf,
-                                    eval.all = eval.all,
-                                    force.re.evaluation = force.re.evaluation,
-                                    estim.feat.importance = estim.feat.importance,
-                                    approch = approch,
-                                    mode = mode)
+                                   X = X,
+                                   y = y,
+                                   clf = clf,
+                                   eval.all = eval.all,
+                                   force.re.evaluation = force.re.evaluation,
+                                   estim.feat.importance = estim.feat.importance,
+                                   approch = approch,
+                                   mode = mode)
 
       #print(i)
     } # end else existance pop
@@ -1286,18 +1286,18 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
 
   pop <- list()
   list_pop <- list()
-    for(i in 1:length(v))
-    {
-      for(j in 1:length(list_y)){
+  for(i in 1:length(v))
+  {
+    for(j in 1:length(list_y)){
 
-        clf$coeffs_ = listcoeffs[[j]]
-        model <- v[[i]][[j]]
-        pop[[j]] <- sparseVecToModel(X=list_X[[j]], y = list_y[[j]], model, clf, eval.all = eval.all, obj = lobj[[i]][[j]])
-      }
-      list_pop[[i]] = pop
+      clf$coeffs_ = listcoeffs[[j]]
+      model <- v[[i]][[j]]
+      pop[[j]] <- sparseVecToModel(X=list_X[[j]], y = list_y[[j]], model, clf, eval.all = eval.all, obj = lobj[[i]][[j]])
     }
-    pop <- list()
-    pop = list_pop
+    list_pop[[i]] = pop
+  }
+  pop <- list()
+  pop = list_pop
 
 
   return(pop)
@@ -1332,7 +1332,7 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
 #' @export
 
 evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
-                                                      seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE)
+                                                     seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE)
 {
 
   nClasse <- unique(y)
@@ -1966,9 +1966,9 @@ computeCardEnrichment_mc <- function(v.card.mat, y)
 #' @return a ggplot object
 #' @export
 plotPrevalence_mc <- function(features, X, y, topdown = TRUE, main = "", plot = TRUE,
-                           col.pt = c("deepskyblue4", "firebrick4"),
-                           col.bg = c("deepskyblue1", "firebrick1"),
-                           zero.value = 0)
+                              col.pt = c("deepskyblue4", "firebrick4"),
+                              col.bg = c("deepskyblue1", "firebrick1"),
+                              zero.value = 0)
 {
   # build object
   v.prop <- getFeaturePrevalence_ovo(features = features, X = X, y = y, prop = TRUE, zero.value = zero.value)
@@ -2088,18 +2088,18 @@ plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE, main = "", p
 
   for (ik in 1:(length(list_y))) {
 
-  X = list_X[[ik]]
-  y = list_y[[ik]]
-  if(!is.matrix(X))
-  {
-    X <- as.matrix(X)
-  }
-  mode <- "classification"
-  if(class(y) == "numeric" & length(table(y)) > 2)
-  {
-    #cat("... plotAbundanceByClass will not work for a continous y - probably in regression mode. Adapting as a uniclass\n")
-    mode <- "regression"
-  }
+    X = list_X[[ik]]
+    y = list_y[[ik]]
+    if(!is.matrix(X))
+    {
+      X <- as.matrix(X)
+    }
+    mode <- "classification"
+    if(class(y) == "numeric" & length(table(y)) > 2)
+    {
+      #cat("... plotAbundanceByClass will not work for a continous y - probably in regression mode. Adapting as a uniclass\n")
+      mode <- "regression"
+    }
   }
   if(mode == "classification")
   {
@@ -2108,91 +2108,91 @@ plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE, main = "", p
       X = list_X[[ib]]
       y = list_y[[ib]]
 
-    # get levels
-    lev <- names(table(y))
+      # get levels
+      lev <- names(table(y))
 
-    # compute p-value of the non parametric abundance test
-    if(length(features) == 1)
-    {
-      dat <- t(as.matrix(X[features, ]))
-      rownames(dat) <- features
-      datl1 <- t(as.matrix(X[features, y == lev[1]]))
-      rownames(datl1) <- features
-      datl2 <- t(as.matrix(X[features, y == lev[2]]))
-      rownames(datl2) <- features
-    }else
-    {
-      dat <- X[features, ]
-      datl1 <- X[features, y == lev[1]]
-      datl2 <- X[features, y == lev[2]]
-      if(ncol(X) == 1)
+      # compute p-value of the non parametric abundance test
+      if(length(features) == 1)
       {
-        dat <- as.matrix(dat)
-        datl1 <- as.matrix(datl1)
-        datl2 <- as.matrix(datl2)
-      }
-    }
-
-    dat.test <- filterfeaturesK(dat, y, k = nrow(dat), sort = FALSE)
-
-    if(plot)
-    {
-      pvals <- dat.test$p
-      qvals <- rep("",nrow(dat.test))
-      qvals[dat.test$q<0.05] <- "*"
-
-      datl1.reshape <- melt(datl1)
-      colnames(datl1.reshape) <- c("feature","observation","abundance")
-      datl1.reshape$class <- rep(lev[1], nrow(datl1.reshape))
-
-      datl2.reshape <- melt(datl2)
-      colnames(datl2.reshape) <- c("feature","observation","abundance")
-      datl2.reshape$class <- rep(lev[2], nrow(datl2.reshape))
-
-      dat.reshape <- as.data.frame(t(data.frame(t(datl1.reshape), t(datl2.reshape))))
-      dat.reshape$abundance <- as.numeric(as.character(dat.reshape$abundance))
-
-      # fix factor level order
-      if(topdown)
-      {
-        # use the same factor levels as features
-        dat.reshape$feature <- factor(dat.reshape$feature, levels=rev(features))
+        dat <- t(as.matrix(X[features, ]))
+        rownames(dat) <- features
+        datl1 <- t(as.matrix(X[features, y == lev[1]]))
+        rownames(datl1) <- features
+        datl2 <- t(as.matrix(X[features, y == lev[2]]))
+        rownames(datl2) <- features
       }else
       {
-        # use the same factor levels as features
-        dat.reshape$feature <- factor(dat.reshape$feature, levels=features)
+        dat <- X[features, ]
+        datl1 <- X[features, y == lev[1]]
+        datl2 <- X[features, y == lev[2]]
+        if(ncol(X) == 1)
+        {
+          dat <- as.matrix(dat)
+          datl1 <- as.matrix(datl1)
+          datl2 <- as.matrix(datl2)
+        }
       }
 
-      # plot object
-      p <- ggplot(dat.reshape, aes(x=feature, y = abundance, fill=class, color=class)) +
-        geom_boxplot() +
-        #scale_x_continuous(limits = range(dat.reshape$abundance)) +
-        coord_flip() +
-        #facet_grid(. ~ class) +
-        theme_bw() +
-        scale_color_manual(values = col.pt) +
-        scale_fill_manual(values = col.bg) +
-        theme(legend.position="none") +
-        ggtitle(main)
+      dat.test <- filterfeaturesK(dat, y, k = nrow(dat), sort = FALSE)
 
-      pad <- max(dat.reshape$abundance) + max(dat.reshape$abundance)*0.1
+      if(plot)
+      {
+        pvals <- dat.test$p
+        qvals <- rep("",nrow(dat.test))
+        qvals[dat.test$q<0.05] <- "*"
 
-      if(topdown){
-        p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = rev(qvals), color="gray", size=7)
-      }else{
-        p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = qvals, color="gray", size=7)
+        datl1.reshape <- melt(datl1)
+        colnames(datl1.reshape) <- c("feature","observation","abundance")
+        datl1.reshape$class <- rep(lev[1], nrow(datl1.reshape))
+
+        datl2.reshape <- melt(datl2)
+        colnames(datl2.reshape) <- c("feature","observation","abundance")
+        datl2.reshape$class <- rep(lev[2], nrow(datl2.reshape))
+
+        dat.reshape <- as.data.frame(t(data.frame(t(datl1.reshape), t(datl2.reshape))))
+        dat.reshape$abundance <- as.numeric(as.character(dat.reshape$abundance))
+
+        # fix factor level order
+        if(topdown)
+        {
+          # use the same factor levels as features
+          dat.reshape$feature <- factor(dat.reshape$feature, levels=rev(features))
+        }else
+        {
+          # use the same factor levels as features
+          dat.reshape$feature <- factor(dat.reshape$feature, levels=features)
+        }
+
+        # plot object
+        p <- ggplot(dat.reshape, aes(x=feature, y = abundance, fill=class, color=class)) +
+          geom_boxplot() +
+          #scale_x_continuous(limits = range(dat.reshape$abundance)) +
+          coord_flip() +
+          #facet_grid(. ~ class) +
+          theme_bw() +
+          scale_color_manual(values = col.pt) +
+          scale_fill_manual(values = col.bg) +
+          theme(legend.position="none") +
+          ggtitle(main)
+
+        pad <- max(dat.reshape$abundance) + max(dat.reshape$abundance)*0.1
+
+        if(topdown){
+          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = rev(qvals), color="gray", size=7)
+        }else{
+          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = qvals, color="gray", size=7)
+        }
+        list_p[[ib]] = p
+        return(list_p)
+      }else
+      {
+        list_dat.test[[ib]] = data.test
+        return(list_dat.test)
       }
-      list_p[[ib]] = p
-      return(list_p)
-    }else
-    {
-      list_dat.test[[ib]] = data.test
-      return(list_dat.test)
-    }
 
     }
 
-    }else # mode regression
+  }else # mode regression
   {
 
     for (m in 1:(length(list_y))) {
@@ -2201,74 +2201,74 @@ plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE, main = "", p
       y = list_y[[m]]
 
 
-    # get levels
+      # get levels
 
-    # compute p-value of the non parametric abundance test
-    if(length(features) == 1)
-    {
-      dat <- t(as.matrix(X[features, ]))
-      rownames(dat) <- features
-    }else
-    {
-      dat <- X[features, ]
-      if(ncol(X) == 1)
+      # compute p-value of the non parametric abundance test
+      if(length(features) == 1)
       {
-        dat <- as.matrix(dat)
-      }
-    }
-
-    # we can still correlate and compute p-values
-    dat.test <- filterfeaturesK(dat, y, k = nrow(dat), sort = FALSE)
-
-    if(plot)
-    {
-      pvals <- dat.test$p
-      qvals <- rep("",nrow(dat.test))
-      qvals[dat.test$q<0.05] <- "*"
-
-      dat.reshape <- melt(dat)
-      colnames(dat.reshape) <- c("feature","observation","abundance")
-      dat.reshape$class <- rep("all", nrow(dat.reshape))
-
-      # fix factor level order
-      if(topdown)
-      {
-        # use the same factor levels as features
-        dat.reshape$feature <- factor(dat.reshape$feature, levels=rev(features))
+        dat <- t(as.matrix(X[features, ]))
+        rownames(dat) <- features
       }else
       {
-        # use the same factor levels as features
-        dat.reshape$feature <- factor(dat.reshape$feature, levels=features)
+        dat <- X[features, ]
+        if(ncol(X) == 1)
+        {
+          dat <- as.matrix(dat)
+        }
       }
 
-      # plot object
-      p <- ggplot(dat.reshape, aes(x=feature, y = abundance, fill=class, color=class)) +
-        geom_boxplot() +
-        #scale_x_continuous(limits = range(dat.reshape$abundance)) +
-        coord_flip() +
-        #facet_grid(. ~ class) +
-        theme_bw() +
-        scale_color_manual(values = "gray40") +
-        scale_fill_manual(values = "gray80") +
-        theme(legend.position="none") +
-        ggtitle(main)
+      # we can still correlate and compute p-values
+      dat.test <- filterfeaturesK(dat, y, k = nrow(dat), sort = FALSE)
 
-      pad <- max(dat.reshape$abundance) + max(dat.reshape$abundance)*0.1
+      if(plot)
+      {
+        pvals <- dat.test$p
+        qvals <- rep("",nrow(dat.test))
+        qvals[dat.test$q<0.05] <- "*"
 
-      if(topdown){
-        p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = rev(qvals), color="gray", size=7)
-      }else{
-        p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = qvals, color="gray", size=7)
+        dat.reshape <- melt(dat)
+        colnames(dat.reshape) <- c("feature","observation","abundance")
+        dat.reshape$class <- rep("all", nrow(dat.reshape))
+
+        # fix factor level order
+        if(topdown)
+        {
+          # use the same factor levels as features
+          dat.reshape$feature <- factor(dat.reshape$feature, levels=rev(features))
+        }else
+        {
+          # use the same factor levels as features
+          dat.reshape$feature <- factor(dat.reshape$feature, levels=features)
+        }
+
+        # plot object
+        p <- ggplot(dat.reshape, aes(x=feature, y = abundance, fill=class, color=class)) +
+          geom_boxplot() +
+          #scale_x_continuous(limits = range(dat.reshape$abundance)) +
+          coord_flip() +
+          #facet_grid(. ~ class) +
+          theme_bw() +
+          scale_color_manual(values = "gray40") +
+          scale_fill_manual(values = "gray80") +
+          theme(legend.position="none") +
+          ggtitle(main)
+
+        pad <- max(dat.reshape$abundance) + max(dat.reshape$abundance)*0.1
+
+        if(topdown){
+          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = rev(qvals), color="gray", size=7)
+        }else{
+          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = qvals, color="gray", size=7)
+        }
+
+        list_p[[ik]] = p
+
+        return(list_p)
+      }else
+      {
+        list_dat.test[[m]] = data.test
+        return(list_dat.test)
       }
-
-      list_p[[ik]] = p
-
-      return(list_p)
-    }else
-    {
-      list_dat.test[[m]] = data.test
-      return(list_dat.test)
-    }
     }
   }
 
@@ -2331,19 +2331,19 @@ makeFeatureAnnot_ovot <- function(pop, X, y, clf, approch = "ovo")
   ##suppressWarnings(feat.abund.wilcox <- plotAbundanceByClass_ovo(features = rownames(pop.noz), X, y, plot=FALSE)[,c("p","q","status")])
 
 
- ## for (w in 1:length(feat.abund.wilcox)){
- ## colnames(feat.abund.wilcox[[w]]) <- c("wilcox.p", "wilcox.q", "wilcox.class")
- ## }
+  ## for (w in 1:length(feat.abund.wilcox)){
+  ## colnames(feat.abund.wilcox[[w]]) <- c("wilcox.p", "wilcox.q", "wilcox.class")
+  ## }
 
   ##if(sum(dim(feat.preval.chisq)) == 0)
- ## {
-   ## feat.preval.chisq <- rep(NA, nrow(feat.abund.wilcox))
- ## }
+  ## {
+  ## feat.preval.chisq <- rep(NA, nrow(feat.abund.wilcox))
+  ## }
   # put everything together
   feature.df <- data.frame(feat.preval.X,
                            feat.preval.chisq,
                            mod.prev,
-                         ##  feat.abund.wilcox,
+                           ##  feat.abund.wilcox,
                            coeff.mean,
                            check.names = FALSE)
   return(list(pop.noz = pop.noz,
@@ -2942,13 +2942,13 @@ updateModelIndex_mc <- function(obj, features = NULL)
     stop("updateIndexes: the features object is missing, which is necessary for this function.")
   }
   for(i in 1:length(obj$indices_)){
-  obj$indices_[[i]]  <- match(obj$names_[[i]] , features)
+    obj$indices_[[i]]  <- match(obj$names_[[i]] , features)
 
 
-  if(any(is.na(obj$indices_[[i]] )))
-  {
-    warning("Some indices are not found.")
-  }
+    if(any(is.na(obj$indices_[[i]] )))
+    {
+      warning("Some indices are not found.")
+    }
   }
   return(obj)
 }
@@ -2983,12 +2983,12 @@ updateModelIndex_mc <- function(obj, features = NULL)
 #' model-size, their respective scores, the best model.
 #' @export
 digestmc <- function(obj,
-                   penalty = NULL,
-                   best.cv = TRUE,
-                   best.k = NULL,
-                   plot = FALSE,
-                   omit.na = TRUE)
-  {
+                     penalty = NULL,
+                     best.cv = TRUE,
+                     best.k = NULL,
+                     plot = FALSE,
+                     omit.na = TRUE)
+{
   if(!isExperiment(obj))
   {
     stop("digest: The object did not pass the sanity check for an Experiment object!")
@@ -3916,9 +3916,10 @@ listOfModels2ModelCollection <- function(pop, nBest = NA)
 #' @param mod: object model
 #' @return list of class predict
 #' @export
-predict_ova <- function(mod, class_names) {
+predict_ova <- function(mod, y) {
   intercept_list <- mod$list_intercept_mc
   score_list <- mod$score_
+  class_names <- unique(y)
 
   # List of prediction vectors for each combination.
   predictions_list <- lapply(seq_along(intercept_list), function(j) {
@@ -3960,8 +3961,8 @@ predict_ovo <- function(mod, y) {
   predictions_list <- list()
 
   for (comb_index in 1:num_combinations) {
-    intercept <- model$intercept[[comb_index]]
-    scores <- model$score[[comb_index]]
+    intercept <- mod$intercept_[[comb_index]]
+    scores <- mod$score[[comb_index]]
     num_samples <- length(scores)
 
     # Get the unique values of the current combination.
@@ -3985,10 +3986,43 @@ predict_ovo <- function(mod, y) {
 }
 
 
+#' This function calculates the maximum score combinations.
+#' @title CalculateDistanceScores_
+#' @description This function calculates the maximum score  combinations..
+#' @param mod: object model
+#' @return list of max scores
+#' @export
+CalculateDistanceScores_ <- function(mod){
+  score_list <- list()
+  intercept <- list()
+  scores <- list()
+  score_list <- mod$score_
+  intercept <- mod$list_intercept_mc
+  for(i in 1: length(intercept)){
+    scores[[i]] = abs((score_list[[i]]) - intercept[[i]])
+  }
+  return(scores)
+}
+
+#' Function to normalize a vector between 0 and 1.
+#' @title normalize_scores
+#' @description Function to normalize a vector between 0 and 1.
+#' @param mod: object model
+#' @return list of scores normalize
+#' @export
+normalize_scores <- function(scores) {
+  # Function to normalize a vector between 0 and 1
+  normalize <- function(x) {
+    (x - min(x)) / (max(x) - min(x))
+  }
+  # Normalize each vector in the list
+  normalized_scores <- lapply(scores, normalize)
+
+  return(normalized_scores)
+}
 
 
-
-#' One versus all predictions aggregation function.
+#' predictions aggregation function.
 #' @title aggregate_predictions
 #' @description One versus all predictions aggregation function.
 #' @param classes_list: List of one versus all predictions
@@ -3998,30 +4032,36 @@ predict_ovo <- function(mod, y) {
 aggregate_predictions <- function(classes_list, score_list) {
   # Initialization of the aggregation vector
   aggregated_predictions <- character(length = length(classes_list[[1]]))
-
+  names_class = unique(y)
   # Loop for each position
   for (i in seq_along(aggregated_predictions)) {
     # Retrieve classes and scores for this position
     current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
     scores <- sapply(score_list, function(score_vector) score_vector[i])
 
-    # Check if 'ALL' is present in the classes
-    if ("ALL" %in% current_classes) {
-      # Filter the classes that are not 'ALL
-      non_all_classes <- current_classes[current_classes != "ALL"]
-
-      # If non-'ALL' classes are present, choose the one with the highest score.
-      if (length(non_all_classes) > 0) {
-        max_score_index <- which.max(scores[current_classes %in% non_all_classes])
-        predicted_class <- non_all_classes[max_score_index]
-      } else {
-        # If all classes are 'ALL,' choose either 'ALL' or another class at random.
-        predicted_class <- "ALL"
-      }
+    # Check if all positions are 'ALL'
+    if (all(current_classes == "ALL")) {
+      # Predict the class with the highest score
+      predicted_class <- names_class[which.max(scores)]
     } else {
-      # If 'ALL' is not present, choose the class with the highest score.
-      max_score_index <- which.max(scores)
-      predicted_class <- current_classes[max_score_index]
+      # Check if 'ALL' is present in the classes
+      if ("ALL" %in% current_classes) {
+        # Filter the classes that are not 'ALL'
+        non_all_classes <- current_classes[current_classes != "ALL"]
+
+        # If non-'ALL' classes are present, choose the one with the highest score.
+        if (length(non_all_classes) > 0) {
+          max_score_index <- which.max(scores[current_classes %in% non_all_classes])
+          predicted_class <- non_all_classes[max_score_index]
+        } else {
+          # If all classes are 'ALL,' choose either 'ALL' or another class at random.
+          predicted_class <- "ALL"
+        }
+      } else {
+        # If 'ALL' is not present, choose the class with the highest score.
+        max_score_index <- which.max(scores)
+        predicted_class <- current_classes[max_score_index]
+      }
     }
 
     # Fill the aggregation vector at position i.
@@ -4030,5 +4070,41 @@ aggregate_predictions <- function(classes_list, score_list) {
 
   return(aggregated_predictions)
 }
+
+
+
+#' Overall additional evaluation metrics.
+#' @title EvaluateAdditionnelGlobaleMetrics
+#' @description Overall additional evaluation metrics.
+#' @param  actual_labels: current class (y)
+#' @param aggregated predictions
+#' @return mod object
+#' @export
+EvaluateAdditionnelGlobaleMetrics <- function(predictions, actual_labels) {
+  # Calculation of the confusion matrix
+  confusion_matrix <- table(predictions, actual_labels)
+  # Calculation of the overall accuracy
+  accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+  # Calculation of overall precision, recall, and f1-score
+  precision <- confusion_matrix[2, 2] / sum(confusion_matrix[, 2])
+  recall <- confusion_matrix[2, 2] / sum(confusion_matrix[2, ])
+  f1 <- 2 * precision * recall / (precision + recall)
+  # Creation of the model object containing all metrics
+  mod <- list(
+    accuracy_ = accuracy,
+    fit_ = accuracy,
+    unpenalized_fit_ = accuracy,
+    precision_ = precision,
+    recall_ = recall,
+
+    f1 = f1,
+    confusion_matrix = confusion_matrix
+  )
+
+  return(mod)
+}
+
+
+
 
 
