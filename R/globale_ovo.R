@@ -3917,10 +3917,10 @@ listOfModels2ModelCollection <- function(pop, nBest = NA)
 #' @return list of class predict
 #' @export
 predict_ova <- function(mod, y) {
-  intercept_list <- mod$list_intercept_mc
+  intercept_list <- mod$intercept_
   score_list <- mod$score_
   class_names <- unique(y)
-
+  class_names <- as.character(class_names)
   # List of prediction vectors for each combination.
   predictions_list <- lapply(seq_along(intercept_list), function(j) {
     class_name <- class_names[j]
@@ -3997,7 +3997,7 @@ CalculateDistanceScores_ <- function(mod){
   intercept <- list()
   scores <- list()
   score_list <- mod$score_
-  intercept <- mod$list_intercept_mc
+  intercept <- mod$intercept_
   for(i in 1: length(intercept)){
     scores[[i]] = abs((score_list[[i]]) - intercept[[i]])
   }
@@ -4033,6 +4033,7 @@ aggregate_predictions <- function(classes_list, score_list) {
   # Initialization of the aggregation vector
   aggregated_predictions <- character(length = length(classes_list[[1]]))
   names_class = unique(y)
+  names_class <- as.character(class_names)
   # Loop for each position
   for (i in seq_along(aggregated_predictions)) {
     # Retrieve classes and scores for this position
@@ -4106,5 +4107,47 @@ EvaluateAdditionnelGlobaleMetrics <- function(predictions, actual_labels) {
 
 
 
+
+#' Overall population evaluation
+#' @title EvaluateAdditionnelGlobaleMetrics
+#' @description Overall population evaluation.
+#' @param  pop : object pop
+#' @param approch: approach
+#' @return overall pop object
+#' @export
+# Defining a function to evaluate the overall performance of a population of models.
+evaluatePopulation_overall <- function(pop, approach = "ovo") {
+  # Initializing an empty list to store the overall evaluation of each model.
+  pop_overall <- list
+
+  # Looping through each model in the population.
+  for(i in 1:length(pop)){
+    # Checking if approach is 'one-vs-one' (ovo) or 'one-vs-all' (ova).
+    if (approch == "ovo"){
+      # If 'ovo', use the predict_ovo function to generate predictions from the current model.
+      predictions <- predict_ovo(mod = pop[[i]], y)
+    } else{
+      # If not 'ovo', use the predict_ova function instead.
+      predictions <- predict_ova(mod = pop[[i]], y)
+    }
+
+
+
+    # Calculate the distance scores for the current model.
+    DistanceScores_ <- CalculateDistanceScores_(mod = pop[[i]])
+    # Normalize the distance scores.
+    normalize_scores <- normalize_scores(DistanceScores_)
+    # Aggregate the predictions based on the classes list and the normalized scores.
+    aggregate_predictions <- aggregate_predictions(classes_list = predictions, score_list = normalize_scores)
+    # Evaluate the global additional metrics for the current model.
+    mod <- EvaluateAdditionnelGlobaleMetrics(predictions = aggregate_predictions, actual_labels = y)
+
+    # Add the evaluated model to the overall population list.
+    pop_overall[[i]] = mod
+  }
+
+  # Return the list containing evaluated models with their respective metrics.
+  return(pop_overall)
+}
 
 

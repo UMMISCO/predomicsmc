@@ -321,6 +321,7 @@ terga1_ovo_fit <- function(X, y, clf, approch="ovo") {
     pop_last.mod <- listOfSparseVecToListOfModels_mc(X, y , clf = clf, v = pop_last,approch = approch)
     # evaluate the population
     pop.last.eval <- evaluatePopulation_mc(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE, approch=approch)
+    pop_overall <- evaluatePopulation_overall(pop = pop.last.eval, approach = approch)
     #for(i in 1:length(pop.last.eva
     # get the evaluation vector
     evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
