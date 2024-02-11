@@ -4,7 +4,7 @@
 \alias{aggregate_predictions}
 \title{aggregate_predictions}
 \usage{
-aggregate_predictions(classes_list, score_list)
+aggregate_predictions(classes_list, score_list, y)
 }
 \arguments{
 \item{classes_list:}{List of one versus all predictions}

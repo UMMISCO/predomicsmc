@@ -3993,16 +3993,29 @@ predict_ovo <- function(mod, y) {
 #' @return list of max scores
 #' @export
 CalculateDistanceScores_ <- function(mod){
-  score_list <- list()
-  intercept <- list()
-  scores <- list()
   score_list <- mod$score_
   intercept <- mod$intercept_
-  for(i in 1: length(intercept)){
-    scores[[i]] = abs((score_list[[i]]) - intercept[[i]])
+  scores <- list()
+
+  # Vérifier si 'score_list' contient uniquement des zéros
+  if (all(sapply(score_list, function(scores) all(scores == 0)))) {
+    # Si 'score_list' ne contient que des zéros, remplir 'scores' de listes de zéros de même taille
+    scores <- lapply(score_list, function(scores) rep(0, length(scores)))
+  } else {
+    # Si 'score_list' contient d'autres valeurs, effectuer le calcul des 'scores'
+    for(i in 1:length(intercept)){
+      # Calculer la différence absolue entre 'scores' et 'intercept'
+      scores[[i]] = abs((score_list[[i]]) - intercept[[i]])
+    }
   }
   return(scores)
 }
+
+
+
+
+
+
 
 #' Function to normalize a vector between 0 and 1.
 #' @title normalize_scores
@@ -4013,14 +4026,21 @@ CalculateDistanceScores_ <- function(mod){
 normalize_scores <- function(scores) {
   # Function to normalize a vector between 0 and 1
   normalize <- function(x) {
-    (x - min(x)) / (max(x) - min(x))
+    if (all(x == 0)) {
+      # Si le vecteur ne contient que des zéros, retournez-le sans changement
+      return(x)
+    } else {
+      # Sinon, normalisez le vecteur
+      return((x - min(x)) / (max(x) - min(x)))
+    }
   }
-  # Normalize each vector in the list
+
+  # Apply the normalize function to each vector in the list,
+  # checking if it contains only 0's or needs normalization.
   normalized_scores <- lapply(scores, normalize)
 
   return(normalized_scores)
 }
-
 
 #' predictions aggregation function.
 #' @title aggregate_predictions
@@ -4029,48 +4049,57 @@ normalize_scores <- function(scores) {
 #' @param score_list: List of one versus all score
 #' @return vector of class aggregate
 #' @export
-aggregate_predictions <- function(classes_list, score_list) {
+aggregate_predictions <- function(classes_list, score_list, y) {
   # Initialization of the aggregation vector
   aggregated_predictions <- character(length = length(classes_list[[1]]))
-  names_class = unique(y)
-  names_class <- as.character(class_names)
+  names_class <- unique(y) # Assurez-vous que 'y' est défini correctement ou passé à la fonction.
+  names_class <- as.character(names_class)
+
   # Loop for each position
   for (i in seq_along(aggregated_predictions)) {
     # Retrieve classes and scores for this position
     current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
     scores <- sapply(score_list, function(score_vector) score_vector[i])
 
-    # Check if all positions are 'ALL'
-    if (all(current_classes == "ALL")) {
-      # Predict the class with the highest score
-      predicted_class <- names_class[which.max(scores)]
+    # Check if all scores for the current position are zero
+    if (all(scores == 0)) {
+      # If all scores are zero, randomly choose a class from the list of unique classes
+      predicted_class <- sample(names_class, 1)
     } else {
-      # Check if 'ALL' is present in the classes
-      if ("ALL" %in% current_classes) {
-        # Filter the classes that are not 'ALL'
-        non_all_classes <- current_classes[current_classes != "ALL"]
-
-        # If non-'ALL' classes are present, choose the one with the highest score.
-        if (length(non_all_classes) > 0) {
-          max_score_index <- which.max(scores[current_classes %in% non_all_classes])
-          predicted_class <- non_all_classes[max_score_index]
-        } else {
-          # If all classes are 'ALL,' choose either 'ALL' or another class at random.
-          predicted_class <- "ALL"
-        }
+      # Proceed with existing logic when scores are not all zeros
+      if (all(current_classes == "ALL")) {
+        # Predict the class with the highest score when all current classes are 'ALL'
+        predicted_class <- names_class[which.max(scores)]
       } else {
-        # If 'ALL' is not present, choose the class with the highest score.
-        max_score_index <- which.max(scores)
-        predicted_class <- current_classes[max_score_index]
+        if ("ALL" %in% current_classes) {
+          non_all_classes <- current_classes[current_classes != "ALL"]
+          if (length(non_all_classes) > 0) {
+            # Choose the non-'ALL' class with the highest score
+            max_score_index <- which.max(scores[current_classes != "ALL"])
+            predicted_class <- non_all_classes[max_score_index]
+          } else {
+            # If we have only 'ALL' left after filtering, predict 'ALL'
+            predicted_class <- "ALL"
+          }
+        } else {
+          # If 'ALL' is not present, choose the class with the highest score
+          max_score_index <- which.max(scores)
+          predicted_class <- current_classes[max_score_index]
+        }
       }
     }
 
-    # Fill the aggregation vector at position i.
+    # Fill the aggregation vector at position i with the predicted class
     aggregated_predictions[i] <- predicted_class
   }
 
   return(aggregated_predictions)
 }
+
+
+
+
+
 
 
 
@@ -4116,9 +4145,9 @@ EvaluateAdditionnelGlobaleMetrics <- function(predictions, actual_labels) {
 #' @return overall pop object
 #' @export
 # Defining a function to evaluate the overall performance of a population of models.
-evaluatePopulation_overall <- function(pop, approach = "ovo") {
+evaluatePopulation_overall <- function(pop, y, approch = "ovo") {
   # Initializing an empty list to store the overall evaluation of each model.
-  pop_overall <- list
+  pop_overall <- list()
 
   # Looping through each model in the population.
   for(i in 1:length(pop)){
@@ -4138,7 +4167,7 @@ evaluatePopulation_overall <- function(pop, approach = "ovo") {
     # Normalize the distance scores.
     normalize_scores <- normalize_scores(DistanceScores_)
     # Aggregate the predictions based on the classes list and the normalized scores.
-    aggregate_predictions <- aggregate_predictions(classes_list = predictions, score_list = normalize_scores)
+    aggregate_predictions <- aggregate_predictions(classes_list = predictions, score_list = normalize_scores, y)
     # Evaluate the global additional metrics for the current model.
     mod <- EvaluateAdditionnelGlobaleMetrics(predictions = aggregate_predictions, actual_labels = y)
 
