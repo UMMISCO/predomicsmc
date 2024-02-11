@@ -4,7 +4,7 @@
 \alias{evaluatePopulation_overall}
 \title{EvaluateAdditionnelGlobaleMetrics}
 \usage{
-evaluatePopulation_overall(pop, y, approch = "ovo")
+evaluatePopulation_overall(pop, y, approch = "ova")
 }
 \arguments{
 \item{pop}{: object pop}

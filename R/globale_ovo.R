@@ -996,7 +996,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     auc_ovo =0
     accuracy_ovo = 0
     intercept_ovo <- list()
-    #list_intercept_mc <- list()
+    list_intercept_mc <- list()
     eval.sparsity_ovo <- 0
     precision_ovo = 0
     recall_ovo = 0
@@ -1022,7 +1022,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
       auc_ovo = auc_ovo + mod.res[[i]]$auc_
       accuracy_ovo = accuracy_ovo + mod.res[[i]]$accuracy_
       intercept_ovo[[i]] =  mod.res[[i]]$intercept_
-      #list_intercept_mc[[i]] =  mod.res[[i]]$intercept_
+      list_intercept_mc[[i]] =  mod.res[[i]]$intercept_
       eval.sparsity_ovo = eval.sparsity_ovo + mod.res[[i]]$eval.sparsity
       signn[[i]] =  mod.res[[i]]$sign_
       precision_ovo = precision_ovo + mod.res[[i]]$precision_
@@ -1074,8 +1074,8 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
     mod_res$auc_ <-auc_ovo
     mod_res$accuracy_ <- accuracy_ovo
-    mod_res$intercept_ <-  intercept_ovo
-    #mod_res$list_intercept_mc <- list_intercept_mc
+    mod_res$intercept_ <-  intercept_ovo[[1]]
+    mod_res$list_intercept_mc <- list_intercept_mc
     mod_res$eval.sparsity <- eval.sparsity_ovo
     mod_res$precision_ <- precision_ovo
     mod_res$recall_ <- recall_ovo
@@ -3917,10 +3917,9 @@ listOfModels2ModelCollection <- function(pop, nBest = NA)
 #' @return list of class predict
 #' @export
 predict_ova <- function(mod, y) {
-  intercept_list <- mod$intercept_
+  intercept_list <- mod$list_intercept_mc
   score_list <- mod$score_
   class_names <- unique(y)
-  class_names <- as.character(class_names)
   # List of prediction vectors for each combination.
   predictions_list <- lapply(seq_along(intercept_list), function(j) {
     class_name <- class_names[j]
@@ -3944,6 +3943,7 @@ predict_ovo <- function(mod, y) {
 
   list_y <- list()
   nClasse <- unique(y)
+  nClasse <- as.character(nClasse)
   # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
   k <- 1
   for (i in 1:(length(nClasse)-1)) {
@@ -3961,7 +3961,7 @@ predict_ovo <- function(mod, y) {
   predictions_list <- list()
 
   for (comb_index in 1:num_combinations) {
-    intercept <- mod$intercept_[[comb_index]]
+    intercept <- mod$list_intercept_mc[[comb_index]]
     scores <- mod$score[[comb_index]]
     num_samples <- length(scores)
 
@@ -3994,7 +3994,7 @@ predict_ovo <- function(mod, y) {
 #' @export
 CalculateDistanceScores_ <- function(mod){
   score_list <- mod$score_
-  intercept <- mod$intercept_
+  intercept <- mod$list_intercept_mc
   scores <- list()
 
   # Vérifier si 'score_list' contient uniquement des zéros
@@ -4145,7 +4145,7 @@ EvaluateAdditionnelGlobaleMetrics <- function(predictions, actual_labels) {
 #' @return overall pop object
 #' @export
 # Defining a function to evaluate the overall performance of a population of models.
-evaluatePopulation_overall <- function(pop, y, approch = "ovo") {
+evaluatePopulation_overall <- function(pop, y, approch = "ova") {
   # Initializing an empty list to store the overall evaluation of each model.
   pop_overall <- list()
 
@@ -4154,16 +4154,14 @@ evaluatePopulation_overall <- function(pop, y, approch = "ovo") {
     # Checking if approach is 'one-vs-one' (ovo) or 'one-vs-all' (ova).
     if (approch == "ovo"){
       # If 'ovo', use the predict_ovo function to generate predictions from the current model.
-      predictions <- predict_ovo(mod = pop[[i]], y)
+      predictions <- predict_ovo(mod = pop[[i]], y = y)
     } else{
       # If not 'ovo', use the predict_ova function instead.
       predictions <- predict_ova(mod = pop[[i]], y)
     }
 
-
-
     # Calculate the distance scores for the current model.
-    DistanceScores_ <- CalculateDistanceScores_(mod = pop[[i]])
+    DistanceScores_ <- CalculateDistanceScores_(mod = pop[[i]] )
     # Normalize the distance scores.
     normalize_scores <- normalize_scores(DistanceScores_)
     # Aggregate the predictions based on the classes list and the normalized scores.
@@ -4172,11 +4170,12 @@ evaluatePopulation_overall <- function(pop, y, approch = "ovo") {
     mod <- EvaluateAdditionnelGlobaleMetrics(predictions = aggregate_predictions, actual_labels = y)
 
     # Add the evaluated model to the overall population list.
-    pop_overall[[i]] = mod
+    pop_overall[[i]] <- mod
   }
 
   # Return the list containing evaluated models with their respective metrics.
   return(pop_overall)
 }
+
 
 
