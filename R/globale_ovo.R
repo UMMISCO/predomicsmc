@@ -4079,8 +4079,10 @@ aggregate_predictions_Max_Voting <- function(classes_list, score_list, y) {
       max_score_index <- which.max(valid_scores)
       predicted_class <- valid_classes[max_score_index]
     } else {
-      # If there are no valid classes (all were 'ALL'), randomly choose a class
-      predicted_class <- sample(names_class, 1)
+      # If there are no valid classes (all were 'ALL'), choose the class from 'ALL' with the highest score
+      max_score <- max(scores)  # first, find the max score from the original scores
+      max_score_indices <- which(scores == max_score)  # then find all the indices with max score
+      predicted_class <- names_class[max_score_indices[1]]  # choose the class for the first index with max score
     }
 
     # Fill the aggregation vector at position i with the predicted class
