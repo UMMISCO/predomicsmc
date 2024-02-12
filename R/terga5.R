@@ -446,22 +446,3 @@ evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
   ##theme_minimal()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

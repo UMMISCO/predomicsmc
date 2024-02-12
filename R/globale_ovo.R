@@ -4049,50 +4049,45 @@ normalize_scores <- function(scores) {
 #' @param score_list: List of one versus all score
 #' @return vector of class aggregate
 #' @export
-aggregate_predictions <- function(classes_list, score_list, y) {
-  # Initialization of the aggregation vector
+aggregate_predictions_Max_Voting <- function(classes_list, score_list, y) {
+  # Initialize the vector to hold the aggregated predictions with the appropriate length
   aggregated_predictions <- character(length = length(classes_list[[1]]))
-  names_class <- unique(y) # Assurez-vous que 'y' est défini correctement ou passé à la fonction.
+
+  # Create a character vector of the unique classes from y
+  names_class <- unique(y)
   names_class <- as.character(names_class)
 
-  # Loop for each position
+  # Iterate over each position in the aggregated predictions
   for (i in seq_along(aggregated_predictions)) {
-    # Retrieve classes and scores for this position
+    # Extract the classes and scores for the current position from each list
     current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
     scores <- sapply(score_list, function(score_vector) score_vector[i])
 
-    # Check if all scores for the current position are zero
+    # Exclude 'ALL' and retrieve corresponding scores
+    valid_classes_indices <- which(current_classes != "ALL")
+    valid_classes <- current_classes[valid_classes_indices]
+    valid_scores <- scores[valid_classes_indices]
+
+    # If all scores are zero, randomly choose a class from the list of unique classes
     if (all(scores == 0)) {
-      # If all scores are zero, randomly choose a class from the list of unique classes
       predicted_class <- sample(names_class, 1)
+    } else if (length(valid_classes) == 1) {
+      # If there is only one valid class, predict that class
+      predicted_class <- valid_classes
+    } else if (length(valid_classes) > 1) {
+      # If there are multiple valid classes, choose the class with the highest score
+      max_score_index <- which.max(valid_scores)
+      predicted_class <- valid_classes[max_score_index]
     } else {
-      # Proceed with existing logic when scores are not all zeros
-      if (all(current_classes == "ALL")) {
-        # Predict the class with the highest score when all current classes are 'ALL'
-        predicted_class <- names_class[which.max(scores)]
-      } else {
-        if ("ALL" %in% current_classes) {
-          non_all_classes <- current_classes[current_classes != "ALL"]
-          if (length(non_all_classes) > 0) {
-            # Choose the non-'ALL' class with the highest score
-            max_score_index <- which.max(scores[current_classes != "ALL"])
-            predicted_class <- non_all_classes[max_score_index]
-          } else {
-            # If we have only 'ALL' left after filtering, predict 'ALL'
-            predicted_class <- "ALL"
-          }
-        } else {
-          # If 'ALL' is not present, choose the class with the highest score
-          max_score_index <- which.max(scores)
-          predicted_class <- current_classes[max_score_index]
-        }
-      }
+      # If there are no valid classes (all were 'ALL'), randomly choose a class
+      predicted_class <- sample(names_class, 1)
     }
 
     # Fill the aggregation vector at position i with the predicted class
     aggregated_predictions[i] <- predicted_class
   }
 
+  # Return the final vector of aggregated predictions
   return(aggregated_predictions)
 }
 
@@ -4165,7 +4160,7 @@ evaluatePopulation_overall <- function(pop, y, approch = "ova") {
     # Normalize the distance scores.
     normalize_scores <- normalize_scores(DistanceScores_)
     # Aggregate the predictions based on the classes list and the normalized scores.
-    aggregate_predictions <- aggregate_predictions(classes_list = predictions, score_list = normalize_scores, y)
+    aggregate_predictions <- aggregate_predictions_Max_Voting(classes_list = predictions, score_list = normalize_scores, y)
     # Evaluate the global additional metrics for the current model.
     mod <- EvaluateAdditionnelGlobaleMetrics(predictions = aggregate_predictions, actual_labels = y)
 

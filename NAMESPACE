@@ -2,7 +2,7 @@
 
 export(CalculateDistanceScores_)
 export(EvaluateAdditionnelGlobaleMetrics)
-export(aggregate_predictions)
+export(aggregate_predictions_Max_Voting)
 export(computeCardEnrichment_mc)
 export(digestmc)
 export(evaluateAccuracy)
