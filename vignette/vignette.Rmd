@@ -188,18 +188,13 @@ best.model_terga1_mcovo <- res_clf.dig_terga1ova$best$model
 
 
 ```{r}
-normalize_scores
+mod = best.model_terga1_mcovo
 ```
 
+```{r}
+evaluateModel_mc <- evaluateModel_mc(mod, X=X, y= as.vector(y[1]), clf, eval.all = TRUE, force.re.evaluation = TRUE, estim.feat.importance = TRUE, approch = approch, mode = 'test')
 
-
-
-
-
-
-
-
-
+```
 
 
 
@@ -630,41 +625,10 @@ print(aggregated_predictions)
 
 
 ```{r}
-aggregate_predictions <- function(classes_list, score_list, list_intercept) {
-  # Initialization of the aggregation vector
-  aggregated_predictions <- character(length = length(classes_list[[1]]))
+predictions_list
 
-  # Loop for each position
-  for (i in seq_along(aggregated_predictions)) {
-    # Retrieve classes and scores for this position
-    current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
-    scores <- sapply(score_list, function(score_vector) score_vector[i])
-
-    # Check if all classes are 'ALL'
-    if (all(current_classes == "ALL")) {
-      # If all classes are 'ALL,' choose the one with the highest score.
-      max_score_index <- which.max(scores)
-      predicted_class <- unique(y[max_score_index])
-    } else {
-      # If 'ALL' is not the only class, choose the class with the highest score.
-      non_all_classes <- current_classes[current_classes != "ALL"]
-      if (length(non_all_classes) > 0) {
-        max_score_index <- which.max(scores[current_classes %in% non_all_classes])
-        predicted_class <- non_all_classes[max_score_index]
-      } else {
-        # If no non-'ALL' classes, choose either 'ALL' or another class with the highest score.
-        max_score_index <- which.max(scores)
-        predicted_class <- unique(y[max_score_index])
-      }
-    }
-
-    # Fill the aggregation vector at position i.
-    aggregated_predictions[i] <- predicted_class
-  }
-
-  return(aggregated_predictions)
-}
-
-
+```
+```{r}
+pre
 ```
 

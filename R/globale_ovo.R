@@ -354,25 +354,25 @@ evaluateFit_mc <- function(mod, X, y, clf, force.re.evaluation = FALSE,approch="
   listcoeffs <- clf$coeffs_
   list_mod <- mod
 
-  for(i in 1: length(list_y)) {
+ ### for(i in 1: length(list_y)) {
 
     # if the models is not a valid object
-    if(!isModel(mod[[1]]))
-    {
-      if(!is.character(mod[[1]]) | !is.numeric(mod[[1]]))
-      {
-        stop("evaluateFit: please provide a valid model object or a feature index vector.")
-      }
+   ### if(!isModel(mod[[1]]))
+   ### {
+     ### if(!is.character(mod[[1]]) | !is.numeric(mod[[1]]))
+     ### {
+       ### stop("evaluateFit: please provide a valid model object or a feature index vector.")
+      ###}
 
-      if(is.character(mod[[1]]))
-      {
+      ###if(is.character(mod[[1]]))
+      ###{
         # if model is of the form of variable names
-        mod[[1]] <- names2index(X = list_X[[1]], var.names = mod[[1]])
-      }
-      clf$coeffs_ <- listcoeffs[[1]]
-      mod[[1]] <- individual(X= list_X[[1]], y= list_y[[1]], clf = clf, ind = mod[[1]])
-    }
-  }
+       ### mod[[1]] <- names2index(X = list_X[[1]], var.names = mod[[1]])
+      ###}
+      ###clf$coeffs_ <- listcoeffs[[1]]
+      ###mod[[1]] <- individual(X= list_X[[1]], y= list_y[[1]], clf = clf, ind = mod[[1]])
+    ###}
+  ###}
 
 
   # compute the score in the case it is asked to recompute
@@ -3909,42 +3909,179 @@ listOfModels2ModelCollection <- function(pop, nBest = NA)
   return(res)
 }
 
-#' Function to predict the class for each "Class vs ALL" combination.
+#' This function predicts outcomes for a one-versus-one (OvA) classification model.
 #' @title predict_ova
-#' @description Function to predict the class for each "Class vs ALL" combination.
-#' @param y: the response vector
-#' @param mod: object model
-#' @return list of class predict
+#' @description This function predicts outcomes for a one-versus-one (OvA) classification model.
+#' @param y: The true class labels
+#' @param X: The feature matrix of the data to be predicted
+#' @param mod: The model object containing the OvA classification models
+#' @param clf: object clf
+#' @param force.re.evaluation: Boolean to force re-evaluation of the model even if it is already evaluated.
+#' @return This function returns the list of one-versus-all predictions and the list of normalized scores.
 #' @export
-predict_ova <- function(mod, y) {
-  intercept_list <- mod$list_intercept_mc
-  score_list <- mod$score_
+#'
+predict_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
+
+  # Initialize empty lists for models, class pairs, predictions, and scores
+  mods <- list()
+  list_y <- list()
+  predictions_list <- list()
+  scorelist <- list()
+
+  # Determine the number of combinations
+  n_combinations <- length(mod$score_)
+
+  # Copy models for each combination
+  for (i in 1:n_combinations) {
+    mods[[i]] <- list(
+      learner = mod$learner,
+      language = mod$language,
+      objective = mod$objective,
+      evalToFit = mod$evalToFit,
+      indices_ = mod$indices_[[i]],
+      names_ = mod$names_[[i]],
+      coeffs_ = mod$coeffs_[[i]],
+      fit_ = mod$fit_,
+      unpenalized_fit_ = mod$unpenalized_fit_,
+      auc_ = mod$auc_,
+      accuracy_ = mod$accuracy_,
+      cor_ = mod$cor_,
+      aic_ = mod$aic_,
+      intercept_ = mod$intercept_,
+      eval_sparsity = mod$eval.sparsity,
+      list_intercept_mc = mod$list_intercept_mc[[i]],
+      precision_ = mod$precision_,
+      recall_ = mod$recall_,
+      f1_ = mod$f1_,
+      sign_ = mod$sign_[[i]],
+      rsq_ = mod$rsq_,
+      ser_ = mod$ser_,
+      score_ = mod$score_[[i]],
+      pos_score_ = mod$pos_score_[[i]],
+      neg_score_ = mod$neg_score_[[i]],
+      confusionMatrix_ = mod$confusionMatrix_[[i]]
+    )
+  }
+
+  # Calculate scores for each model and store in scorelist
+  for(i in 1:length(mods)){
+    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = force.re.evaluation)
+  }
+
+  # Extract scores only
+  score_only_list <- lapply(scorelist, function(x) x$score_)
+  score_list <-  score_only_list
   class_names <- unique(y)
+  class_names <- as.vector(class_names)
+  intercept_list = mod$list_intercept_mc
   # List of prediction vectors for each combination.
-  predictions_list <- lapply(seq_along(intercept_list), function(j) {
+  predictions_list <- lapply(seq_along(score_list), function(j) {
     class_name <- class_names[j]
     sapply(score_list[[j]], function(score) {
       ifelse(score > intercept_list[[j]], class_name, "ALL")
     })
   })
 
-  return(predictions_list)
+  # Calculate distances between scores and intercepts
+  intercept <- mod$list_intercept_mc
+  scores_distance <- list()
+
+  # Check if 'score_list' contains only zeros
+  if (all(sapply(score_only_list, function(scores_distance) all(scores_distance == 0)))) {
+    # If 'score_list' contains only zeros, fill 'scores_distance' with zero lists of the same length
+    scores_distance <- lapply(score_only_list, function(scores_distance) rep(0, length(scores_distance)))
+  } else {
+    # If 'score_list' contains other values, calculate the distances
+    for(i in 1:length(intercept)){
+      # Calculate the absolute difference between 'score_list' and 'intercept'
+      scores_distance[[i]] = abs((score_only_list[[i]]) - intercept[[i]])
+    }
+  }
+
+  # Normalize function
+  normalize <- function(x) {
+    if (all(x == 0)) {
+      # If the vector contains only zeros, return it unchanged
+      return(x)
+    } else {
+      # Otherwise, normalize the vector
+      return((x - min(x)) / (max(x) - min(x)))
+    }
+  }
+
+  # Apply the normalize function to each vector in the list,
+  # checking if it contains only 0's or needs normalization.
+  normalized_scores <- lapply(scores_distance, normalize)
+
+  # Return predicted class labels for each combination, the corresponding score vectors, and the distances
+  return(list(predictions = predictions_list, scores = normalized_scores))
+
 }
 
 
-#' Function to predict the class for each "Class 1 vs Class 2" combination.
-#' @title predict_ovo
-#' @description Function to predict the class for each "Class1 vs Class2" combination.
-#' @param y: the response vector
-#' @param mod: object model
-#' @return list of class predict
-#' @export
-predict_ovo <- function(mod, y) {
 
+#' This function predicts outcomes for a one-versus-one (OvO) classification model.
+#' @title predict_ovo
+#' @description This function predicts outcomes for a one-versus-one (OvO) classification model.
+#' @param y: The true class labels
+#' @param X: The feature matrix of the data to be predicted
+#' @param mod: The model object containing the OvO classification models
+#' @param clf: object clf
+#' @param force.re.evaluation: Boolean to force re-evaluation of the model even if it is already evaluated.
+#' @return This function returns the list of one-versus-one predictions and the list of normalized scores.
+#' @export
+#'
+predict_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
+  # Initialize empty lists for models, class pairs, predictions, and scores
+  mods <- list()
   list_y <- list()
-  nClasse <- unique(y)
-  nClasse <- as.character(nClasse)
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
+  predictions_list <- list()
+  scorelist <- list()
+
+  # Determine the number of combinations
+  n_combinations <- length(mod$score_)
+
+  # Copy models for each combination
+  for (i in 1:n_combinations) {
+    mods[[i]] <- list(
+      learner = mod$learner,
+      language = mod$language,
+      objective = mod$objective,
+      evalToFit = mod$evalToFit,
+      indices_ = mod$indices_[[i]],
+      names_ = mod$names_[[i]],
+      coeffs_ = mod$coeffs_[[i]],
+      fit_ = mod$fit_,
+      unpenalized_fit_ = mod$unpenalized_fit_,
+      auc_ = mod$auc_,
+      accuracy_ = mod$accuracy_,
+      cor_ = mod$cor_,
+      aic_ = mod$aic_,
+      intercept_ = mod$intercept_,
+      eval_sparsity = mod$eval.sparsity,
+      list_intercept_mc = mod$list_intercept_mc[[i]],
+      precision_ = mod$precision_,
+      recall_ = mod$recall_,
+      f1_ = mod$f1_,
+      sign_ = mod$sign_[[i]],
+      rsq_ = mod$rsq_,
+      ser_ = mod$ser_,
+      score_ = mod$score_[[i]],
+      pos_score_ = mod$pos_score_[[i]],
+      neg_score_ = mod$neg_score_[[i]],
+      confusionMatrix_ = mod$confusionMatrix_[[i]]
+    )
+  }
+
+  # Calculate scores for each model and store in scorelist
+  for(i in 1:length(mods)){
+    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = force.re.evaluation)
+  }
+
+  # Extract scores only
+  score_only_list <- lapply(scorelist, function(x) x$score_)
+
+  # Decompose dataset into one-versus-one combinations
   k <- 1
   for (i in 1:(length(nClasse)-1)) {
     for (j in (i+1):length(nClasse)) {
@@ -3957,89 +4094,91 @@ predict_ovo <- function(mod, y) {
     }
   }
 
+  # Get the number of combinations
   num_combinations <- length(list_y)
-  predictions_list <- list()
 
+  # Predict class labels for each combination
   for (comb_index in 1:num_combinations) {
     intercept <- mod$list_intercept_mc[[comb_index]]
-    scores <- mod$score[[comb_index]]
+    scores <- score_only_list[[comb_index]]
     num_samples <- length(scores)
 
-    # Get the unique values of the current combination.
+    # Get unique classes
     class_values <- list_y[[comb_index]]
     unique_classes <- unique(class_values)
 
-    # Initialize the prediction vector for this combination
+    # Initialize prediction vector
     predictions <- character(length = num_samples)
 
+    # Make predictions based on decision values
     for (sample_index in 1:num_samples) {
-      # Prediction for the current sample
       decision_value <- scores[sample_index]
-      predictions[sample_index] <- ifelse(decision_value > intercept,unique_classes[2],unique_classes[1])
+      predictions[sample_index] <- ifelse(decision_value > intercept, unique_classes[2], unique_classes[1])
     }
 
-    # Add the prediction vector to the list.
+    # Add predictions to list
     predictions_list[[comb_index]] <- predictions
   }
 
-  return(predictions_list)
-}
-
-
-#' This function calculates the maximum score combinations.
-#' @title CalculateDistanceScores_
-#' @description This function calculates the maximum score  combinations..
-#' @param mod: object model
-#' @return list of max scores
-#' @export
-CalculateDistanceScores_ <- function(mod){
-  score_list <- mod$score_
+  # Calculate distances between scores and intercepts
   intercept <- mod$list_intercept_mc
-  scores <- list()
+  scores_distance <- list()
 
-  # Vérifier si 'score_list' contient uniquement des zéros
-  if (all(sapply(score_list, function(scores) all(scores == 0)))) {
-    # Si 'score_list' ne contient que des zéros, remplir 'scores' de listes de zéros de même taille
-    scores <- lapply(score_list, function(scores) rep(0, length(scores)))
+  # Check if 'score_list' contains only zeros
+  if (all(sapply(score_only_list, function(scores_distance) all(scores_distance == 0)))) {
+    # If 'score_list' contains only zeros, fill 'scores_distance' with zero lists of the same length
+    scores_distance <- lapply(score_only_list, function(scores_distance) rep(0, length(scores_distance)))
   } else {
-    # Si 'score_list' contient d'autres valeurs, effectuer le calcul des 'scores'
+    # If 'score_list' contains other values, calculate the distances
     for(i in 1:length(intercept)){
-      # Calculer la différence absolue entre 'scores' et 'intercept'
-      scores[[i]] = abs((score_list[[i]]) - intercept[[i]])
+      # Calculate the absolute difference between 'score_list' and 'intercept'
+      scores_distance[[i]] = abs((score_only_list[[i]]) - intercept[[i]])
     }
   }
-  return(scores)
-}
 
-
-
-
-
-
-
-#' Function to normalize a vector between 0 and 1.
-#' @title normalize_scores
-#' @description Function to normalize a vector between 0 and 1.
-#' @param mod: object model
-#' @return list of scores normalize
-#' @export
-normalize_scores <- function(scores) {
-  # Function to normalize a vector between 0 and 1
+  # Normalize function
   normalize <- function(x) {
     if (all(x == 0)) {
-      # Si le vecteur ne contient que des zéros, retournez-le sans changement
+      # If the vector contains only zeros, return it unchanged
       return(x)
     } else {
-      # Sinon, normalisez le vecteur
+      # Otherwise, normalize the vector
       return((x - min(x)) / (max(x) - min(x)))
     }
   }
 
   # Apply the normalize function to each vector in the list,
   # checking if it contains only 0's or needs normalization.
-  normalized_scores <- lapply(scores, normalize)
+  normalized_scores <- lapply(scores_distance, normalize)
 
-  return(normalized_scores)
+  # Return predicted class labels for each combination, the corresponding score vectors, and the distances
+  return(list(predictions = predictions_list, scores = normalized_scores))
+}
+
+
+
+# Function to aggregate one-versus-one predictions using majority voting
+#' @title aggregate_majoritaire_vote
+#' @description Function to aggregate one-versus-one predictions using majority voting.
+#' @param predictions_list: List of predictions
+#' @return vector of class aggregate
+#' @export
+aggregate_majoritaire_vote_ovo <- function(predictions_list) {
+  predictions_list = predictions_list$predictions
+  num_predictions <- length(predictions_list)  # Number of prediction vectors
+  num_samples <- length(predictions_list[[1]])  # Number of samples in one vector
+
+  aggregated_vector <- character(num_samples)  # Initialize aggregated vector
+
+  # Iterate over each sample
+  for (i in 1:num_samples) {
+    # Count votes for position i
+    votes <- table(sapply(predictions_list, `[`, i))
+    # Aggregate prediction for position i
+    aggregated_vector[i] <- names(sort(votes, decreasing = TRUE)[1])
+  }
+
+  return(aggregated_vector)
 }
 
 #' predictions aggregation function.
@@ -4049,8 +4188,10 @@ normalize_scores <- function(scores) {
 #' @param score_list: List of one versus all score
 #' @return vector of class aggregate
 #' @export
-aggregate_predictions_Max_Voting <- function(classes_list, score_list, y) {
+aggregate_predictions_Max_Voting <- function(list_predictions, y) {
   # Initialize the vector to hold the aggregated predictions with the appropriate length
+  classes_list = list_predictions$predictions
+  score_list = list_predictions$scores
   aggregated_predictions <- character(length = length(classes_list[[1]]))
 
   # Create a character vector of the unique classes from y
@@ -4092,7 +4233,6 @@ aggregate_predictions_Max_Voting <- function(classes_list, score_list, y) {
   # Return the final vector of aggregated predictions
   return(aggregated_predictions)
 }
-
 
 
 

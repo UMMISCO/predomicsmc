@@ -4,19 +4,25 @@
 \alias{predict_ova}
 \title{predict_ova}
 \usage{
-predict_ova(mod, y)
+predict_ova(mod, y, X, clf, force.re.evaluation = TRUE)
 }
 \arguments{
-\item{y:}{the response vector}
+\item{y:}{The true class labels}
 
-\item{mod:}{object model}
+\item{X:}{The feature matrix of the data to be predicted}
+
+\item{mod:}{The model object containing the OvA classification models}
+
+\item{clf:}{object clf}
+
+\item{force.re.evaluation:}{Boolean to force re-evaluation of the model even if it is already evaluated.}
 }
 \value{
-list of class predict
+This function returns the list of one-versus-all predictions and the list of normalized scores.
 }
 \description{
-Function to predict the class for each "Class vs ALL" combination.
+This function predicts outcomes for a one-versus-one (OvA) classification model.
 }
 \details{
-Function to predict the class for each "Class vs ALL" combination.
+This function predicts outcomes for a one-versus-one (OvA) classification model.
 }

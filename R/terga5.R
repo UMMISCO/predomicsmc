@@ -448,3 +448,24 @@ evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
 
 
 
+
+
+
+
+# Function to predict one-versus-one (OvO) classifications
+# Parameters:
+#   mod: Model object containing information about the trained model
+#   y: Vector of class labels
+#   X: Matrix of features
+#   clf: Classifier object for prediction
+#   force.re.evaluation: Boolean indicating whether to force re-evaluation of the model (default: TRUE)
+# Returns:
+#   List containing predicted class labels for each one-versus-one combination and the corresponding score vectors
+
+
+
+
+
+
+
+

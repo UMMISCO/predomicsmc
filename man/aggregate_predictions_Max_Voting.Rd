@@ -4,7 +4,7 @@
 \alias{aggregate_predictions_Max_Voting}
 \title{aggregate_predictions}
 \usage{
-aggregate_predictions_Max_Voting(classes_list, score_list, y)
+aggregate_predictions_Max_Voting(list_predictions, y)
 }
 \arguments{
 \item{classes_list:}{List of one versus all predictions}
