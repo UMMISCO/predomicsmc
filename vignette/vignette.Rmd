@@ -25,34 +25,6 @@ library(gtools)
 
 ## Setting the learner context
 
-```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
-chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
-load(chemin_du_dataset)
-set.seed(123)
-#recover the vector y
-yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-indices_tries <- order(yvec)
-yvec_trie <- yvec[indices_tries]
-X_general  <- mc.input$X[,indices_tries]
-# Créer un vecteur d'indices pour la division des données
-set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
-indices_division <- createDataPartition(yvec_trie, p = 0.8, list = FALSE)
-
-# Diviser yvec_trie en 80% train et 20% test
-y <- as.vector(yvec_trie[indices_division])
-y.test <- as.vector(yvec_trie[-indices_division])
-X <- X_general[,indices_division]
-X.test <- X_general[,-indices_division]
-
-# Vérifier la répartition dans chaque ensemble
-table(y)
-table(y.test)
-dim(X)
-dim(X.test)
-
-```
-
-`
 ```{r}
 chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
 load(chemin_du_dataset)
@@ -127,7 +99,7 @@ class(clf)  # the class of the classifier object
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE, nfolds = 1); # class(res_clf)
   # save results
   save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
 }
@@ -174,461 +146,45 @@ if(!runit)
 res_clf.dig_terga1ova <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
 ```
 
-### Visualizing the best model
+### best model
 
 ```{r best model, fig.width=7, warning=FALSE}
 
 # get the best model
-best.model_terga1_mcovo <- res_clf.dig_terga1ova$best$model
+mod <- res_clf.dig_terga1ova$best$model
 
 ```
 
 
+### Prediction one versus all
+```{r}
+predict_ova <- predict_ova(mod, y, X, clf, force.re.evaluation = TRUE)
+predict_ova
+```
 
 
+### `Aggregation Max Voting one versus all and table  contingency
+```{r}
+aggregate_predictions_Max_Voting <- aggregate_predictions_Max_Voting(list_predictions = predict_ova, y)
+aggregate_predictions_Max_Voting
+y_pred = aggregate_predictions_Max_Voting
+table_contingency <- table(y, y_pred)
+print(table_contingency)
+```
+
+###  Prediction one versus one
 
 ```{r}
-mod = best.model_terga1_mcovo
+predict_ovo <- predict_ovo(mod, y, X, clf, force.re.evaluation = TRUE )
+predict_ovo
 ```
 
+###  Aggregation : aggregate_predictions_Max_Voting one versus one and table  contingency
 ```{r}
-evaluateModel_mc <- evaluateModel_mc(mod, X=X, y= as.vector(y[1]), clf, eval.all = TRUE, force.re.evaluation = TRUE, estim.feat.importance = TRUE, approch = approch, mode = 'test')
-
-```
-
-
-
-
-
-```{r}
-model_test_terga1 <- list()
-model_test_terga1$accuracy_ =best.model.test_terga1ovo$accuracy_
-model_test_terga1$auc_ = best.model.test_terga1ovo$auc_
-model_test_terga1$recall_ = best.model.test_terga1ovo$recall_
-model_test_terga1$precision_ = best.model.test_terga1ovo$precision_
-```
-
-
-```{r}
-
-
-# Sélectionner uniquement les métriques nécessaires
-model_test_terga1 <- list(
-  accuracy_ = model_test_terga1$accuracy_,
-  auc_ = model_test_terga1$auc_,
-  recall_ = model_test_terga1$recall_,
-  precision_ = model_test_terga1$precision_
-)
-
-# Convertir la liste en un data frame
-df <- data.frame(
-  Metric = names(model_test_terga1),
-  Value = unlist(model_test_terga1)
-)
-
-# Modifier la couleur pour chaque métrique
-df$Color <- c("red", "green", "blue", "orange")
-
-# Créer le graphique de barres avec ggplot2
-library(ggplot2)
-plot <- ggplot(df, aes(x = Metric, y = Value, fill = Color)) +
-  geom_bar(stat = "identity", alpha = 0.7) +
-  geom_text(aes(label = round(Value, 3)), vjust = -0.3) +
-  ylim(0, 1) +
-  labs(title = "Performance of model test terbeam one versus all",
-       x = "Metrics",
-       y = "Values") +
-  theme_minimal()
-
-# Afficher le graphique
-print(plot)
-
-```
-
-
-
-
-
-```{r loading filtering the data, message=FALSE, warning=FALSE, paged.print=FALSE}
-chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
-load(chemin_du_dataset)
-set.seed(123)
-#recover the vector y
-yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-indices_tries <- order(yvec)
-yvec_trie <- yvec[indices_tries]
-X_general  <- mc.input$X[,indices_tries]
-# Créer un vecteur d'indices pour la division des données
-set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
-indices_division <- createDataPartition(yvec_trie, p = 0.8, list = FALSE)
-
-# Diviser yvec_trie en 80% train et 20% test
-y <- as.vector(yvec_trie[indices_division])
-y.test <- as.vector(yvec_trie[-indices_division])
-X <- X_general[,indices_division]
-X.test <- X_general[,-indices_division]
-
-# Vérifier la répartition dans chaque ensemble
-table(y)
-table(y.test)
-```
-
-
-```{r}
-yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-indices_tries <- order(yvec)
-yvec_trie <- yvec[indices_tries]
-X_general  <- mc.input$X[,indices_tries]
-# Créer un vecteur d'indices pour la division des données
-set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
-#indices_division <- createDataPartition(yvec_trie, p = 0.8, list = FALSE)
-
-# Diviser yvec_trie en 80% train et 20% test
-#y <- as.vector(yvec_trie[indices_division])
-#y.test <- as.vector(yvec_trie[-indices_division])
-#X <- X_general[,indices_division]
-#X.test <- X_general[,-indices_division]
-
-# Vérifier la répartition dans chaque ensemble
-#table(y)
-#table(y.test)
-y = as.vector(yvec_trie)
-X = X_general
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-
-tmp <- plotAUC(best.model$score_, y, percent = TRUE); rm(tmp)
-
-# create the roc objects
-rocobj.train <- roc(y ~ best.model$score_)
-rocobj.test <- roc(y.test ~ best.model.test$score_)
-
-# make the plot
-ggroc(list(train = rocobj.train, test = rocobj.test))
-
-```
-
-###Family of Best Models (FBM)
-
-```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-# get the population of models scrambled by model size
-pop <- modelCollectionToPopulation(res_clf$classifier$models)
-printy(pop)
-pop.df <- populationToDataFrame(pop)
-head(pop.df[,-c(3,4,7,8,14)])
-pop.df.melt <- melt(pop.df, id.vars = c("accuracy_","eval.sparsity"))
-
-g.before <- ggplot(data = pop.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
-  geom_boxplot(notch = FALSE, outlier.shape = " ", position = position_dodge(width=0.9), alpha = 0.3) + 
-  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
-  ylim(c(0,1)) +
-  xlab("Model parsimony") +
-  ggtitle("Original population") +
-  theme_bw() +
-  theme(legend.position="bottom", legend.direction="horizontal") +
-  guides(colour="none")
-
-# select the best 
-fbm <- selectBestPopulation(pop)
-printy(fbm)
-fbm.df <- populationToDataFrame(fbm)
-fbm.df.melt <- melt(fbm.df, id.vars = c("accuracy_","eval.sparsity"))#; head(fbm.df.melt)
-
-g.after <- ggplot(data = fbm.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
-  geom_boxplot(notch = FALSE, position = position_dodge(width=0.9), alpha = 0.3) + 
-  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
-  ylim(c(0,1)) +
-  xlab("Model parsimony") +
-  ggtitle("FBM") +
-  theme_bw() +
-  theme(legend.position="bottom", legend.direction="horizontal") +
-  guides(colour="none")
-
-grid.arrange(g.before, g.after, ncol =2)
-```
-
-###Analyzing the FBM
-
-```{r feature exploration, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-fa <- makeFeatureAnnot_ovo(pop = fbm, 
-                       X = X, 
-                       y = y, 
-                       clf = clf)
-dim(fa[[1]]$pop.noz)
-(g1 <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[1]]$pop.noz))
-(g2 <- plotAbundanceByClass(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
-(g3 <- plotPrevalence(features = rownames(fa[[1]]$pop.noz), X = list_X[[1]], y = list_y[[1]]))
-```
-
-### Random Forest sota
-
-```{r}
-fa[[1]]$feature.df
-```
-
-```{r}
-clf <- sota.rf_ovo(sparsity = c(2:10, 50, 70, 100, 150, 200, 300), 
-                                   nrow(X),
-                                   max.nb.features = 10000,
-                                   seed = (1:20),
-                                   nCores = 1,
-                                   evalToFit = "accuracy_",
-                                   objective = "auc",
-                                   ntree=500,
-                                   experiment.id = "sota_rf_ovo",
-                                   experiment.save = "nothing")
-  
-                      
-  printy(clf) # 
-
-```
-
-### Running the learner experiment sota.RF ovo
-
-```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
-runit = TRUE
-if(runit)
-{
-  res_clf_sota <- fit_OVO(X = X, y = y, clf = clf, cross.validate = TRUE, nfolds = 1); # class(res_clf)
-  # save results
-  save(res_clf_sota, clf, file = "res_clf_sota.rda", compression_level = 9)
-}
-```
-
-##Digesting the results
-
-```{r digesting results, fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig_sota <- digest(obj = res_clf_sota, penalty = 0.75/100, plot = TRUE)
-```
-
-```{r}
-# get the best model sota.rf_ovo
-# get the best model
-best.modelsota <- res_clf.dig_sota$best$model
-##printy(best.model)
-
-```
-
-### Testing the model in another dataset
-
-```{r}
-best.model.test_sota <- evaluateModel_ovo(mod = best.modelsota, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
-##printy(best.model.test)
-```
-
-###One-versus-one class distribution train
-
-```{r One-versus-one class distribution}
-  nClasse <- unique(y)
-  list_y <- list()
-  list_X <- list()
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      X_pair <- X[,indices]
-      list_y[[k]] <- y_pair
-      list_X[[k]] <- X_pair
-      k <- k + 1
-    }
-  }
-```
-
-###One-versus-one class distribution test
-
-```{r One-versus-one class distribution}
- nClasse <- unique(y.test)
-  list_y.test <- list()
-  list_X.test <- list()
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indicess <- which(y.test == class_i | y.test == class_j)
-      y_paire <- y.test[indicess]
-      X_paire <- X.test[,indicess]
-      list_y.test[[k]] <- y_paire
-      list_X.test[[k]] <- X_paire
-      k <- k + 1
-    }
-  }
-```
-
-```{r}
-  # we recover the first output to apply the plot
-  X <- list_X[[1]]
-  y <- list_y[[1]]
-  X.test <- list_X.test[[1]]
-  y.test <- list_y.test[[1]]
-```
-
-### Visualizing model performance AUC
-
-```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALS}
-tmp <- plotAUC(best.model$score_, y, percent = TRUE); rm(tmp)
-
-# create the roc objects
-rocobj.train <- roc(y ~ best.model$score_)
-rocobj.test <- roc(y.test ~ best.model.test$score_)
-
-# make the plot
-ggroc(list(train = rocobj.train, test = rocobj.test))
-```
-
-###Family of Best Models (FBM)
-
-```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-# get the population of models scrambled by model size
-pop <- modelCollectionToPopulation(res_clf$classifier$models)
-printy(pop)
-pop.df <- populationToDataFrame(pop)
-head(pop.df[,-c(3,4,7,8,14)])
-pop.df.melt <- melt(pop.df, id.vars = c("accuracy_","eval.sparsity"))
-
-g.before <- ggplot(data = pop.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
-  geom_boxplot(notch = FALSE, outlier.shape = " ", position = position_dodge(width=0.9), alpha = 0.3) + 
-  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
-  ylim(c(0,1)) +
-  xlab("Model parsimony") +
-  ggtitle("Original population") +
-  theme_bw() +
-  theme(legend.position="bottom", legend.direction="horizontal") +
-  guides(colour="none")
-
-# select the best 
-fbm <- selectBestPopulation(pop)
-printy(fbm)
-fbm.df <- populationToDataFrame(fbm)
-fbm.df.melt <- melt(fbm.df, id.vars = c("accuracy_","eval.sparsity"))#; head(fbm.df.melt)
-
-g.after <- ggplot(data = fbm.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
-  geom_boxplot(notch = FALSE, position = position_dodge(width=0.9), alpha = 0.3) + 
-  geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
-  ylim(c(0,1)) +
-  xlab("Model parsimony") +
-  ggtitle("FBM") +
-  theme_bw() +
-  theme(legend.position="bottom", legend.direction="horizontal") +
-  guides(colour="none")
-
-grid.arrange(g.before, g.after, ncol =2)
-```
-
-###Analyzing the FBM
-
-```{r}
-clf <- terBeam_mc(sparsity = c( 2, 3, 4, 5), 
-                                   max.nb.features = 1000,
-                                   seed = 1,
-                                   nCores = 1,
-                                   evalToFit = "accuracy_",
-                                   objective = "auc",
-                                   experiment.id = "terBeam_mc",
-                                   experiment.save = "nothing")
-  
-                      
-  printy(clf) # 
-```
-
-```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
-runit = TRUE
-if(runit)
-{
-  res_clfterbeamova <- fit_OVO(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
-
-}
-```
-
-```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig_terbeamova <- digest(obj = res_clfterbeamova, penalty = 0.75/100, plot = TRUE)
-```
-
-```{r}
-mod <- res_clf.dig_terbeamova$best$model
-```
-
-
-
-
-```{r}
-
-
-
-
-```
-
-```{r}
-class_names = unique(y)
-classes_list <- predict_ova(mod, class_names)
-
-
-```
-
-
-
-
-```{r}
-
-aggregated_predictions <- aggregate_predictions(classes_list, score_list)
-
-print(aggregated_predictions)
-```
-
-
-
-
-
-```{r}
-predictions_list
-
-```
-```{r}
-pre
+aggregate_majoritaire_vote_ovo <- aggregate_majoritaire_vote_ovo(predictions_list = predict_ovo)
+aggregate_majoritaire_vote_ovo
+y_pred = aggregate_majoritaire_vote_ovo
+table_contingency <- table(y, y_pred)
+print(table_contingency)
 ```
 

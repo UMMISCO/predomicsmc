@@ -4037,6 +4037,7 @@ predict_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   list_y <- list()
   predictions_list <- list()
   scorelist <- list()
+  nClasse <- unique(y)
 
   # Determine the number of combinations
   n_combinations <- length(mod$score_)
