@@ -2,7 +2,7 @@
 % Please edit documentation in R/globale_ovo.R
 \name{aggregate_majoritaire_vote_ovo}
 \alias{aggregate_majoritaire_vote_ovo}
-\title{aggregate_majoritaire_vote}
+\title{aggregate_majoritaire_vote_ovo}
 \usage{
 aggregate_majoritaire_vote_ovo(predictions_list)
 }

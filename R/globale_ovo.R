@@ -4159,7 +4159,7 @@ predict_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
 
 
 # Function to aggregate one-versus-one predictions using majority voting
-#' @title aggregate_majoritaire_vote
+#' @title aggregate_majoritaire_vote_ovo
 #' @description Function to aggregate one-versus-one predictions using majority voting.
 #' @param predictions_list: List of predictions
 #' @return vector of class aggregate
@@ -4182,14 +4182,14 @@ aggregate_majoritaire_vote_ovo <- function(predictions_list) {
   return(aggregated_vector)
 }
 
-#' predictions aggregation function.
-#' @title aggregate_predictions
-#' @description One versus all predictions aggregation function.
+#' Aggregation function of one-versus-all predictions using maximum score voting.
+#' @title aggregate_predictions_Max_Voting_ova
+#' @description Aggregation function of one-versus-all predictions using maximum score voting.
 #' @param classes_list: List of one versus all predictions
 #' @param score_list: List of one versus all score
 #' @return vector of class aggregate
 #' @export
-aggregate_predictions_Max_Voting <- function(list_predictions, y) {
+aggregate_predictions_Max_Voting_ova <- function(list_predictions, y) {
   # Initialize the vector to hold the aggregated predictions with the appropriate length
   classes_list = list_predictions$predictions
   score_list = list_predictions$scores
@@ -4234,6 +4234,70 @@ aggregate_predictions_Max_Voting <- function(list_predictions, y) {
   # Return the final vector of aggregated predictions
   return(aggregated_predictions)
 }
+
+
+
+
+
+
+#' Aggregation function of one-versus-all predictions using minimum score voting.
+#' @title aggregate_predictions_Min_Voting_ova
+#' @description Aggregation function of one-versus-all predictions using minimum score voting.
+#' @param classes_list: List of one versus all predictions
+#' @param score_list: List of one versus all score
+#' @return vector of class aggregate
+#' @export
+aggregate_predictions_Min_Voting_ova <- function(list_predictions, y) {
+  # Initialize the vector to hold the aggregated predictions with the appropriate length
+  classes_list = list_predictions$predictions
+  score_list = list_predictions$scores
+  aggregated_predictions <- character(length = length(classes_list[[1]]))
+
+  # Create a character vector of the unique classes from y
+  names_class <- unique(y)
+  names_class <- as.character(names_class)
+
+  # Iterate over each position in the aggregated predictions
+  for (i in seq_along(aggregated_predictions)) {
+    # Extract the classes and scores for the current position from each list
+    current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
+    scores <- sapply(score_list, function(score_vector) score_vector[i])
+
+    # Exclude 'ALL' and retrieve corresponding scores
+    valid_classes_indices <- which(current_classes != "ALL")
+    valid_classes <- current_classes[valid_classes_indices]
+    valid_scores <- scores[valid_classes_indices]
+
+    # If all scores are zero, randomly choose a class from the list of unique classes
+    if (all(scores == 0)) {
+      predicted_class <- sample(names_class, 1)
+    } else if (length(valid_classes) == 1) {
+      # If there is only one valid class, predict that class
+      predicted_class <- valid_classes
+    } else if (length(valid_classes) > 1) {
+      # If there are multiple valid classes, choose the class with the highest score
+      min_score_index <- which.min(valid_scores)
+      predicted_class <- valid_classes[min_score_index]
+    } else {
+      # If there are no valid classes (all were 'ALL'), choose the class from 'ALL' with the highest score
+      min_score <- min(scores)  # first, find the max score from the original scores
+      min_score_indices <- which(scores == min_score)  # then find all the indices with max score
+      predicted_class <- names_class[min_score_indices[1]]  # choose the class for the first index with max score
+    }
+
+    # Fill the aggregation vector at position i with the predicted class
+    aggregated_predictions[i] <- predicted_class
+  }
+
+  # Return the final vector of aggregated predictions
+  return(aggregated_predictions)
+}
+
+
+
+
+
+
 
 
 

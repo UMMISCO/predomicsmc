@@ -2,7 +2,8 @@
 
 export(EvaluateAdditionnelGlobaleMetrics)
 export(aggregate_majoritaire_vote_ovo)
-export(aggregate_predictions_Max_Voting)
+export(aggregate_predictions_Max_Voting_ova)
+export(aggregate_predictions_Min_Voting_ova)
 export(computeCardEnrichment_mc)
 export(digestmc)
 export(evaluateAccuracy)

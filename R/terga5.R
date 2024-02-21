@@ -465,6 +465,21 @@ evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
 
 
 
+###(clf$data$y,table)
+
+###lapply(lapply(clf$data$y,table), names)
+
+###unlist(lapply(lapply(lapply(clf$data$y,table), names), paste))
+
+###lapply(lapply(lapply(clf$data$y,table), names), paste, collapse = "_")
+
+
+
+
+
+
+
+
 
 
 

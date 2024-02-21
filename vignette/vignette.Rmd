@@ -99,7 +99,7 @@ class(clf)  # the class of the classifier object
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE, nfolds = 1); # class(res_clf)
+  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 1); # class(res_clf)
   # save results
   save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
 }
@@ -165,7 +165,7 @@ predict_ova
 
 ### `Aggregation Max Voting one versus all and table  contingency
 ```{r}
-aggregate_predictions_Max_Voting <- aggregate_predictions_Max_Voting(list_predictions = predict_ova, y)
+aggregate_predictions_Max_Voting <- aggregate_predictions_Max_Voting_ova(list_predictions = predict_ova, y)
 aggregate_predictions_Max_Voting
 y_pred = aggregate_predictions_Max_Voting
 table_contingency <- table(y, y_pred)
