@@ -66,7 +66,7 @@ X_equilibre <- donnees_equilibrees$X
 #table(y_equilibre)
 
 set.seed(42)
-indices_division <- createDataPartition(y_equilibre, p = 0.1, list = FALSE)
+indices_division <- createDataPartition(y_equilibre, p = 0.8, list = FALSE)
 
 # Diviser yvec_trie en 80% train et 20% test
 y <- as.vector(y_equilibre[indices_division])
@@ -171,6 +171,22 @@ y_pred = aggregate_predictions_Max_Voting
 table_contingency <- table(y, y_pred)
 print(table_contingency)
 ```
+
+
+### Aggregation Min Voting one versus all and table  contingency
+```{r}
+aggregate_predictions_Min_Voting <- aggregate_predictions_Min_Voting_ova(list_predictions = predict_ova, y)
+aggregate_predictions_Min_Voting
+y_pred = aggregate_predictions_Min_Voting
+table_contingency <- table(y, y_pred)
+print(table_contingency)
+```
+
+
+
+
+
+
 
 ###  Prediction one versus one
 
