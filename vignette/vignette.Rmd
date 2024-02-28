@@ -11,6 +11,7 @@ knitr:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ```{r load the packages, message=FALSE, warning=FALSE}
 library(mcpredomics)
 library(predomics)
@@ -23,7 +24,7 @@ library(caret)
 library(gtools)
 ```
 
-## Setting the learner context
+# Loading and Analysis of Used Data
 
 ```{r}
 chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
@@ -33,15 +34,15 @@ yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
 indices_tries <- order(yvec)
 yvec_trie <- yvec[indices_tries]
 X_general  <- mc.input$X[,indices_tries]
-# Créer un vecteur d'indices pour la division des données
-set.seed(42)  # Vous pouvez définir une graine pour la reproductibilité
+# Create an index vector for data partitioning
+set.seed(42)  
 y = as.vector(yvec_trie)
 X = X_general
 
-# Nombre d'échantillons désiré dans chaque classe
+# Number of desired samples in each class
 nombre_echantillons_par_classe <- min(table(y))
 
-# Fonction pour équilibrer les classes
+# Function to balance the classes
 equilibrer_classes <- function(y, X, nombre_echantillons_par_classe,seed =123) {
   classes <- unique(y)
   indices_equilibres <- integer(0)
@@ -55,32 +56,27 @@ equilibrer_classes <- function(y, X, nombre_echantillons_par_classe,seed =123) {
   return(list(y = y[indices_equilibres], X = X[, indices_equilibres]))
 }
 
-# Équilibrer les classes dans l'ensemble d'entraînement
 donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
-
-# Utiliser les données équilibrées
 y_equilibre <- donnees_equilibrees$y
 X_equilibre <- donnees_equilibrees$X
 
-# Vérifier la répartition après équilibrage
-#table(y_equilibre)
+# Verify the distribution after balancing
 
 set.seed(42)
 indices_division <- createDataPartition(y_equilibre, p = 0.8, list = FALSE)
 
-# Diviser yvec_trie en 80% train et 20% test
+# Split yvec_trie into 80% train and 20% test
 y <- as.vector(y_equilibre[indices_division])
 y.test <- as.vector(y_equilibre[-indices_division])
 X <- X_equilibre[,indices_division]
 X.test <- X_equilibre[,-indices_division]
 
-# Vérifier la répartition dans chaque ensemble
 table(y)
 table(y.test)
 dim(X)
 dim(X.test)
 ```
-
+#Classifying using the terga1 algorithm
 
 ```{r setting the classifier}
 
@@ -93,7 +89,27 @@ isClf(clf)  # test whether the object is a classifier
 class(clf)  # the class of the classifier object
 ```
 
-## Running the learner experiment
+
+
+#Classifying using the terbeam algorithm
+
+```{r setting the classifier}
+clf <- terBeam_mc(sparsity = c( 2, 3, 4, 5), 
+                                   max.nb.features = 1000,
+                                   seed = 1,
+                                   nCores = 1,
+                                   evalToFit = "accuracy_",
+                                   objective = "auc",
+                                   experiment.id = "terBeam_mc",
+                                   experiment.save = "nothing")
+  
+                      
+  printy(clf)  
+
+```
+
+
+# Running the learner experiment
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
@@ -140,7 +156,7 @@ if(!runit)
 }
 ```
 
-### Digesting the results
+# Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
 res_clf.dig_terga1ova <- digest(obj = res_clf, penalty = 0.75/100, plot = TRUE)
@@ -156,14 +172,15 @@ mod <- res_clf.dig_terga1ova$best$model
 ```
 
 
-### Prediction one versus all
+# Prediction one versus all
+
 ```{r}
 predict_ova <- predict_ova(mod, y, X, clf, force.re.evaluation = TRUE)
-predict_ova
+
 ```
 
 
-### `Aggregation Max Voting one versus all and table  contingency
+# Aggregation Max Voting score one versus all and table  contingency
 ```{r}
 aggregate_predictions_Max_Voting <- aggregate_predictions_Max_Voting_ova(list_predictions = predict_ova, y)
 aggregate_predictions_Max_Voting
@@ -173,7 +190,7 @@ print(table_contingency)
 ```
 
 
-### Aggregation Min Voting one versus all and table  contingency
+# Aggregation Min Voting score one versus all and table  contingency
 ```{r}
 aggregate_predictions_Min_Voting <- aggregate_predictions_Min_Voting_ova(list_predictions = predict_ova, y)
 aggregate_predictions_Min_Voting
@@ -182,17 +199,19 @@ table_contingency <- table(y, y_pred)
 print(table_contingency)
 ```
 
+#Evaluation of metrics for the one versus all approach
+
+```{r}
+Results <- EvaluateAdditionnelGlobaleMetrics(predictions = y_pred, actual_labels = y)
+Results
+```
 
 
-
-
-
-
-###  Prediction one versus one
+#Prediction one versus one
 
 ```{r}
 predict_ovo <- predict_ovo(mod, y, X, clf, force.re.evaluation = TRUE )
-predict_ovo
+
 ```
 
 ###  Aggregation : aggregate_predictions_Max_Voting one versus one and table  contingency
@@ -203,4 +222,339 @@ y_pred = aggregate_majoritaire_vote_ovo
 table_contingency <- table(y, y_pred)
 print(table_contingency)
 ```
+
+
+###Evaluation of metrics for the one versus all approach
+
+```{r}
+Results <- EvaluateAdditionnelGlobaleMetrics(predictions = y_pred, actual_labels = y)
+Results
+```
+
+
+
+# State of the art 
+
+
+## Random Forest
+
+```{r warning=FALSE}
+library(randomForest)
+library(e1071)
+```
+
+```{r warning=FALSE}
+library(caret)
+library(randomForest)
+library(e1071)
+X_train = t(X)
+y_train = y
+X_test = t(X.test)
+y_test =y.test
+y_train <- as.factor(y_train)
+y_test <- as.factor(y_test)
+
+
+# Define 10-fold cross-validation
+train_control <- trainControl(method = "cv", number = 10)
+
+# Train the multiclass random forest model with 10-fold cross-validation
+rf_model <- train(x = X_train, y = y_train, method = "rf", trControl = train_control)
+
+# Prediction on the training data
+train_pred <- predict(rf_model, X_train)
+
+# Calculation of metrics for the training data
+train_metrics <- confusionMatrix(train_pred, y_train)
+
+# Calculation of the AUC for training
+roc_train <- multiclass.roc(y_train, as.numeric(train_pred))
+auc_train <- auc(roc_train)
+
+# Displaying metrics for training
+print(train_metrics)
+print(auc_train)
+
+# Prediction on the test data
+test_pred <- predict(rf_model, X_test)
+
+# Calculation of metrics for the test data
+test_metrics <- confusionMatrix(test_pred, y_test)
+
+# Calculation of the AUC for the test data.
+roc_test <- multiclass.roc(y_test, as.numeric(test_pred))
+auc_test <- auc(roc_test)
+
+# Displaying metrics for the test data
+print(test_metrics)
+print(auc_test)
+
+```
+
+
+
+
+```{r warning=FALSE}
+# Calculating metrics for the training data
+train_accuracy <- train_metrics$overall["Accuracy"]
+train_precision <- mean(train_metrics$byClass[,"Precision"], na.rm = TRUE)
+train_recall <- mean(train_metrics$byClass[,"Recall"], na.rm = TRUE)
+train_auc <- auc_train
+
+# Displaying metrics for the training data
+print(paste("Train Accuracy:", train_accuracy))
+print(paste("Train Precision:", train_precision))
+print(paste("Train Recall:", train_recall))
+print(paste("Train AUC:", train_auc))
+
+# Calculating metrics for the test data
+test_metrics <- confusionMatrix(test_pred, y_test)
+test_accuracy <- test_metrics$overall["Accuracy"]
+test_precision <- mean(test_metrics$byClass[,"Precision"], na.rm = TRUE)
+test_recall <- mean(test_metrics$byClass[,"Recall"], na.rm = TRUE)
+
+# Calculating the AUC for the test data
+roc_test <- multiclass.roc(y_test, as.numeric(test_pred))
+test_auc <- auc(roc_test)
+
+# Displaying metrics for the test data
+print(paste("Test Accuracy:", test_accuracy))
+print(paste("Test Precision:", test_precision))
+print(paste("Test Recall:", test_recall))
+print(paste("Test AUC:", test_auc))
+
+```
+
+
+```{r warning=FALSE, fig.height=4, fig.width=6, message=FALSE}
+library(ggplot2)
+
+# Example of metrics for the training data
+accuracy_train <- train_accuracy
+precision_train <- train_precision
+AUC_train <- train_auc
+recall_train <- train_recall
+
+# Example of metrics for the test data
+accuracy_test <- test_accuracy
+precision_test <- test_precision
+AUC_test <- test_auc
+recall_test <- test_recall
+
+# Create a data frame for the training metrics
+train_metrics <- data.frame(
+  Metric = c("Accuracy", "Precision", "AUC", "Recall"),
+  Value = c(accuracy_train, precision_train, AUC_train, recall_train),
+  Dataset = "Training"
+)
+
+# Create a data frame for the test metrics
+test_metrics <- data.frame(
+  Metric = c("Accuracy", "Precision", "AUC", "Recall"),
+  Value = c(accuracy_test, precision_test, AUC_test, recall_test),
+  Dataset = "Test"
+)
+
+# Combine the training and test metrics
+all_metrics <- rbind(train_metrics, test_metrics)
+
+# Create the graph
+plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Value, 2)), position = position_dodge(width = 1), vjust = -0.5) +
+  labs(title = "Comparison of test and training metrics RF",
+       x = "Metrics", y = "Values") +
+  theme_minimal()
+
+# Display the graph
+print(plot)
+
+```
+
+
+
+## Regression Logistique
+
+```{r warning=FALSE}
+library(nnet)
+# Create a data.frame from matrix X
+library(glmnet)
+# Utilize cv.glmnet with 10-fold cross-validation
+df <- as.data.frame(t(X))
+df$y <- factor(y)
+cv_model <- cv.glmnet(as.matrix(df[, -ncol(df)]), df$y, family = "multinomial", alpha = 1, nfolds = 10)
+
+# Get the best model based on cross-validation
+best_model <- cv_model$glmnet.fit
+
+# Obtain predictions directly from cross-validation
+predictions <- predict(cv_model, newx = as.matrix(df[, -ncol(df)]), s = "lambda.min", type = "class")
+predictions <- factor(predictions)
+
+# Check the dimensions and create the confusion matrix
+if(length(predictions) == length(df$y)) {
+  confusionMatrix(predictions, df$y)
+} else {
+  print("The dimensions of the predictions do not match those of the ground truth")
+}
+
+```
+
+
+
+```{r warning=FALSE}
+# Create the confusion matrix
+conf_matrix <- confusionMatrix(predictions, df$y)
+accuracy_train <- conf_matrix$overall[["Accuracy"]]
+# Calculate the mean precision of each class
+precision_train <- mean(conf_matrix$byClass[ , "Precision"])
+AUC_train <- mean(conf_matrix$byClass[ , "Balanced Accuracy"])
+recall_train <- mean(conf_matrix$byClass[ , "Sensitivity"])
+
+```
+
+
+
+```{r warning=FALSE}
+predictions_test <- predict(model, newx = as.matrix(X_test), type = "class")
+library(caret)
+predictions_test <- as.factor(predictions_test)
+
+
+```
+
+
+```{r warning=FALSE}
+# Create the confusion matrix for predictions on the test dataset
+conf_matrix_test <- confusionMatrix(predictions_test, y_test)
+
+# Calculate accuracy, precision, AUC, and recall for the test dataset
+# Calculate accuracy, precision, AUC, and recall for the test dataset
+accuracy_test <- conf_matrix_test$overall[["Accuracy"]]
+precision_test <- mean(conf_matrix_test$byClass[ , "Precision"], na.rm = TRUE)
+AUC_test <- mean(conf_matrix_test$byClass[ , "Balanced Accuracy"], na.rm = TRUE)
+recall_test <- mean(conf_matrix_test$byClass[ ,"Sensitivity"], na.rm = TRUE)
+
+```
+
+
+
+```{r warning=FALSE, fig.height=4, fig.width=6, message=FALSE}
+library(ggplot2)
+
+# Create a data frame for the training metrics
+train_metrics <- data.frame(
+  Metric = c("Accuracy", "Precision", "AUC", "Recall"),
+  Value = c(accuracy_train, precision_train, AUC_train, recall_train),
+  Dataset = "Training"
+)
+
+# Create a data frame for the test metrics
+test_metrics <- data.frame(
+  Metric = c("Accuracy", "Precision", "AUC", "Recall"),
+  Value = c(accuracy_test, precision_test, AUC_test, recall_test),
+  Dataset = "Test"
+)
+
+# Combine the training and test metrics
+all_metrics <- rbind(test_metrics,train_metrics)
+
+# Create the graph
+plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Value, 2)), position = position_dodge(width = 1), vjust = -0.5) +
+  labs(title = "Comparison of test and training metrics MLR",
+       x = "Metrics", y = "Values") +
+  theme_minimal()
+
+# Display the graph
+print(plot)
+
+```
+
+
+## SVM
+
+
+```{r warning=FALSE}
+library(caret)
+library(pROC)
+
+# Train an SVM model with radial kernel and 10-fold cross-validation
+svm_model <- train(x = X_train, y = y_train, method = "svmRadial", trControl = trainControl(method = "cv", number = 10))
+
+# Make predictions with the SVM model
+svm_predictions_train <- predict(svm_model, X_train)
+svm_predictions_test <- predict(svm_model, X_test)
+
+# Calculate the accuracy for the training and test sets
+accuracy_train <- confusionMatrix(data = svm_predictions_train, reference = y_train)$overall['Accuracy']
+accuracy_test <- confusionMatrix(data = svm_predictions_test, reference = y_test)$overall['Accuracy']
+
+# Calculate precision, recall, and AUC for the training and test sets
+precision_train <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Pos Pred Value']
+precision_test <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Pos Pred Value']
+
+recall_train <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Sensitivity']
+recall_test <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Sensitivity']
+
+auc_train <- roc(y_train, as.numeric(svm_predictions_train))$auc
+auc_test <- roc(y_test, as.numeric(svm_predictions_test))$auc
+
+precision_train = mean(precision_train)
+precision_test = mean(precision_test)
+recall_train = mean(recall_train)
+recall_test = mean(recall_test)
+
+```
+
+```{r warning=FALSE, fig.height=4, fig.width=6, message=FALSE}
+library(ggplot2)
+
+# Create a data frame for the training metrics
+train_metrics <- data.frame(
+  Metric = c("Accuracy", "Precision", "AUC", "Recall"),
+  Value = c(accuracy_train, precision_train, AUC_train, recall_train),
+  Dataset = "Training"
+)
+
+# Create a data frame for the test metrics
+test_metrics <- data.frame(
+  Metric = c("Accuracy", "Precision", "AUC", "Recall"),
+  Value = c(accuracy_test, precision_test, AUC_test, recall_test),
+  Dataset = "Test"
+)
+
+# Combine the training and test metrics
+all_metrics <- rbind(test_metrics,train_metrics)
+
+# Create the graph
+plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Value, 2)), position = position_dodge(width = 1), vjust = -0.5) +
+  labs(title = "Comparison of test and training metrics SVM",
+       x = "Metrics", y = "Values") +
+  theme_minimal()
+
+# Display the graph
+print(plot)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

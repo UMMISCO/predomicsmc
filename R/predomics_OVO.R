@@ -628,7 +628,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terBeam_mc=
            {
              if(clf$params$verbose) cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
-             res <- terBeam_fit_ovo(X, y, clf,approch = approch)
+             res <- terBeam_fit_mc(X, y, clf,approch = approch)
            },
 
          metal=

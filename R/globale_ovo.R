@@ -981,7 +981,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
 
   #Unification phase of the multiclass model in binary
   #mod.res <- mod.res
-  if(mode == "train"){
+
 
     mod.res <- mod.res
     nClass = length(mod.res)
@@ -1091,25 +1091,9 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     mod_res$confusionMatrix_ <- confusionMatrix_ovo
     mod.res <- list()
     mod.res <- mod_res
-  }
 
-  else {
 
-    mod_f1 <- numeric(length(mod.res))  # Initialize a vector to store the f1
 
-    # Loop to retrieve the f1 for each model.
-    for (i in seq_along(mod.res)) {
-      mod_f1[i] <- mod.res[[i]]$f1_
-    }
-
-    # Find the index of the model with the highest f1
-    index_best_model <- which.max(mod_f1)
-
-    # Access the model with the highest f1
-    best_model <- mod.res[[index_best_model]]
-    mod.res <- list()
-    mod.res = best_model
-  }
   return(mod.res)
 }
 
@@ -1432,6 +1416,28 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
   #pop <- evaluatePopulation_ovo(X = X, y = y, clf = clf, pop = pop, eval.all = TRUE, force.re.evaluation = TRUE)
   # compute the presence of features in the models
   listfa  <- makeFeatureAnnot_mc(pop = pop, X = X, y = y, clf = clf, approch = approch)
+
+  populations <- list()
+
+  for (i in 1:length(pop[[1]]$indices_)) {
+    lista <- list()
+
+    for (j in 1:length(pop)) {
+      popp <- pop[[j]]
+      popp$indices_ <- pop[[j]]$indices_[[i]]
+      popp$names_ <- pop[[j]]$names_[[i]]
+      popp$coeffs_ <- pop[[j]]$coeffs_[[i]]
+      popp$intercept_ <- pop[[j]]$list_intercept_mc[[i]]
+      popp$sign_ <- pop[[j]]$sign_[[i]]
+      popp$score_ <- pop[[j]]$score_[[i]]
+      popp$confusionMatrix_ <- pop[[j]]$confusionMatrix_[[i]]
+
+      lista[[j]] <- popp
+    }
+
+    populations[[i]] <- lista
+  }
+
   for(h in 1:length(list_y)) {
     X = list_X[[h]]
     y = list_y[[h]]
@@ -1440,7 +1446,7 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
     clf$data$X.min <- listXmin[[h]]
     clf$data$X.max <- listXmax[[h]]
     clf$data$y <- listy[[h]]
-
+    pop = populations[[h]]
     fa  <- listfa[[h]]
     #pop  <- popul[[h]]
     feat.prev     <- rowSums(fa$pop.noz != 0, na.rm = TRUE)
@@ -1453,6 +1459,7 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
     # the pool of features
     feat.pool     <- names(feat.prev)
     if(verbose) print(paste("Feature prevalence is computed. There are ", length(feat.pool), "features to consider."))
+
 
     eval.orig     <- populationGet_X(element2get = score, toVec = TRUE, na.rm = FALSE)(pop)
 
@@ -2371,6 +2378,27 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo")
   listXmax <- clf$data$X.max
   listy <- clf$data$y
 
+  populations <- list()
+
+  for (i in 1:length(pop[[1]]$indices_)) {
+    lista <- list()
+
+    for (j in 1:length(pop)) {
+      popp <- pop[[j]]
+      popp$indices_ <- pop[[j]]$indices_[[i]]
+      popp$names_ <- pop[[j]]$names_[[i]]
+      popp$coeffs_ <- pop[[j]]$coeffs_[[i]]
+      popp$intercept_ <- pop[[j]]$list_intercept_mc[[i]]
+      popp$sign_ <- pop[[j]]$sign_[[i]]
+      popp$score_ <- pop[[j]]$score_[[i]]
+      popp$confusionMatrix_ <- pop[[j]]$confusionMatrix_[[i]]
+
+      lista[[j]] <- popp
+    }
+
+    populations[[i]] <- lista
+  }
+
   # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
   if (approch == "ovo") {
     k <- 1
@@ -2401,7 +2429,7 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo")
     clf$data$X.min <- listXmin[[i]]
     clf$data$X.max <- listXmax[[i]]
     clf$data$y <- listy[[i]]
-    listfa[[i]] <- makeFeatureAnnot(pop = pop, X = list_X[[i]], y = list_y[[i]], clf = clf)
+    listfa[[i]] <- makeFeatureAnnot(pop = populations[[i]], X = list_X[[i]], y = list_y[[i]], clf = clf)
   }
 
   return(listfa)
@@ -4020,6 +4048,7 @@ predict_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
 
 
 
+
 #' This function predicts outcomes for a one-versus-one (OvO) classification model.
 #' @title predict_ovo
 #' @description This function predicts outcomes for a one-versus-one (OvO) classification model.
@@ -4292,15 +4321,6 @@ aggregate_predictions_Min_Voting_ova <- function(list_predictions, y) {
   # Return the final vector of aggregated predictions
   return(aggregated_predictions)
 }
-
-
-
-
-
-
-
-
-
 
 
 
