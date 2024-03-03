@@ -477,38 +477,25 @@ fit_mc <- function(X,
         # for each model add a vector with feature importance
 
         for (i in 1:length(pop)) {
+
           # MDA generalization
-          pop[[i]]$mda.cv_ <- rep(0, length(pop[[i]]$names_))
-          names(pop[[i]]$mda.cv_) <- pop[[i]]$names_
-          for (j in 1:length(pop[[i]]$names_)) {
-            name <- pop[[i]]$names_[[j]]
-            ind.feature <- match(name, names(feature.importance.cv))
-            if (!is.na(ind.feature) && length(ind.feature) == 1) {
-              pop[[i]]$mda.cv_[j] <- feature.importance.cv[[ind.feature]]
-            }
-          }
+          pop[[i]]$mda.cv_ <- rep(0, length(pop[[i]]$names_[[1]]))
+          names(pop[[i]]$mda.cv_) <- pop[[i]]$names_[[1]]
+          ind.features <-intersect(pop[[i]]$names_[[1]], names(feature.importance.cv))
+          pop[[i]]$mda.cv_[ind.features] <-feature.importance.cv[ind.features]
 
           # prevalence in top models in the folds
-          pop[[i]]$prev.cv_ <- rep(0, length(pop[[i]]$names_))
-          names(pop[[i]]$prev.cv_) <- pop[[i]]$names_
-          for (j in 1:length(pop[[i]]$names_)) {
-            name <- pop[[i]]$names_[[j]]
-            ind.feature <- match(name, names(feature.prevalence.cv))
-            if (!is.na(ind.feature) && length(ind.feature) == 1) {
-              pop[[i]]$prev.cv_[j] <- feature.prevalence.cv[[ind.feature]]
-            }
-          }
+          pop[[i]]$prev.cv_ <- rep(0, length(pop[[i]]$names_[[1]]))
+          names(pop[[i]]$prev.cv_) <- pop[[i]]$names_[[1]]
+          ind.features <-intersect(pop[[i]]$names_[[1]], names(feature.prevalence.cv))
+          pop[[i]]$prev.cv_[ind.features] <-feature.prevalence.cv[ind.features]
+
 
           # MDA empirical
-          pop[[i]]$mda_ <- rep(0, length(pop[[i]]$names_))
-          names(pop[[i]]$mda_) <- pop[[i]]$names_
-          for (j in 1:length(pop[[i]]$names_)) {
-            name <- pop[[i]]$names_[[j]]
-            ind.feature <- match(name, names(feature.importance))
-            if (!is.na(ind.feature) && length(ind.feature) == 1) {
-              pop[[i]]$mda_[j] <- feature.importance[[ind.feature]]
-            }
-          }
+          pop[[i]]$mda_ <- rep(0, length(pop[[i]]$names_[[1]]))
+          names(pop[[i]]$mda_) <- pop[[i]]$names_[[1]]
+          ind.features <-intersect(pop[[i]]$names_[[1]], names(feature.importance))
+          pop[[i]]$mda_[ind.features] <-feature.importance[ind.features]
         }
 
         # convert to model collection and put back

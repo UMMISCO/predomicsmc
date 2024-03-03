@@ -979,120 +979,118 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     }
   }
 
-  #Unification phase of the multiclass model in binary
-  #mod.res <- mod.res
+  replace_NaN_with_0 <- function(x) {
+    ifelse(is.nan(x), 0, x)
+  }
 
+  # Unification phase of the multiclass model in binary
+  nClass <- length(mod.res)
 
-    mod.res <- mod.res
-    nClass = length(mod.res)
+  learnerr <- mod.res[[1]]$learner
+  languagee <- mod.res[[1]]$language
+  objectivee <- mod.res[[1]]$objective
+  evalToFitt <- mod.res[[1]]$evalToFit
+  indicess <- vector("list", nClass)
+  fit_ovo <- 0
+  unpenalized_fit_ovo <- 0
+  auc_ovo <- 0
+  accuracy_ovo <- 0
+  intercept_ovo <- 0
+  list_intercept_mc <- vector("list", nClass)
+  eval.sparsity_ovo <- 0
+  precision_ovo <- 0
+  recall_ovo <- 0
+  f1_ovo <- 0
+  confusionMatrix_ovo <- vector("list", nClass)
+  namess <- vector("list", nClass)
+  coeffss <- vector("list", nClass)
+  corr <- NA
+  aicc <- NA
+  signn <- vector("list", nClass)
+  rsqq <- NA
+  serr <- NA
+  scoree <- vector("list", nClass)
+  pos_scoree <- vector("list", nClass)
+  neg_scoree <- vector("list", nClass)
 
-    learnerr <- mod.res[[1]]$learner
-    languagee <- mod.res[[1]]$language
-    objectivee <- mod.res[[1]]$objective
-    evalToFitt <- mod.res[[1]]$evalToFit
-    indicess <- list()
-    fit_ovo = 0
-    unpenalized_fit_ovo = 0
-    auc_ovo =0
-    accuracy_ovo = 0
-    intercept_ovo <- list()
-    list_intercept_mc <- list()
-    eval.sparsity_ovo <- 0
-    precision_ovo = 0
-    recall_ovo = 0
-    f1_ovo = 0
-    confusionMatrix_ovo <- list()
-    namess <- list()
-    coeffss <- list()
-    corr <- NA
-    aicc <- NA
-    signn <- list()
-    rsqq <- NA
-    serr <- NA
-    scoree <- list()
-    pos_scoree <- list()
-    neg_scoree <- list()
+  for(i in 1:length(mod.res)){
+    indicess[[i]] = mod.res[[i]]$indices_
+    namess[[i]] = mod.res[[i]]$names_
+    coeffss[[i]] = mod.res[[i]]$coeffs_
+    fit_ovo = fit_ovo + mod.res[[i]]$fit_
+    unpenalized_fit_ovo = unpenalized_fit_ovo + replace_NaN_with_0(mod.res[[i]]$unpenalized_fit_)
+    auc_ovo = auc_ovo + replace_NaN_with_0(mod.res[[i]]$auc_)
+    accuracy_ovo = accuracy_ovo + replace_NaN_with_0(mod.res[[i]]$accuracy_)
+    intercept_ovo =  intercept_ovo + replace_NaN_with_0(mod.res[[i]]$intercept_)
+    list_intercept_mc[[i]] =  replace_NaN_with_0(mod.res[[i]]$intercept_)
+    eval.sparsity_ovo = eval.sparsity_ovo + replace_NaN_with_0(mod.res[[i]]$eval.sparsity)
+    signn[[i]] =  mod.res[[i]]$sign_
+    precision_ovo = precision_ovo + replace_NaN_with_0(mod.res[[i]]$precision_)
+    recall_ovo = recall_ovo + replace_NaN_with_0(mod.res[[i]]$recall_)
+    f1_ovo = f1_ovo + replace_NaN_with_0(mod.res[[i]]$f1_)
+    scoree[[i]] = mod.res[[i]]$score_
+    pos_scoree[[i]] = mod.res[[i]]$pos_score_
+    neg_scoree[[i]] = mod.res[[i]]$neg_score_
+    confusionMatrix_ovo[[i]] = mod.res[[i]]$confusionMatrix_
+  }
 
-    for(i in 1:length(mod.res)){
-      indicess[[i]] = mod.res[[i]]$indices_
-      namess[[i]] = mod.res[[i]]$names_
-      coeffss[[i]] = mod.res[[i]]$coeffs_
-      fit_ovo = fit_ovo + mod.res[[i]]$fit_
-      unpenalized_fit_ovo= unpenalized_fit_ovo + mod.res[[i]]$unpenalized_fit_
-      auc_ovo = auc_ovo + mod.res[[i]]$auc_
-      accuracy_ovo = accuracy_ovo + mod.res[[i]]$accuracy_
-      intercept_ovo[[i]] =  mod.res[[i]]$intercept_
-      list_intercept_mc[[i]] =  mod.res[[i]]$intercept_
-      eval.sparsity_ovo = eval.sparsity_ovo + mod.res[[i]]$eval.sparsity
-      signn[[i]] =  mod.res[[i]]$sign_
-      precision_ovo = precision_ovo + mod.res[[i]]$precision_
-      recall_ovo = recall_ovo + mod.res[[i]]$recall_
-      f1_ovo = f1_ovo + mod.res[[i]]$f1_
-      scoree[[i]] = mod.res[[i]]$score_
-      pos_scoree[[i]] = mod.res[[i]]$pos_score_
-      neg_scoree[[i]] = mod.res[[i]]$neg_score_
-      confusionMatrix_ovo[[i]] = mod.res[[i]]$confusionMatrix_
-    }
-    # retrieve average of evaluation metric
-    fit_ovo = fit_ovo/nClass
-    unpenalized_fit_ovo = unpenalized_fit_ovo/nClass
-    auc_ovo = auc_ovo/nClass
-    accuracy_ovo = accuracy_ovo/nClass
-    #intercept_ovo = intercept_ovo
-    eval.sparsity_ovo =  eval.sparsity_ovo/nClass
-    precision_ovo = precision_ovo/nClass
-    recall_ovo = recall_ovo/nClass
-    f1_ovo = f1_ovo/nClass
-    confusionMatrix_ovo = confusionMatrix_ovo
+  # Calcul des moyennes des métriques d'évaluation
+  fit_ovo = fit_ovo / nClass
+  unpenalized_fit_ovo = unpenalized_fit_ovo / nClass
+  auc_ovo = auc_ovo / nClass
+  accuracy_ovo = accuracy_ovo / nClass
+  eval.sparsity_ovo = eval.sparsity_ovo / nClass
+  precision_ovo = precision_ovo / nClass
+  recall_ovo = recall_ovo / nClass
+  f1_ovo = f1_ovo / nClass
+  intercept_ovo = intercept_ovo / nClass
 
-    #generate a single model output
-    mod_res$learner <- learnerr
-    mod_res$language <- languagee
-    mod_res$objective <- objectivee
-    mod_res$evalToFit <- evalToFitt
+  # Génération d'une seule sortie de modèle
+  mod_res$learner <- learnerr
+  mod_res$language <- languagee
+  mod_res$objective <- objectivee
+  mod_res$evalToFit <- evalToFitt
 
-    if(isModelSota(mod.res[[1]])){
+  if(isModelSota(mod.res[[1]])){
 
-      list_obj <- list()
-      for(ko in 1:(length(mod.res))){
-        list_obj[[ko]] <-  mod.res[[ko]]$obj
-      }
-
+    list_obj <- list()
+    for(ko in 1:(length(mod.res))){
+      list_obj[[ko]] <-  mod.res[[ko]]$obj
     }
 
-    mod_res$coeffs_ <- coeffss
-    mod_res$indices_ <- indicess
-    mod_res$names_ <- namess
+  }
+
+  mod_res$coeffs_ <- coeffss
+  mod_res$indices_ <- indicess
+  mod_res$names_ <- namess
 
 
-    if(isModelSota(mod_res)){
-      mod_res$obj <- list_obj
+  if(isModelSota(mod_res)){
+    mod_res$obj <- list_obj
 
-    }
+  }
 
-    mod_res$fit_ <- fit_ovo
-    mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
-    mod_res$auc_ <-auc_ovo
-    mod_res$accuracy_ <- accuracy_ovo
-    mod_res$intercept_ <-  intercept_ovo[[1]]
-    mod_res$list_intercept_mc <- list_intercept_mc
-    mod_res$eval.sparsity <- eval.sparsity_ovo
-    mod_res$precision_ <- precision_ovo
-    mod_res$recall_ <- recall_ovo
-    mod_res$f1_ <- f1_ovo
-    mod_res$cor_ <- corr
-    mod_res$aic_ <- aicc
-    mod_res$sign_ <- signn
-    mod_res$rsq_ <- rsqq
-    mod_res$ser_ <- serr
-    mod_res$score_ <- scoree
-    mod_res$pos_score_ <- pos_scoree
-    mod_res$neg_score_ <- neg_scoree
-    mod_res$confusionMatrix_ <- confusionMatrix_ovo
-    mod.res <- list()
-    mod.res <- mod_res
-
-
+  mod_res$fit_ <- fit_ovo
+  mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
+  mod_res$auc_ <- auc_ovo
+  mod_res$accuracy_ <- accuracy_ovo
+  mod_res$intercept_ <- intercept_ovo
+  mod_res$list_intercept_mc <- list_intercept_mc
+  mod_res$eval.sparsity <- eval.sparsity_ovo
+  mod_res$precision_ <- precision_ovo
+  mod_res$recall_ <- recall_ovo
+  mod_res$f1_ <- f1_ovo
+  mod_res$cor_ <- corr
+  mod_res$aic_ <- aicc
+  mod_res$sign_ <- signn
+  mod_res$rsq_ <- rsqq
+  mod_res$ser_ <- serr
+  mod_res$score_ <- scoree
+  mod_res$pos_score_ <- pos_scoree
+  mod_res$neg_score_ <- neg_scoree
+  mod_res$confusionMatrix_ <- confusionMatrix_ovo
+  mod.res <- list()
+  mod.res <- mod_res
 
   return(mod.res)
 }
@@ -3501,6 +3499,522 @@ digestmc <- function(obj,
 
 }
 
+
+
+
+
+
+
+
+
+
+
+digest_MC <- function(obj,
+                   penalty = NULL,
+                   best.cv = TRUE,
+                   best.k = NULL,
+                   plot = FALSE,
+                   omit.na = TRUE)
+{
+  if(!isExperiment(obj))
+  {
+    stop("digest: The object did not pass the sanity check for an Experiment object!")
+  }
+
+  # so that it works with below
+  if(is.null(penalty))
+  {
+    penalty <- 0
+  }
+
+  if(length(penalty) > 1)
+  {
+    stop("digest: Please provide a single value for penalty!")
+  }
+
+  res                       <- list()
+  res$learner               <- obj$classifier$learner
+
+  # Empirical
+  res$best                  <- list()
+  res$best$models           <- getNBestModelst(obj = obj,
+                                              significance = TRUE,
+                                              by.k.sparsity = TRUE,
+                                              k.penalty = penalty,
+                                              n.best = 1,
+                                              single.best = FALSE,
+                                              single.best.cv = best.cv,
+                                              single.best.k = best.k,
+                                              max.min.prevalence = FALSE,
+                                              X = NULL,
+                                              verbose = FALSE,
+                                              evalToOrder = "fit_",
+                                              return.population = TRUE, # population
+                                              unique.control = TRUE
+  )
+
+  # sanity check
+  if(is.null(res$best$models))
+  {
+    warning("digest: no models are found. Returning empty handed.")
+    return(NULL)
+  }
+  res$best$model            <- getNBestModelst(obj = obj,
+                                              significance = TRUE,
+                                              by.k.sparsity = TRUE,
+                                              k.penalty = penalty,
+                                              n.best = 5,
+                                              single.best = TRUE, # give best
+                                              single.best.cv = best.cv, # based on CV
+                                              single.best.k = best.k,
+                                              max.min.prevalence = FALSE,
+                                              X = NULL,
+                                              verbose = FALSE,
+                                              evalToOrder = "fit_",
+                                              return.population = FALSE # population
+  )
+
+  res$best$scores           <- list()
+  res$best$scores$fit_      <- populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$auc_      <- populationGet_X(element2get = "auc_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$accuracy_ <- populationGet_X(element2get = "accuracy_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$precision_<- populationGet_X(element2get = "precision_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$recall_   <- populationGet_X(element2get = "recall_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$f1_       <- populationGet_X(element2get = "f1_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$cor_      <- populationGet_X(element2get = "cor_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$ser_      <- populationGet_X(element2get = "ser_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+  res$best$scores$rsq_      <- populationGet_X(element2get = "rsq_", toVec = TRUE, na.rm = FALSE)(pop = res$best$models)
+
+
+  # Cross Validation (if activated)
+  res$cv <- list()
+  if(!is.null(obj$crossVal))
+  {
+    res$cv                  <-   obj$crossVal
+    crossval                <- TRUE
+  }else
+  {
+    warning(paste("crossval information unavailable for", obj$learner))
+    crossval                <- FALSE
+  }
+
+  maj.class <- NA # default value for maj.class
+
+  # Majoritary class for all folds
+  if(!is.null(obj$classifier$lfolds))
+  {
+    if(obj$classifier$params$objective == "auc")
+    {
+      if(obj$classifier$params$evalToFit == "accuracy_")
+      {
+        maj.class           <- rep(NA, length(obj$classifier$lfolds))
+        # if accuracy
+        for(i in 1:length(maj.class))
+        {
+          maj.class[i]      <- max(table(obj$classifier$data$y[-obj$classifier$lfolds[[i]]])/length(obj$classifier$data$y[-obj$classifier$lfolds[[i]]]))
+        }
+      }else
+      {
+        # if AUC
+        maj.class           <- 0.5
+      }
+    } # if correlation it is NA
+  }
+
+  ##########################################################
+  # Plotting the results
+  ##########################################################
+  if(plot)
+  {
+    # set the limits
+    ylim <- c(0,1)
+
+    # make an empty plot in case it does not work
+    g.empty <- ggplot(data.frame()) + geom_point() + xlim(0, 10) + ylim(ylim) +
+      theme_bw() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+      ylab("") +
+      xlab("Model parismony sparse") +
+      ggtitle("") +
+      geom_hline(aes(yintercept=1), lty=2, col="lightgray") +
+      geom_hline(aes(yintercept=0.5), lty=2, col="lightgray")
+
+    # if correlation
+    if(obj$classifier$params$objective=="cor")
+    {
+      if(crossval)
+      {
+        #-----------------------------------------------------
+        # CORRELATION
+        #-----------------------------------------------------
+        # overall training accuracy learner results
+        dat <- res$cv$scores$empirical.cor
+        if(omit.na)
+        {
+          dat <- dat[rowSums(!is.na(dat))!=0,]
+        }
+        df <- data.frame(parsimony = rownames(dat),dat)
+        df.melt <- melt(df, id.vars = "parsimony")
+        df.melt$parsimony <- as.factor(df.melt$parsimony)
+        df.melt$parsimony <- factor(df.melt$parsimony,
+                                    levels = levels(df.melt$parsimony)[order(as.numeric(gsub("k_","",levels(df.melt$parsimony))))]
+        )
+        g.cor.emp.cv <- ggplot(data = df.melt, aes(y = value, x = parsimony)) +
+          geom_point(aes(color = variable), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+          geom_boxplot(notch = FALSE, outlier.colour = NA, position = position_dodge(width=0.9), alpha = 0.3) +
+          ylab("cor_") +
+          xlab("Model parsimony") +
+          ggtitle("Training performance (CV)") +
+          ylim(ylim) +
+          theme_bw() +
+          #geom_hline(yintercept = unique(maj.class), col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+
+        # overall testing accuracy learner results
+        dat <- res$cv$scores$generalization.cor
+        if(omit.na)
+        {
+          dat <- dat[rowSums(!is.na(dat))!=0,]
+        }
+        df <- data.frame(parsimony = rownames(dat),dat)
+        df.melt <- melt(df, id.vars = "parsimony")
+        df.melt$parsimony <- as.factor(df.melt$parsimony)
+        df.melt$parsimony <- factor(df.melt$parsimony,
+                                    levels = levels(df.melt$parsimony)[order(as.numeric(gsub("k_","",levels(df.melt$parsimony))))]
+        )
+        g.cor.gen.cv <- ggplot(data = df.melt, aes(y = value, x = parsimony)) +
+          geom_point(aes(color = variable), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+          geom_boxplot(notch = FALSE, outlier.colour = NA, position = position_dodge(width=0.9), alpha = 0.3) +
+          ylab("cor_") +
+          xlab("Model parsimony") +
+          ggtitle("Testing performance (CV)") +
+          ylim(ylim) +
+          theme_bw() +
+          #geom_hline(yintercept = unique(maj.class), col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+      }else
+      {
+        g.cor.emp.cv <- g.empty
+        g.cor.gen.cv <- g.empty
+      }
+
+      # RHO Empirical
+      v <- res$best$scores$cor_
+      df <- data.frame(value = v, parsimony = names(v))
+      df$parsimony <- factor(df$parsimony,
+                             levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+      )
+      g.cor.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+        geom_line(aes(color = "gray")) +
+        geom_point(size = 2, alpha = 1) +
+        scale_color_manual(values = "gray") +
+        ylab("cor_") +
+        xlab("Model parsimony") +
+        ggtitle("Emprical performance") +
+        labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$cor_,4),"|k:",length(res$best$model$indices_), sep="")) +
+        ylim(ylim) +
+        theme_bw() +
+        geom_hline(yintercept = mean(maj.class), col = "gray", linetype = "dashed") +
+        theme(legend.position="bottom", legend.direction="horizontal") +
+        guides(colour = "none")
+
+      # RSQ Empirical (R squared)
+      v <- res$best$scores$rsq_
+      df <- data.frame(value = v, parsimony = names(v))
+      df$parsimony <- factor(df$parsimony,
+                             levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+      )
+      g.rsq.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+        geom_line(aes(color = "gray")) +
+        geom_point(size = 2, alpha = 1) +
+        scale_color_manual(values = "gray") +
+        ylab("rsq_") +
+        xlab("Model parsimony") +
+        ggtitle("Emprical performance") +
+        labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$rsq_,4),"|k:",length(res$best$model$indices_), sep="")) +
+        ylim(ylim) +
+        theme_bw() +
+        geom_hline(yintercept = mean(maj.class), col = "gray", linetype = "dashed") +
+        theme(legend.position="bottom", legend.direction="horizontal") +
+        guides(colour = "none")
+
+      # SER Empirical (Standar error of the regression)
+      v <- res$best$scores$ser_
+      df <- data.frame(value = v, parsimony = names(v))
+      df$parsimony <- factor(df$parsimony,
+                             levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+      )
+      g.ser.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+        geom_line(aes(color = "gray")) +
+        geom_point(size = 2, alpha = 1) +
+        scale_color_manual(values = "gray") +
+        ylab("ser_") +
+        xlab("Model parsimony") +
+        ggtitle("Emprical performance") +
+        labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$ser_,4),"|k:",length(res$best$model$indices_), sep="")) +
+        #ylim(ylim) +
+        theme_bw() +
+        geom_hline(yintercept = mean(maj.class), col = "gray", linetype = "dashed") +
+        theme(legend.position="bottom", legend.direction="horizontal") +
+        guides(colour = "none")
+
+
+      grid.arrange(g.cor.emp.cv, g.cor.gen.cv,
+                   # empricial
+                   g.cor.emp, g.rsq.emp,
+                   g.ser.emp,
+                   ncol = 2)
+
+    }else # if classification
+    {
+      if(crossval)
+      {
+        # make an empty plot in case it does not work
+        g.empty <- ggplot(data.frame()) + geom_point() + xlim(0, 10) + ylim(ylim) +
+          theme_bw() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+          ylab("") +
+          xlab("Model parismony sparse") +
+          ggtitle("") +
+          geom_hline(aes(yintercept=1), lty=2, col="lightgray") +
+          geom_hline(aes(yintercept=0.5), lty=2, col="lightgray")
+
+        #-----------------------------------------------------
+        # ACCURACY
+        #-----------------------------------------------------
+        # overall training accuracy learner results
+        dat <- res$cv$scores$empirical.acc
+        if(omit.na)
+        {
+          dat <- dat[rowSums(!is.na(dat))!=0,]
+        }
+        df <- data.frame(parsimony = rownames(dat),dat)
+        df.melt <- melt(df, id.vars = "parsimony")
+        df.melt$parsimony <- as.factor(df.melt$parsimony)
+        df.melt$parsimony <- factor(df.melt$parsimony,
+                                    levels = levels(df.melt$parsimony)[order(as.numeric(gsub("k_","",levels(df.melt$parsimony))))]
+        )
+        g.accuracy.emp.cv <- ggplot(data = df.melt, aes(y = value, x = parsimony)) +
+          geom_point(aes(color = variable), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+          geom_boxplot(notch = FALSE, outlier.colour = NA, position = position_dodge(width=0.9), alpha = 0.3) +
+          ylab("accuracy_") +
+          xlab("Model parsimony") +
+          ggtitle("Training performance (CV)") +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = unique(maj.class), col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+        # overall testing accuracy learner results
+        dat <- res$cv$scores$generalization.acc
+        if(omit.na)
+        {
+          dat <- dat[rowSums(!is.na(dat))!=0,]
+        }
+        df <- data.frame(parsimony = rownames(dat),dat)
+        df.melt <- melt(df, id.vars = "parsimony")
+        df.melt$parsimony <- as.factor(df.melt$parsimony)
+        df.melt$parsimony <- factor(df.melt$parsimony,
+                                    levels = levels(df.melt$parsimony)[order(as.numeric(gsub("k_","",levels(df.melt$parsimony))))]
+        )
+        g.accuracy.gen.cv <- ggplot(data = df.melt, aes(y = value, x = parsimony)) +
+          geom_point(aes(color = variable), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+          geom_boxplot(notch = FALSE, outlier.colour = NA, position = position_dodge(width=0.9), alpha = 0.3) +
+          ylab("accuracy_") +
+          xlab("Model parsimony") +
+          ggtitle("Testing performance (CV)") +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = unique(maj.class), col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+        #-----------------------------------------------------
+        # AUC
+        #-----------------------------------------------------
+        # overall training accuracy learner results
+        dat <- res$cv$scores$empirical.auc
+        if(omit.na)
+        {
+          dat <- dat[rowSums(!is.na(dat))!=0,]
+        }
+        df <- data.frame(parsimony = rownames(dat),dat)
+        df.melt <- melt(df, id.vars = "parsimony")
+        df.melt$parsimony <- as.factor(df.melt$parsimony)
+        df.melt$parsimony <- factor(df.melt$parsimony,
+                                    levels = levels(df.melt$parsimony)[order(as.numeric(gsub("k_","",levels(df.melt$parsimony))))]
+        )
+        g.auc.emp.cv <- ggplot(data = df.melt, aes(y = value, x = parsimony)) +
+          geom_point(aes(color = variable), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+          geom_boxplot(notch = FALSE, outlier.colour = NA, position = position_dodge(width=0.9), alpha = 0.3) +
+          ylab("auc_") +
+          xlab("Model parsimony") +
+          ggtitle("Training performance (CV)") +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = 0.5, col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+        # overall testing accuracy learner results
+        dat <- res$cv$scores$generalization.auc
+        if(omit.na)
+        {
+          dat <- dat[rowSums(!is.na(dat))!=0,]
+        }
+        df <- data.frame(parsimony = rownames(dat),dat)
+        df.melt <- melt(df, id.vars = "parsimony")
+        df.melt$parsimony <- as.factor(df.melt$parsimony)
+        df.melt$parsimony <- factor(df.melt$parsimony,
+                                    levels = levels(df.melt$parsimony)[order(as.numeric(gsub("k_","",levels(df.melt$parsimony))))]
+        )
+        g.auc.gen.cv <- ggplot(data = df.melt, aes(y = value, x = parsimony)) +
+          geom_point(aes(color = variable), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+          geom_boxplot(notch = FALSE, outlier.colour = NA, position = position_dodge(width=0.9), alpha = 0.3) +
+          ylab("auc_") +
+          xlab("Model parsimony") +
+          ggtitle("Testing performance (CV)") +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = 0.5, col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+      }else
+      {
+        g.accuracy.emp.cv <- g.empty
+        g.accuracy.gen.cv <- g.empty
+        g.auc.emp.cv <- g.empty
+        g.auc.gen.cv <- g.empty
+      }
+
+      if(all(is.na(unlist(res$best$scores))))
+      {
+        g.accuracy.emp <- g.empty
+        g.auc.emp <- g.empty
+        g.recall.emp <- g.empty
+        g.precision.emp <- g.empty
+      }else
+      {
+        # ACCURACY Empirical
+        v <- res$best$scores$accuracy_
+        df <- data.frame(value = v, parsimony = names(v))
+        df$parsimony <- as.factor(df$parsimony)
+        df$parsimony <- factor(df$parsimony,
+                               levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+        )
+        g.accuracy.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+          geom_line(aes(color = "gray")) +
+          geom_point(size = 2, alpha = 1) +
+          scale_color_manual(values = "gray") +
+          ylab("accuracy_") +
+          xlab("Model parsimony") +
+          ggtitle("Emprical performance") +
+          labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$accuracy_,4),"|k:",length(res$best$model$indices_), sep="")) +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = mean(maj.class), col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+
+        # AUC Empirical
+        v <- res$best$scores$auc_
+        df <- data.frame(value = v, parsimony = names(v))
+        df$parsimony <- as.factor(df$parsimony)
+        df$parsimony <- factor(df$parsimony,
+                               levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+        )
+        g.auc.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+          geom_line(aes(color = "gray")) +
+          geom_point(size = 2, alpha = 1) +
+          scale_color_manual(values = "gray") +
+          ylab("auc_") +
+          xlab("Model parsimony") +
+          ggtitle("Emprical performance") +
+          labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$auc_,4),"|k:",length(res$best$model$indices_), sep="")) +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = mean(maj.class), col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+        # RECALL Empirical
+        v <- res$best$scores$recall_
+        df <- data.frame(value = v, parsimony = names(v))
+        df$parsimony <- as.factor(df$parsimony)
+        df$parsimony <- factor(df$parsimony,
+                               levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+        )
+        g.recall.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+          geom_line(aes(color = "gray")) +
+          geom_point(size = 2, alpha = 1) +
+          scale_color_manual(values = "gray") +
+          ylab("recall_") +
+          xlab("Model parsimony") +
+          ggtitle("Emprical performance") +
+          labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$recall_,4),"|k:",length(res$best$model$indices_), sep="")) +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = 0.5, col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+        # PRECISION Empirical
+        v <- res$best$scores$precision_
+        df <- data.frame(value = v, parsimony = names(v))
+        df$parsimony <- as.factor(df$parsimony)
+        df$parsimony <- factor(df$parsimony,
+                               levels = levels(df$parsimony)[order(as.numeric(gsub("k_","",levels(df$parsimony))))]
+        )
+        g.precision.emp <- ggplot(data = df, aes(x = parsimony, y = value, group = 1)) +
+          geom_line(aes(color = "gray")) +
+          geom_point(size = 2, alpha = 1) +
+          scale_color_manual(values = "gray") +
+          ylab("precision_") +
+          xlab("Model parsimony") +
+          ggtitle("Emprical performance") +
+          labs(subtitle = paste("L:",obj$classifier$learner,"|F:",signif(res$best$model$precision_,4),"|k:",length(res$best$model$indices_), sep="")) +
+          ylim(ylim) +
+          theme_bw() +
+          geom_hline(yintercept = 0.5, col = "gray", linetype = "dashed") +
+          theme(legend.position="bottom", legend.direction="horizontal") +
+          guides(colour = "none")
+
+      } # end existing scores
+
+      grid.arrange(g.accuracy.emp.cv, g.accuracy.gen.cv,
+                   g.auc.emp.cv, g.auc.gen.cv,
+                   # empricial
+                   g.accuracy.emp, g.auc.emp,
+                   g.recall.emp, g.precision.emp,
+                   ncol = 2)
+
+    } # end classification
+  }
+
+  # return digested results
+  return(res)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #' Get the models from a classifier result for each k-sparsity
 #'
 #' @description Get the N best models from a classifier result for each k-sparsity.
@@ -3527,7 +4041,7 @@ digestmc <- function(obj,
 #' @param unique.control: if set to TRUE (default:TRUZ), we correct the population so that no dupplication of models takes place
 #' @return a list of model objects or a model when it is a single one or a model collection
 #' @export
-getNBestModels <- function(obj,
+getNBestModelst <- function(obj,
                            significance = FALSE,
                            by.k.sparsity = TRUE,
                            k.penalty = 0,
@@ -3770,6 +4284,7 @@ getNBestModels <- function(obj,
       {
         # set from above if it does not exist
         single.best.k <- best.k
+        single.best.k <- 10
       }else
       {
         if(single.best.k == 0)
@@ -4063,10 +4578,22 @@ predict_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
 predict_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   # Initialize empty lists for models, class pairs, predictions, and scores
   mods <- list()
-  list_y <- list()
   predictions_list <- list()
   scorelist <- list()
   nClasse <- unique(y)
+  list_feature.cor <- list()
+  list_feature.cor <- clf$feature.cor
+  list_X <- list()
+  list_X <- clf$data$X
+  list_Xmin <- list()
+  list_Xmin <- clf$data$X.min
+  list_Xmax <- list()
+  list_Xmax <- clf$data$X.max
+  list_y <- list()
+  list_y <- clf$data$y
+  list_coeffs <- list()
+  list_coeffs <- clf$coeffs_
+
 
   # Determine the number of combinations
   n_combinations <- length(mod$score_)
@@ -4105,6 +4632,13 @@ predict_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
 
   # Calculate scores for each model and store in scorelist
   for(i in 1:length(mods)){
+    clf$feature.cor <- list_feature.cor[[i]]
+    clf$data$X <- list_X[[i]]
+    clf$data$X.min <- list_Xmin[[i]]
+    clf$data$X.max <- list_Xmax[[i]]
+    clf$coeffs_ <-  list_coeffs[[i]]
+    clf$data$y <-  list_y[[i]]
+
     scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = force.re.evaluation)
   }
 
@@ -4398,6 +4932,10 @@ evaluatePopulation_overall <- function(pop, y, approch = "ova") {
   # Return the list containing evaluated models with their respective metrics.
   return(pop_overall)
 }
+
+
+
+
 
 
 
