@@ -47,11 +47,11 @@ generateAllSingleFeatureModel_mc <- function(X, y, clf, ind.sub = NULL, eval.all
   if(!is.null(ind.sub[[1]]))
   {
     for(j in 1:(length(list_X))){
-    # sanity check
-    if(any(is.na(match(ind.sub[[j]], seq_len(nrow(list_X[[j]]))))))
-    {
-      stop("generateAllSingleFeatureModel_ovo: index does not match with X")
-    }
+      # sanity check
+      if(any(is.na(match(ind.sub[[j]], seq_len(nrow(list_X[[j]]))))))
+      {
+        stop("generateAllSingleFeatureModel_ovo: index does not match with X")
+      }
     }
 
   }else
@@ -97,14 +97,14 @@ generateAllCombinations_mc <- function(X, y, clf, ind.features.to.keep, sparsity
   # features contained in ind.features.to.keep
   pop_vec <- list()
   for(j in 1:(length(ind.features.to.keep))){
-  pop_vec[[j]] <- combinations(n = length(ind.features.to.keep[[j]]), r = sparsity, v = ind.features.to.keep[[j]])
+    pop_vec[[j]] <- combinations(n = length(ind.features.to.keep[[j]]), r = sparsity, v = ind.features.to.keep[[j]])
   }
   if(clf$params$language == "ratio" & clf$params$objective == "auc")
   {
     for(j in 1:(ind.features.to.keep)){
-    popvec = pop_vec[[j]]
-    ind <- (apply(pop_vec[[j]],1,min) < length(ind.features.to.keep[[j]])/2) & (apply(pop_vec[[j]], 1, max) > length(ind.features.to.keep[[j]])/2)
-    pop_vec[[j]] <- popvec[ind,]
+      popvec = pop_vec[[j]]
+      ind <- (apply(pop_vec[[j]],1,min) < length(ind.features.to.keep[[j]])/2) & (apply(pop_vec[[j]], 1, max) > length(ind.features.to.keep[[j]])/2)
+      pop_vec[[j]] <- popvec[ind,]
 
     }
   }
@@ -117,8 +117,8 @@ generateAllCombinations_mc <- function(X, y, clf, ind.features.to.keep, sparsity
 
   # transform pop_vec from matrix to list of sparseVec objects
   for(j in 1:length(pop_vec)){
-  popvec = pop_vec[[j]]
-  pop_vec[[j]] <- lapply(seq_len(nrow(popvec)), function(i, popvec) {popvec[i,]}, popvec)
+    popvec = pop_vec[[j]]
+    pop_vec[[j]] <- lapply(seq_len(nrow(popvec)), function(i, popvec) {popvec[i,]}, popvec)
   }
 
   list_indices <- list()
@@ -175,12 +175,12 @@ countEachFeatureApperance_mc <- function(clf, allFeatures, pop, best, veryBest,a
 
   for(i in 1:(length(list_coeff))){
 
-  clf$coeffs_ <-  list_coeff[[i]]
-  feat.coeff <- clf$coeffs_[featuresInPop]
+    clf$coeffs_ <-  list_coeff[[i]]
+    feat.coeff <- clf$coeffs_[featuresInPop]
 
-  res <- data.frame(nbInBest, nbInVeryBest, freqInBest, feat.coeff)
-  res <- res[order(res[, "nbInVeryBest"], res[, "nbInBest"], decreasing = TRUE),]
-  list_res[[i]] <- res
+    res <- data.frame(nbInBest, nbInVeryBest, freqInBest, feat.coeff)
+    res <- res[order(res[, "nbInVeryBest"], res[, "nbInBest"], decreasing = TRUE),]
+    list_res[[i]] <- res
   }
   res <- list()
   res <- list_res
@@ -201,25 +201,25 @@ getFeatures2Keep_mc <- function(clf, featuresApperance, threshold = 0.01,approch
   passerel <- featuresApperance
   for(i in 1:(length(passerel))){
     featuresApperance = passerel[[i]]
-  if(clf$params$language == "ratio" & clf$params$objective == "auc")
-  {
-    fa.pos <- featuresApperance[featuresApperance$feat.coeff == "1",]
-    fa.neg <- featuresApperance[featuresApperance$feat.coeff == "-1",]
+    if(clf$params$language == "ratio" & clf$params$objective == "auc")
+    {
+      fa.pos <- featuresApperance[featuresApperance$feat.coeff == "1",]
+      fa.neg <- featuresApperance[featuresApperance$feat.coeff == "-1",]
 
-    tookeep.pos <- fa.pos$nbInVeryBest !=0 | fa.pos$freqInBest > threshold #| 1:clf$params$nbBest/2
-    mask <- rep(FALSE,nrow(fa.pos)); mask[1:clf$params$nbBest/2] <- TRUE
-    tookeep.pos <- tookeep.pos | mask
+      tookeep.pos <- fa.pos$nbInVeryBest !=0 | fa.pos$freqInBest > threshold #| 1:clf$params$nbBest/2
+      mask <- rep(FALSE,nrow(fa.pos)); mask[1:clf$params$nbBest/2] <- TRUE
+      tookeep.pos <- tookeep.pos | mask
 
-    tookeep.neg <- fa.neg$nbInVeryBest !=0 | fa.neg$freqInBest > threshold
-    mask <- rep(FALSE,nrow(fa.neg)); mask[1:clf$params$nbBest/2] <- TRUE
-    tookeep.neg <- tookeep.neg | mask
+      tookeep.neg <- fa.neg$nbInVeryBest !=0 | fa.neg$freqInBest > threshold
+      mask <- rep(FALSE,nrow(fa.neg)); mask[1:clf$params$nbBest/2] <- TRUE
+      tookeep.neg <- tookeep.neg | mask
 
-    tokeep <- c(rownames(fa.pos)[tookeep.pos], rownames(fa.neg)[tookeep.neg])
-  }else
-  {
-    tokeep <- (featuresApperance[,"nbInVeryBest"] !=0  | featuresApperance[,"freqInBest"] > threshold)
-    tokeep <- rownames(featuresApperance[tokeep,])
-  }
+      tokeep <- c(rownames(fa.pos)[tookeep.pos], rownames(fa.neg)[tookeep.neg])
+    }else
+    {
+      tokeep <- (featuresApperance[,"nbInVeryBest"] !=0  | featuresApperance[,"freqInBest"] > threshold)
+      tokeep <- rownames(featuresApperance[tokeep,])
+    }
     list_tokeep[[i]] <- tokeep
   }
   tokeep <- list()
@@ -227,4 +227,3 @@ getFeatures2Keep_mc <- function(clf, featuresApperance, threshold = 0.01,approch
 
   return(tokeep)
 }
-

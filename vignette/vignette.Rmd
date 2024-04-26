@@ -35,6 +35,10 @@ indices_tries <- order(yvec)
 yvec_trie <- yvec[indices_tries]
 X_general  <- mc.input$X[,indices_tries]
 # Create an index vector for data partitioning
+
+X_general <- X_general[rowSums(X_general)!=0,]; dim(X_general) # filter out variables with only zero values
+X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE); dim(X_general)
+
 set.seed(42)  
 y = as.vector(yvec_trie)
 X = X_general
@@ -76,25 +80,13 @@ table(y.test)
 dim(X)
 dim(X.test)
 ```
-#Classifying using the terga1 algorithm
-
-```{r setting the classifier}
-
-clf <- terga1_mc(nCores = 1,
-              seed = 1,
-              plot = TRUE
-)
-printy(clf) # print the object for more information
-isClf(clf)  # test whether the object is a classifier
-class(clf)  # the class of the classifier object
-```
 
 
 
 #Classifying using the terbeam algorithm
 
 ```{r setting the classifier}
-clf <- terBeam_mc(sparsity = c( 2, 3, 4, 5), 
+clf <- terBeam_mc(sparsity = c(2,3,4,5), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -109,15 +101,15 @@ clf <- terBeam_mc(sparsity = c( 2, 3, 4, 5),
 ```
 
 
-# Running the learner experiment
+# Run the multiclass learning experiment using the one-versus-one binarization strategy.
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
 if(runit)
 {
-  res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE, nfolds = 10); # class(res_clf)
+res_clf_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE, nfolds= 10); # class(res_clf_ovo)
   # save results
-  save(res_clf, clf, file = "res_clf.rda", compression_level = 9)
+  save(res_clf_ovo, clf, file = "res_clf_ovo.rda", compression_level = 9)
 }
 
 # ... Database X is not a matrix! Converting ...
@@ -149,213 +141,299 @@ if(runit)
 
 ```
 
+# Load the results of the one-versus-one training.
+
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-if(!runit)
-{
-  load("res_clf.rda")
+
+  load("res_clf_ovo.rda")
+
+```
+
+## Digesting the results
+
+```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+bests_models_parsimony_ovo <- digestmc(obj = res_clf_ovo, penalty = 0.75/100, plot = TRUE)
+
+```
+
+## Voting Aggregation
+
+
+### Evaluate the population of the best one-versus-one models using the multiclass aggregation method by majority voting with the test data.
+
+```{r}
+pop = res_clf_ovo$classifier$models
+Population_voting_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "votingAggregation")
+```
+
+### Function to extract the values of each metric for each method
+
+
+```{r}
+extract_metric_values <- function(aggregation_list, metric_name) {
+  values <- c()
+  for (i in seq_along(aggregation_list)) {
+    values <- c(values, aggregation_list[[i]][[1]][[metric_name]])
+  }
+  return(values)
 }
 ```
 
-# Digesting the results
+### Visualize the performance of each metric for the best model of each sparsity used.
+
+
+```{r fig.height=3.5, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
+data <- data.frame(
+  Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
+  Value = c(
+    extract_metric_values(Population_voting_Aggregation, "accuracy_") * 100,
+    extract_metric_values(Population_voting_Aggregation, "precision_") * 100,
+    extract_metric_values(Population_voting_Aggregation, "recall_") * 100,
+    extract_metric_values(Population_voting_Aggregation, "f1_") * 100
+  ),
+  Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
+)
+
+colors <- c("Accuracy" = "#1f77b4", "Precision" = "#ff7f0e", "Recall" = "#2ca02c", "F1" = "#d62728")
+
+ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
+  geom_boxplot(color = "black", outlier.color = "black") +
+  scale_fill_manual(values = colors) +  # Utiliser la palette de couleurs définie
+  facet_wrap(~Metric, scales = "free_y") +
+  labs(x = "Metrics", y = "Value", title = "Metrics by sparsity") +
+  ylim(0, 100) +  # Définir la limite de l'axe y de 0 à 100
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA),
+        legend.title = element_blank(),
+        legend.position = "bottom")
+```
+
+### Best Model Voting Aggregation
+
+```{r}
+best_model_voting_aggregation = Population_voting_Aggregation[[4]][[1]]
+best_model_voting_aggregation$accuracy_
+best_model_voting_aggregation$confusionMatrix_
+best_model_voting_aggregation$coeffs_
+best_model_voting_aggregation$predictions_aggre
+```
+
+
+
+## Weighted voting Aggregation
+
+### Evaluate the population of the best one-versus-one models using the multiclass aggregation method by Weighted voting with the test data.
+
+```{r}
+pop = res_clf_ovo$classifier$models
+Population_weighted_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "weightedAggregation")
+```
+
+### Visualize the performance of each metric for the best model of each sparsity used.
+
+```{r fig.height=3.5, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
+data <- data.frame(
+  Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
+  Value = c(
+    extract_metric_values(Population_weighted_Aggregation, "accuracy_") * 100,
+    extract_metric_values(Population_weighted_Aggregation, "precision_") * 100,
+    extract_metric_values(Population_weighted_Aggregation, "recall_") * 100,
+    extract_metric_values(Population_weighted_Aggregation, "f1_") * 100
+  ),
+  Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
+)
+
+colors <- c("Accuracy" = "#1f77b4", "Precision" = "#ff7f0e", "Recall" = "#2ca02c", "F1" = "#d62728")
+
+ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
+  geom_boxplot(color = "black", outlier.color = "black") +
+  scale_fill_manual(values = colors) +  # Utiliser la palette de couleurs définie
+  facet_wrap(~Metric, scales = "free_y") +
+  labs(x = "Metrics", y = "Value", title = "Metrics by sparsity") +
+  ylim(0, 100) +  # Définir la limite de l'axe y de 0 à 100
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA),
+        legend.title = element_blank(),
+        legend.position = "bottom")
+```
+
+### best model Weighted Aggregation
+
+```{r}
+best_model_weighted_aggregation = Population_weighted_Aggregation[[4]][[1]]
+best_model_weighted_aggregation$accuracy_
+best_model_weighted_aggregation$confusionMatrix_
+best_model_weighted_aggregation$coeffs_
+best_model_weighted_aggregation$predictions_aggre
+
+```
+
+
+
+
+
+# Load the results of the one-versus-all training.
+
+```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+load("res_clf_ova.rda")
+```
+
+## Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig_terga1ovobeamova <- digest_MC(obj = res_clf, penalty = 0.75/100, plot = TRUE)
+bests_models_parsimony_ova <- digestmc(obj = res_clf_ova, penalty = 0.75/100, plot = TRUE)
 ```
 
-### best model
 
-```{r best model, fig.width=7, warning=FALSE}
+## New Approach
 
-# get the best model
-mod <- res_clf.dig_terga1ova$best$model
 
-```
+### Evaluate the population of the best one-versus-all models using the multiclass aggregation method by New Approach  with the test data.
 
 
 ```{r}
-mod4 <- res_clf.dig_terga1ovobeamova$best$model
+pop = res_clf_ova$classifier$models
+Population_newApproach_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "NewApproach")
 ```
 
 
+### Visualize the performance of each metric for the best model of each sparsity used.
 
+```{r fig.height=3.5, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
+data <- data.frame(
+  Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
+  Value = c(
+    extract_metric_values(Population_newApproach_Aggregation, "accuracy_") * 100,
+    extract_metric_values(Population_newApproach_Aggregation, "precision_") * 100,
+    extract_metric_values(Population_newApproach_Aggregation, "recall_") * 100,
+    extract_metric_values(Population_newApproach_Aggregation, "f1_") * 100
+  ),
+  Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
+)
 
+colors <- c("Accuracy" = "#1f77b4", "Precision" = "#ff7f0e", "Recall" = "#2ca02c", "F1" = "#d62728")
 
-
-
-#Sauvegarde terga1 ova cv 10
-```{r}
-modterga1_ovacv = mod
+ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
+  geom_boxplot(color = "black", outlier.color = "black") +
+  scale_fill_manual(values = colors) +  # Utiliser la palette de couleurs définie
+  facet_wrap(~Metric, scales = "free_y") +
+  labs(x = "Metrics", y = "Value", title = "Metrics by sparsity") +
+  ylim(0, 100) +  # Définir la limite de l'axe y de 0 à 100
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA),
+        legend.title = element_blank(),
+        legend.position = "bottom")
 ```
 
-
-```{r}
-sauve1ovatergacv = modterga1_ovacv 
-```
-
-
-
-# Prediction one versus all
-
-```{r}
-predict_ova <- predict_ova(mod, y = y.test, X = X.test, clf, force.re.evaluation = TRUE)
-
-```
-
-
-
-
-
-
-```{r}
-predict_ova4 <- predict_ova(mod4, y = y.test, X = X.test, clf, force.re.evaluation = TRUE)
-```
-
-# Aggregation Max Voting score one versus all and table  contingency
-```{r}
-aggregate_predictions_Max_Voting <- aggregate_predictions_Max_Voting_ova(list_predictions = predict_ova, y)
-aggregate_predictions_Max_Voting
-y_pred = aggregate_predictions_Max_Voting
-table_contingency <- table(y.test, y_pred)
-print(table_contingency)
-```
-
-
-#terbeam
-```{r}
-aggregate_predictions_Max_Voting4 <- aggregate_predictions_Max_Voting_ova(list_predictions = predict_ova4, y.test)
-aggregate_predictions_Max_Voting4
-y_pred = aggregate_predictions_Max_Voting4
-table_contingency4 <- table(y.test, y_pred)
-print(table_contingency4)
-```
-
-#Min
+### best model new approach Aggregation
 
 ```{r}
-aggregate_predictions_Min_Voting42 <- aggregate_predictions_Min_Voting_ova(list_predictions = predict_ova4, y.test)
-aggregate_predictions_Min_Voting42
-y_pred = aggregate_predictions_Min_Voting42
-table_contingency42 <- table(y.test, y_pred)
-print(table_contingency42)
+best_model_newapproach_aggregation = Population_newApproach_Aggregation[[3]][[1]]
+best_model_newapproach_aggregation$accuracy_
+best_model_newapproach_aggregation$confusionMatrix_
+best_model_newapproach_aggregation$coeffs_
+best_model_newapproach_aggregation$predictions_aggre
 ```
 
 
+## maximizationAggregation
 
-
-
-
-
-
-# Aggregation Min Voting score one versus all and table  contingency
-```{r}
-aggregate_predictions_Min_Voting <- aggregate_predictions_Min_Voting_ova(list_predictions = predict_ova, y.test)
-aggregate_predictions_Min_Voting
-y_pred = aggregate_predictions_Min_Voting
-table_contingency <- table(y.test, y_pred)
-print(table_contingency)
-```
-
-#Evaluation of metrics for the one versus all approach
+### Evaluate the population of the best one-versus-all models using the multiclass aggregation method by maximization  with the test data.
 
 ```{r}
-Results <- EvaluateAdditionnelGlobaleMetrics(predictions = y_pred, actual_labels = y.test)
-Results
+pop = res_clf_ova$classifier$models
+Population_maximization_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "maximizationAggregation")
 ```
 
 
+### Visualize the performance of each metric for the best model of each sparsity used.
+
+```{r fig.height=3.5, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
+data <- data.frame(
+  Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
+  Value = c(
+    extract_metric_values(Population_maximization_Aggregation, "accuracy_") * 100,
+    extract_metric_values(Population_maximization_Aggregation, "precision_") * 100,
+    extract_metric_values(Population_maximization_Aggregation, "recall_") * 100,
+    extract_metric_values(Population_maximization_Aggregation, "f1_") * 100
+  ),
+  Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
+)
+
+colors <- c("Accuracy" = "#1f77b4", "Precision" = "#ff7f0e", "Recall" = "#2ca02c", "F1" = "#d62728")
+
+ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
+  geom_boxplot(color = "black", outlier.color = "black") +
+  scale_fill_manual(values = colors) +  # Utiliser la palette de couleurs définie
+  facet_wrap(~Metric, scales = "free_y") +
+  labs(x = "Metrics", y = "Value", title = "Metrics by sparsity") +
+  ylim(0, 100) +  # Définir la limite de l'axe y de 0 à 100
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA),
+        legend.title = element_blank(),
+        legend.position = "bottom")
+```
 
 
-
-
-
+### best model maximization Aggregation
 ```{r}
-Results41 <- EvaluateAdditionnelGlobaleMetrics(predictions = y_pred, actual_labels = y.test)
-Results41
+best_model_maximization_aggregation = Population_maximization_Aggregation[[3]][[1]]
+best_model_maximization_aggregation$accuracy_
+best_model_maximization_aggregation$confusionMatrix_
+best_model_maximization_aggregation$coeffs_
+best_model_maximization_aggregation$predictions_aggre
+```
+ 
+
+## Ranking Aggregation
+
+### Evaluate the population of the best one-versus-all models using the multiclass aggregation method by ranking  with the test data.
+
+```{r warning=FALSE}
+pop = res_clf_ova$classifier$models
+Population_ranking_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "rankingAggregation")
+
 ```
 
 
-#Prediction one versus one
+### Visualize the performance of each metric for the best model of each sparsity used.
+
+```{r  fig.height=3.5, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
+data <- data.frame(
+  Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
+  Value = c(
+    extract_metric_values(Population_ranking_Aggregation, "accuracy_") * 100,
+    extract_metric_values(Population_ranking_Aggregation, "precision_") * 100,
+    extract_metric_values(Population_ranking_Aggregation, "recall_") * 100,
+    extract_metric_values(Population_ranking_Aggregation, "f1_") * 100
+  ),
+  Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
+)
+
+colors <- c("Accuracy" = "#1f77b4", "Precision" = "#ff7f0e", "Recall" = "#2ca02c", "F1" = "#d62728")
+
+ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
+  geom_boxplot(color = "black", outlier.color = "black") +
+  scale_fill_manual(values = colors) +  # Utiliser la palette de couleurs définie
+  facet_wrap(~Metric, scales = "free_y") +
+  labs(x = "Metrics", y = "Value", title = "Metrics by sparsity") +
+  ylim(0, 100) +  # Définir la limite de l'axe y de 0 à 100
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA),
+        legend.title = element_blank(),
+        legend.position = "bottom")
+```
 
 
-
-
-
-
-
+### best model ranking Aggregation
 ```{r}
-modovo <- res_clf.dig_terga1ovo$best$model
-
+best_model_ranking_aggregation = Population_ranking_Aggregation[[3]][[1]]
+best_model_ranking_aggregation$accuracy_
+best_model_ranking_aggregation$confusionMatrix_
+best_model_ranking_aggregation$coeffs_
+best_model_ranking_aggregation$predictions_aggre
 ```
-
-
-```{r}
-predict_ovo <- predict_ovo(modovo, y = y.test, X = X.test, clf, force.re.evaluation = TRUE )
-
-```
-
-###  Aggregation : aggregate_predictions_Max_Voting one versus one and table  contingency
-```{r}
-aggregate_majoritaire_vote_ovo <- aggregate_majoritaire_vote_ovo(predictions_list = predict_ovo)
-aggregate_majoritaire_vote_ovo
-y_pred = aggregate_majoritaire_vote_ovo
-table_contingency <- table(y.test, y_pred)
-print(table_contingency)
-```
-
-
-###Evaluation of metrics for the one versus all approach
-
-```{r}
-Results <- EvaluateAdditionnelGlobaleMetrics(predictions = y_pred, actual_labels = y.test)
-Results
-```
-
-```{r}
-best.model.test_ovoterga <- evaluateModel_mc(mod = modovo, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
-best.model.test_ovoterga$auc_
-```
-
-
-```{r}
-modovobeam = res_clf.dig_terga1ovobeam$best$model
-```
-
-```{r}
-predict_ovo1 <- predict_ovo(modovobeam, y = y.test, X = X.test, clf, force.re.evaluation = TRUE )
-```
-
-```{r}
-aggregate_majoritaire_vote_ovo1 <- aggregate_majoritaire_vote_ovo(predictions_list = predict_ovo1)
-aggregate_majoritaire_vote_ovo1
-y_pred = aggregate_majoritaire_vote_ovo1
-table_contingency <- table(y.test, y_pred)
-print(table_contingency)
-```
-
-```{r}
-Results <- EvaluateAdditionnelGlobaleMetrics(predictions = y_pred, actual_labels = y.test)
-Results
-```
-
-
-```{r}
-best.model.test_ovobeamova <- evaluateModel_mc(mod = mod, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE, mode = "test",approch = "ova")
-best.model.test_ovobeamova$auc_
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -364,10 +442,6 @@ best.model.test_ovobeamova$auc_
 
 ## Random Forest
 
-```{r warning=FALSE}
-library(randomForest)
-library(e1071)
-```
 
 ```{r warning=FALSE}
 library(caret)
@@ -387,6 +461,11 @@ train_control <- trainControl(method = "cv", number = 10)
 # Train the multiclass random forest model with 10-fold cross-validation
 rf_model <- train(x = X_train, y = y_train, method = "rf", trControl = train_control)
 
+
+```
+
+
+```{r warning=FALSE}
 # Prediction on the training data
 train_pred <- predict(rf_model, X_train)
 
@@ -414,10 +493,7 @@ auc_test <- auc(roc_test)
 # Displaying metrics for the test data
 print(test_metrics)
 print(auc_test)
-
 ```
-
-
 
 
 ```{r warning=FALSE}
@@ -431,9 +507,6 @@ f1_train <- 2 * (train_precision * train_recall) / (train_precision + train_reca
 
 # Afficher le score F1 pour les données d'entraînement
 print(paste("Train F1 Score:", f1_train))
-
-
- 
 
 # Displaying metrics for the training data
 print(paste("Train Accuracy:", train_accuracy))
@@ -503,7 +576,7 @@ all_metrics <- rbind(train_metrics, test_metrics)
 plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 1), vjust = -0.5) +
-  labs(title = "Comparison of test and training metrics RF",
+  labs(title = "Comparison of test and training metrics Sota RF",
        x = "Metrics", y = "Values") +
   theme_minimal()
 
@@ -511,7 +584,6 @@ plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
 print(plot)
 
 ```
-
 
 
 ## Regression Logistique
@@ -523,18 +595,18 @@ library(glmnet)
 # Utilize cv.glmnet with 10-fold cross-validation
 df <- as.data.frame(t(X))
 df$y <- factor(y)
-cv_model <- cv.glmnet(as.matrix(df[, -ncol(df)]), df$y, family = "multinomial", alpha = 1, nfolds = 10)
+cv_model_rl <- cv.glmnet(as.matrix(df[, -ncol(df)]), df$y, family = "multinomial", alpha = 1, nfolds = 10)
 
 # Get the best model based on cross-validation
-best_model <- cv_model$glmnet.fit
+best_model_rl <- cv_model_rl$glmnet.fit
 
 # Obtain predictions directly from cross-validation
-predictions <- predict(cv_model, newx = as.matrix(df[, -ncol(df)]), s = "lambda.min", type = "class")
-predictions <- factor(predictions)
+predictions_rl <- predict(cv_model_rl, newx = as.matrix(df[, -ncol(df)]), s = "lambda.min", type = "class")
+predictions_rl <- factor(predictions_rl)
 
 # Check the dimensions and create the confusion matrix
-if(length(predictions) == length(df$y)) {
-  confusionMatrix(predictions, df$y)
+if(length(predictions_rl) == length(df$y)) {
+  confusionMatrix(predictions_rl, df$y)
 } else {
   print("The dimensions of the predictions do not match those of the ground truth")
 }
@@ -544,29 +616,29 @@ if(length(predictions) == length(df$y)) {
 
 
 ```{r warning=FALSE}
-conf_matrix <- confusionMatrix(predictions, df$y)
+conf_matrix_rl <- confusionMatrix(predictions_rl, df$y)
 
 # Calcul de l'exactitude
-accuracy_train <- conf_matrix$overall[["Accuracy"]]
+accuracy_train_rl <- conf_matrix_rl$overall[["Accuracy"]]
 
 # Calcul de la précision moyenne de chaque classe
-precision_train <- mean(conf_matrix$byClass[ , "Precision"])
+precision_train_rl <- mean(conf_matrix_rl$byClass[ , "Precision"])
 
 # Calcul de l'AUC en utilisant la précision équilibrée moyenne (Balanced Accuracy)
-AUC_train <- mean(conf_matrix$byClass[ , "Balanced Accuracy"])
+AUC_train_rl <- mean(conf_matrix_rl$byClass[ , "Balanced Accuracy"])
 
 # Calcul du rappel moyen (Sensibilité) de chaque classe
-recall_train <- mean(conf_matrix$byClass[ , "Sensitivity"])
+recall_train_rl <- mean(conf_matrix_rl$byClass[ , "Sensitivity"])
 
 # Calcul du score F1 pour les données d'entraînement
-F1_train <- 2 * (precision_train * recall_train) / (precision_train + recall_train)
+F1_train_rl <- 2 * (precision_train_rl * recall_train_rl) / (precision_train_rl + recall_train_rl)
 
 # Affichage des métriques pour les données d'entraînement
-print(paste("Train Accuracy:", accuracy_train))
-print(paste("Train Precision:", precision_train))
-print(paste("Train Recall (Sensitivity):", recall_train))
-print(paste("Train AUC (Balanced Accuracy):", AUC_train))
-print(paste("Train F1 Score:", F1_train))
+print(paste("Train Accuracy:", accuracy_train_rl))
+print(paste("Train Precision:", precision_train_rl))
+print(paste("Train Recall (Sensitivity):", recall_train_rl))
+print(paste("Train AUC (Balanced Accuracy):", AUC_train_rl))
+print(paste("Train F1 Score:", F1_train_rl))
 
 
 ```
@@ -574,9 +646,9 @@ print(paste("Train F1 Score:", F1_train))
 
 
 ```{r warning=FALSE}
-predictions_test1 <- predict(cv_model, newx = as.matrix(X_test), type = "class")
+predictions_test1_rl <- predict(cv_model_rl, newx = as.matrix(X_test), type = "class")
 library(caret)
-predictions_test1 <- as.factor(predictions_test1)
+predictions_test1_rl <- as.factor(predictions_test1_rl)
 
 
 ```
@@ -584,16 +656,16 @@ predictions_test1 <- as.factor(predictions_test1)
 
 ```{r warning=FALSE}
 # Create the confusion matrix for predictions on the test dataset
-conf_matrix_test <- confusionMatrix(predictions_test1, y_test)
+conf_matrix_test_rl <- confusionMatrix(predictions_test1_rl, y_test)
 
 # Calculate accuracy, precision, AUC, and recall for the test dataset
 # Calculate accuracy, precision, AUC, and recall for the test dataset
-accuracy_test1 <- conf_matrix_test$overall[["Accuracy"]]
-precision_test1 <- mean(conf_matrix_test$byClass[ , "Precision"], na.rm = TRUE)
-AUC_test1 <- mean(conf_matrix_test$byClass[ , "Balanced Accuracy"], na.rm = TRUE)
-recall_test1 <- mean(conf_matrix_test$byClass[ ,"Sensitivity"], na.rm = TRUE)
+accuracy_test1_rl <- conf_matrix_test_rl$overall[["Accuracy"]]
+precision_test1_rl <- mean(conf_matrix_test_rl$byClass[ , "Precision"], na.rm = TRUE)
+AUC_test1_rl <- mean(conf_matrix_test_rl$byClass[ , "Balanced Accuracy"], na.rm = TRUE)
+recall_test1_rl <- mean(conf_matrix_test_rl$byClass[ ,"Sensitivity"], na.rm = TRUE)
 # Calcul du score F1 pour les données d'entraînement
-F1_test1 <- 2 * (precision_test1 * recall_test1) / (precision_test1 + recall_test1)
+F1_test1_rl <- 2 * (precision_test1_rl * recall_test1_rl) / (precision_test1_rl + recall_test1_rl)
 
 ```
 
@@ -603,27 +675,27 @@ F1_test1 <- 2 * (precision_test1 * recall_test1) / (precision_test1 + recall_tes
 library(ggplot2)
 
 # Create a data frame for the training metrics
-train_metrics <- data.frame(
+train_metrics_rl <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_train, precision_train, F1_train, recall_train),
+  Value = c(accuracy_train_rl, precision_train_rl, F1_train_rl, recall_train_rl),
   Dataset = "Training"
 )
 
 # Create a data frame for the test metrics
-test_metrics <- data.frame(
+test_metrics_rl <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_test1, precision_test1, F1_test1, recall_test1),
+  Value = c(accuracy_test1_rl, precision_test1_rl, F1_test1_rl, recall_test1_rl),
   Dataset = "Test"
 )
 
 # Combine the training and test metrics
-all_metrics <- rbind(test_metrics,train_metrics)
+all_metrics_rl <- rbind(test_metrics_rl,train_metrics_rl)
 
 # Create the graph
-plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
+plot <- ggplot(all_metrics_rl, aes(x = Metric, y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 1), vjust = -0.5) +
-  labs(title = "Comparison of test and training metrics MLR",
+  labs(title = "Comparison of test and training metrics Sota LR",
        x = "Metrics", y = "Values") +
   theme_minimal()
 
@@ -635,15 +707,9 @@ print(plot)
 
 ## SVM
 
-
 ```{r warning=FALSE}
 library(caret)
 library(pROC)
-
-
-
-
-
 
 # Train an SVM model with radial kernel and 10-fold cross-validation
 svm_model <- train(x = X_train, y = y_train, method = "svmRadial", trControl = trainControl(method = "cv", number = 10))
@@ -653,74 +719,262 @@ svm_predictions_train <- predict(svm_model, X_train)
 svm_predictions_test <- predict(svm_model, X_test)
 
 # Calculate the accuracy for the training and test sets
-accuracy_train <- confusionMatrix(data = svm_predictions_train, reference = y_train)$overall['Accuracy']
-accuracy_test <- confusionMatrix(data = svm_predictions_test, reference = y_test)$overall['Accuracy']
+accuracy_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)$overall['Accuracy'][1]
+accuracy_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)$overall['Accuracy'][1]
 
 # Calculate precision, recall, and AUC for the training and test sets
-precision_train <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Pos Pred Value']
-precision_test <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Pos Pred Value']
+precision_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Pos Pred Value']
+precision_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Pos Pred Value']
 
-recall_train <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Sensitivity']
-recall_test <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Sensitivity']
-F1_train <- 2 * (precision_train * recall_train) / (precision_train + recall_train)
-F1_train = mean(F1_train)
-auc_train <- roc(y_train, as.numeric(svm_predictions_train))$auc
-auc_test <- roc(y_test, as.numeric(svm_predictions_test))$auc
+recall_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Sensitivity']
+recall_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Sensitivity']
+F1_train_svm <- 2 * (precision_train_svm * recall_train_svm) / (precision_train_svm + recall_train_svm)
+F1_train = mean(F1_train_svm)
+auc_train_svm <- roc(y_train, as.numeric(svm_predictions_train))$auc
+auc_test_svm <- roc(y_test, as.numeric(svm_predictions_test))$auc
 
-precision_train = mean(precision_train)
-precision_test = mean(precision_test)
-recall_train = mean(recall_train)
-recall_test = mean(recall_test)
-F1_test <- 2 * (precision_test * recall_test) / (precision_test + recall_test)
-F1_test <- mean(F1_test)
+
+
 ```
+
+
+```{r}
+precision_train_svm = mean(precision_train_svm)
+precision_test_svm = mean(precision_test_svm)
+recall_train_svm = mean(recall_train_svm)
+recall_test_svm = mean(recall_test_svm)
+F1_test_svm <- 2 * (precision_test_svm * recall_test_svm) / (precision_test_svm + recall_test_svm)
+
+```
+
+```{r}
+F1_test_svm <- mean(F1_test_svm)
+```
+
 
 ```{r warning=FALSE, fig.height=4.5, fig.width=6, message=FALSE}
 library(ggplot2)
 
 # Create a data frame for the training metrics
-train_metrics <- data.frame(
+train_metrics_svm <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_train, precision_train, F1_train, recall_train),
+  Value = c(accuracy_train_svm, precision_train_svm, F1_train, recall_train_svm),
   Dataset = "Training"
 )
 
 # Create a data frame for the test metrics
-test_metrics <- data.frame(
+test_metrics_svm <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_test, precision_test, F1_test, recall_test),
+  Value = c(accuracy_test_svm, precision_test_svm, F1_test_svm, recall_test_svm),
   Dataset = "Test"
 )
 
 # Combine the training and test metrics
-all_metrics <- rbind(test_metrics,train_metrics)
+all_metrics_svm <- rbind(test_metrics_svm,train_metrics_svm)
 
 # Create the graph
-plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
+plot <- ggplot(all_metrics_svm, aes(x = Metric, y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 1), vjust = -0.5) +
-  labs(title = "Comparison of test and training metrics SVM",
+  labs(title = "Comparison of test and training metrics Sota SVM",
        x = "Metrics", y = "Values") +
   theme_minimal()
 
 # Display the graph
 print(plot)
+
 ```
 
 
 
+# Comparison of predomics and state-of-the-art results
+
+## best model voting aggregation predomics
+
+```{r}
+accuracy_val = best_model_voting_aggregation$accuracy_
+precision_val = best_model_voting_aggregation$precision_
+recall_val = best_model_voting_aggregation$recall_
+f1_val <- best_model_voting_aggregation$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_voting <- data.frame(
+  Algorithme = "Voting Aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_voting
+
+```
 
 
+## best model weighted aggregation predomics
+
+```{r}
+accuracy_val = best_model_weighted_aggregation$accuracy_
+precision_val = best_model_weighted_aggregation$precision_
+recall_val = best_model_weighted_aggregation$recall_
+f1_val <- best_model_weighted_aggregation$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_weighted <- data.frame(
+  Algorithme = "weighted Aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_weighted
+```
 
 
+## best model newapproach aggregation
+
+```{r}
+accuracy_val = best_model_newapproach_aggregation$accuracy_
+precision_val = best_model_newapproach_aggregation$precision_
+recall_val = best_model_newapproach_aggregation$recall_
+f1_val <- best_model_newapproach_aggregation$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_newapproach <- data.frame(
+  Algorithme = "New Approach",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_newapproach
+```
+
+## best model maximization aggregation
+
+```{r}
+accuracy_val = best_model_maximization_aggregation$accuracy_
+precision_val = best_model_maximization_aggregation$precision_
+recall_val = best_model_maximization_aggregation$recall_
+f1_val <- best_model_maximization_aggregation$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_maximization <- data.frame(
+  Algorithme = "maximization aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_maximization
+```
+
+## best model ranking aggregation
+
+```{r}
+accuracy_val = best_model_ranking_aggregation$accuracy_
+precision_val =best_model_ranking_aggregation$precision_
+recall_val = best_model_ranking_aggregation$recall_
+f1_val <-best_model_ranking_aggregation$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_ranking <- data.frame(
+  Algorithme = "ranking aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_ranking
+```
+
+## Random Forest
+
+```{r}
+accuracy_val <-  test_accuracy 
+precision_val <- test_precision
+recall_val <- test_recall
+f1_val <- f1_test
+
+# Création du dataframe sans la matrice de confusion
+df_rf <- data.frame(
+  Algorithme = "Sota_RF",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_rf
+```
 
 
+## Logistic Regression
+
+```{r}
+accuracy_val <-  accuracy_test1_rl
+precision_val <- precision_test1_rl
+recall_val <- recall_test1_rl
+f1_val <- F1_test1_rl
+
+# Création du dataframe sans la matrice de confusion
+df_LR <- data.frame(
+  Algorithme = "Sota_LR",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_LR
+```
+
+## SVM
+
+```{r}
+accuracy_val <-  accuracy_test_svm
+precision_val <- precision_test_svm
+recall_val <- recall_test_svm
+f1_val <- F1_test_svm
+
+# Création du dataframe sans la matrice de confusion
+df_SVM <- data.frame(
+  Algorithme = "Sota_SVM",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_SVM
+```
 
 
+### Plot results 
+
+```{r warning=FALSE, fig.height=6, fig.width=10, message=FALSE}
+
+# Combinez les dataframes en un seul dataframe
+df_all <- rbind(df_ranking, df_maximization,df_newapproach, df_voting,df_weighted, df_rf,df_LR, df_SVM)
+
+# Créer une liste des métriques à comparer
+metrics_list <- c("Accuracy", "Precision", "Recall", "F1")
+
+# Parcourir chaque métrique pour créer un plot unique
+for (metric in metrics_list) {
+  # Filtrer les données par métrique
+  df_metric <- df_all[df_all$Metrics == metric, ]
+  
+  # Créer le plot
+  plot <- ggplot(df_metric, aes(x = Algorithme, y = Values, fill = Algorithme)) +
+    geom_bar(stat = "identity") +
+    labs(title = paste("Comparison of", metric, "between the models"), y = metric, x = "Algorithms") +
+    theme_minimal() +
+    geom_text(aes(label = round(Values, 2), y = Values), vjust = -0.3, size = 3)
+  
+  # Afficher le plot
+  print(plot)
 
 
+}
 
-
+```
 
 
 

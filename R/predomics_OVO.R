@@ -48,17 +48,17 @@
 #' classification results as a sub-element
 #' @export
 fit_mc <- function(X,
-                    y,
-                    clf,
-                    cross.validate = FALSE,
-                    lfolds = NULL,
-                    nfolds = 2,
-                    parallelize.folds = TRUE,
-                    compute.importance = TRUE,
-                    return.all = FALSE,
-                    log.file = "parallel.log",
-                    approch ="ovo",
-                    path = NULL)
+                   y,
+                   clf,
+                   cross.validate = FALSE,
+                   lfolds = NULL,
+                   nfolds = 4,
+                   parallelize.folds = TRUE,
+                   compute.importance = TRUE,
+                   return.all = FALSE,
+                   log.file = "parallel.log",
+                   approch ="ovo",
+                   path = NULL)
 {
   # test the classifier object
   if(!isClf(clf))
@@ -476,26 +476,56 @@ fit_mc <- function(X,
 
         # for each model add a vector with feature importance
 
-        for (i in 1:length(pop)) {
+          mda.cv_ <- list() # Initializing the list of MDA results
+          ind.features <- list() # Initializing the list of feature indices
+          prev.cv_ <- list()
+          mda_ <- list()
 
-          # MDA generalization
-          pop[[i]]$mda.cv_ <- rep(0, length(pop[[i]]$names_[[1]]))
-          names(pop[[i]]$mda.cv_) <- pop[[i]]$names_[[1]]
-          ind.features <-intersect(pop[[i]]$names_[[1]], names(feature.importance.cv))
-          pop[[i]]$mda.cv_[ind.features] <-feature.importance.cv[ind.features]
+          for (i in 1:length(pop)) {
+            # Generalizing MDA
 
+            # Initializing mda.cv_ for each model in the population
+            pop[[i]]$mda.cv_ <- list()
+
+            # Looping over feature names for each model
+            for (j in 1:length(pop[[1]]$names_)) {
+              # Assigning feature names to mda.cv_
+              pop[[i]]$mda.cv_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
+              names(pop[[i]]$mda.cv_[[j]]) <- pop[[i]]$names_[[j]]
+
+              # Intersection of feature names with the names of feature importance
+              ind.features[[j]] <- intersect(pop[[i]]$names_[[j]], names(feature.importance.cv))
+            }
+
+            # Assigning feature importance results to mda.cv_
+            for (j in 1:length(ind.features)) {
+              pop[[i]]$mda.cv_[[j]][ind.features[[j]]] <- feature.importance.cv[ind.features[[j]]]
+            }
+
+          # Initializing mda.cv_ for each model in the population
+          pop[[i]]$prev.cv_ <- list()
+
+            # Looping over feature names for each model
+          for (j in 1:length(pop[[1]]$names_)) {
           # prevalence in top models in the folds
-          pop[[i]]$prev.cv_ <- rep(0, length(pop[[i]]$names_[[1]]))
-          names(pop[[i]]$prev.cv_) <- pop[[i]]$names_[[1]]
-          ind.features <-intersect(pop[[i]]$names_[[1]], names(feature.prevalence.cv))
-          pop[[i]]$prev.cv_[ind.features] <-feature.prevalence.cv[ind.features]
-
+          pop[[i]]$prev.cv_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
+          names(pop[[i]]$prev.cv_[[j]]) <- pop[[i]]$names_[[j]]
+          ind.features[[j]] <-intersect(pop[[i]]$names_[[j]], names(feature.prevalence.cv))
+          }
+          for (j in 1:length(ind.features)) {
+          pop[[i]]$prev.cv_[[j]][ind.features[[j]]] <-feature.prevalence.cv[ind.features[[j]]]
+          }
 
           # MDA empirical
-          pop[[i]]$mda_ <- rep(0, length(pop[[i]]$names_[[1]]))
-          names(pop[[i]]$mda_) <- pop[[i]]$names_[[1]]
-          ind.features <-intersect(pop[[i]]$names_[[1]], names(feature.importance))
-          pop[[i]]$mda_[ind.features] <-feature.importance[ind.features]
+          pop[[i]]$mda_ <- list()
+          for (j in 1:length(pop[[1]]$names_)) {
+          pop[[i]]$mda_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
+          names(pop[[i]]$mda_[[j]]) <- pop[[i]]$names_[[j]]
+          ind.features[[j]] <-intersect(pop[[i]]$names_[[j]], names(feature.importance))
+          }
+          for (j in 1:length(ind.features)) {
+          pop[[i]]$mda_[[j]][ind.features[[j]]] <-feature.importance[ind.features[[j]]]
+          }
         }
 
         # convert to model collection and put back
@@ -676,16 +706,16 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
 
     # for each of the best models in the population compute the importance in the test population
     efip.fold <- evaluateFeatureImportanceInPopulation_mc(pop = pop.fold,
-                                                           X = x_test,
-                                                           y = y_test,
-                                                           clf = clf,
-                                                           score = "fit_",
-                                                           filter.ci = TRUE,
-                                                           method = "extensive",
-                                                           seed = c(1:10), # 10 times the perturbation for more accurate importance
-                                                           aggregation = "mean",
-                                                           approch = approch,
-                                                           verbose = clf$params$verbose)
+                                                          X = x_test,
+                                                          y = y_test,
+                                                          clf = clf,
+                                                          score = "fit_",
+                                                          filter.ci = TRUE,
+                                                          method = "extensive",
+                                                          seed = c(1:10), # 10 times the perturbation for more accurate importance
+                                                          aggregation = "mean",
+                                                          approch = approch,
+                                                          verbose = clf$params$verbose)
     clf$fip <- efip.fold
   }
 
@@ -1079,28 +1109,26 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
     if(clf$params$compute.importance & !isLearnerSota(clf))
     {
       # we compute the feature importance and BTR languages and algorithms
-      if(isClf(res.all[[i]]))
-      {
-        # if results are valid
-        if(!is.null(res.all[[i]]$fip[[1]]))
-        {
-          # if object exist
-          if(!is.null(res.all[[i]]$fip[[1]]$mda))
-          {
-            mda.all[res.all[[i]]$fip[[1]]$feat.catalogue,i] <- res.all[[i]]$fip[[1]]$mda
-          }
-          # if object exist
-          if(!is.null(res.all[[i]]$fip[[1]]$sda))
-          {
-            sda.all[res.all[[i]]$fip[[1]]$feat.catalogue,i] <- res.all[[i]]$fip[[1]]$sda
-          }
-          # if object exist
-          if(!is.null(res.all[[i]]$fip[[1]]$pda))
-          {
-            pda.all[res.all[[i]]$fip[[1]]$feat.catalogue,i] <- res.all[[i]]$fip[[1]]$pda
+      if (isClf(res.all[[i]])) {
+        for (jo in 1:length(res.all[[1]]$fip)) {
+          # Check if results are valid
+          if (!is.null(res.all[[i]]$fip[[jo]])) {
+            # Check if object exists
+            if (!is.null(res.all[[i]]$fip[[jo]]$mda)) {
+              mda.all[res.all[[i]]$fip[[jo]]$feat.catalogue, i] <- res.all[[i]]$fip[[jo]]$mda
+            }
+            # Check if object exists
+            if (!is.null(res.all[[i]]$fip[[jo]]$sda)) {
+              sda.all[res.all[[i]]$fip[[jo]]$feat.catalogue, i] <- res.all[[i]]$fip[[jo]]$sda
+            }
+            # Check if object exists
+            if (!is.null(res.all[[i]]$fip[[jo]]$pda)) {
+              pda.all[res.all[[i]]$fip[[jo]]$feat.catalogue, i] <- res.all[[i]]$fip[[jo]]$pda
+            }
           }
         }
-      }else
+      }
+      else
       {
         # print out information (might be errors)
         print(res.all[[i]])
@@ -1203,4 +1231,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
   return(res.crossval)
 }
+
+
+
+
+
+
+
+
 

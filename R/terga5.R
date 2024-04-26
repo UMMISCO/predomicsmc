@@ -63,28 +63,28 @@
 #' @return an object containing a list of parameters for this classifier
 #' @export
 terga1_mc <- function(sparsity = c(1:10),
-                       # population options
-                       size_pop = 100, size_world = "NULL", max.nb.features = 1000, popSourceFile = "NULL", popSaveFile = "NULL",
-                       # language in {bin, bininter, ter, terinter, ratio}
-                       language = "terinter",
-                       # language options
-                       scoreFormula=scoreRatio, epsilon = "NULL",
-                       # individual options
-                       unique_vars = FALSE,
-                       # evaluation options
-                       objective = "auc", k_penalty=0, evalToFit = "fit_", estimate_coefs = FALSE, intercept = "NULL",
-                       # selection options
-                       select_type = "mixed", select_perc1 = 20, select_perc2 = 30, perc_best_ancestor = 10,
-                       # mutation options
-                       mutate_size = 70, mutate_rate = 50,
-                       # evolution options
-                       nb_generations = 100, convergence = TRUE, convergence_steps = 10, evolve_k1 = TRUE,
-                       # output options
-                       plot = FALSE, verbose = TRUE, warnings = FALSE, debug = FALSE, print_ind_method = "short", parallelize.folds = TRUE,
-                       # computing options
-                       nCores = 4, seed = "NULL",
-                       # experiment options
-                       experiment.id = "NULL", experiment.description = "NULL", experiment.save = "nothing")
+                      # population options
+                      size_pop = 100, size_world = "NULL", max.nb.features = 1000, popSourceFile = "NULL", popSaveFile = "NULL",
+                      # language in {bin, bininter, ter, terinter, ratio}
+                      language = "terinter",
+                      # language options
+                      scoreFormula=scoreRatio, epsilon = "NULL",
+                      # individual options
+                      unique_vars = FALSE,
+                      # evaluation options
+                      objective = "auc", k_penalty=0, evalToFit = "fit_", estimate_coefs = FALSE, intercept = "NULL",
+                      # selection options
+                      select_type = "mixed", select_perc1 = 20, select_perc2 = 30, perc_best_ancestor = 10,
+                      # mutation options
+                      mutate_size = 70, mutate_rate = 50,
+                      # evolution options
+                      nb_generations = 100, convergence = TRUE, convergence_steps = 10, evolve_k1 = TRUE,
+                      # output options
+                      plot = FALSE, verbose = TRUE, warnings = FALSE, debug = FALSE, print_ind_method = "short", parallelize.folds = TRUE,
+                      # computing options
+                      nCores = 4, seed = "NULL",
+                      # experiment options
+                      experiment.id = "NULL", experiment.description = "NULL", experiment.save = "nothing")
 {
   clf <- list() # create a classifier object
   clf$learner <- "terga1_mc" # name of the method
@@ -321,7 +321,7 @@ terga1_ovo_fit <- function(X, y, clf, approch="ovo") {
     pop_last.mod <- listOfSparseVecToListOfModels_mc(X, y , clf = clf, v = pop_last,approch = approch)
     # evaluate the population
     pop.last.eval <- evaluatePopulation_mc(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE, approch=approch)
-   ### pop_overall <- evaluatePopulation_overall(pop = pop.last.eval, y=y, approch = approch)
+    ### pop_overall <- evaluatePopulation_overall(pop = pop.last.eval, y=y, approch = approch)
     #for(i in 1:length(pop.last.eva
     # get the evaluation vector
     evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
@@ -430,4 +430,3 @@ evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
 
   return(evolved_pop)
 }
-

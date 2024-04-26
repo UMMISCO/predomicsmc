@@ -54,27 +54,27 @@
 #' @return an object containing a list of parameters for this classifier
 #' @export
 terBeam_mc <- function(sparsity = 1:5, max.nb.features = 1000,
-                    # maxNbOfModels corresponds to the width of the beam search in terms of models
-                    maxNbOfModels = 10000, # population size
-                    # nbBest is the number of models to keep such that the most frequent feature in the best models are kept
-                    nbBest = round(maxNbOfModels/10),
-                    # nbVeryBest
-                    nbVeryBest = round(maxNbOfModels/100),
-                    final.pop.perc = 100,  # percentage of models in the returned results
-                    # population options
-                    popSaveFile = "NULL", saveFiles = FALSE,
-                    # language in {bin, bininter, ter, terinter, ratio}
-                    language = "terinter",
-                    # language options
-                    scoreFormula=scoreRatio, epsilon = "NULL",
-                    # evaluation options
-                    objective = "auc", k_penalty=0, evalToFit = 'auc_', estimate_coefs=FALSE, intercept = "NULL", testAllSigns = FALSE,
-                    # output options
-                    plot = FALSE, verbose = TRUE, warnings = FALSE, debug = FALSE, print_ind_method = "short", parallelize.folds = TRUE,
-                    # computing options
-                    nCores = 4, seed = "NULL", #maxTime = Inf,
-                    # experiment options
-                    experiment.id = "NULL", experiment.description = "NULL", experiment.save = "nothing")
+                       # maxNbOfModels corresponds to the width of the beam search in terms of models
+                       maxNbOfModels = 10000, # population size
+                       # nbBest is the number of models to keep such that the most frequent feature in the best models are kept
+                       nbBest = round(maxNbOfModels/10),
+                       # nbVeryBest
+                       nbVeryBest = round(maxNbOfModels/100),
+                       final.pop.perc = 100,  # percentage of models in the returned results
+                       # population options
+                       popSaveFile = "NULL", saveFiles = FALSE,
+                       # language in {bin, bininter, ter, terinter, ratio}
+                       language = "terinter",
+                       # language options
+                       scoreFormula=scoreRatio, epsilon = "NULL",
+                       # evaluation options
+                       objective = "auc", k_penalty=0, evalToFit = 'auc_', estimate_coefs=FALSE, intercept = "NULL", testAllSigns = FALSE,
+                       # output options
+                       plot = FALSE, verbose = TRUE, warnings = FALSE, debug = FALSE, print_ind_method = "short", parallelize.folds = TRUE,
+                       # computing options
+                       nCores = 4, seed = "NULL", #maxTime = Inf,
+                       # experiment options
+                       experiment.id = "NULL", experiment.description = "NULL", experiment.save = "nothing")
 {
   # standard means that we use the standard heuristics
   clf <- list()
@@ -253,6 +253,10 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
   feature.cor <-  clf$feature.cor
   clf$coeffss_ <-  list()
   clf$coeffss_ = clf$coeffs_
+  list_best <- list()
+  list_veryBest <- list()
+  list_pop <- list()
+  kl = 0
   #features.to.keep <- list()
   # for each sparsity
   for(k in clf$params$sparsity)
@@ -260,58 +264,58 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
     if(k == 1)
     {
       for(j in 1:(length(feature.cor))){
-      # For k = 1 we generate every possible Model with only one feature
-      if(!is.null(clf$feature.cor[[1]]))
-      {
-        # for the ration language, force to have the same number of negative and positive features selected
-        if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc")
+        # For k = 1 we generate every possible Model with only one feature
+        if(!is.null(clf$feature.cor[[1]]))
         {
-          # select the best features here no need to compute all
-          nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]),clf$params$maxNbOfModels)
-          nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]]/2)
-          # get the pool of features
-          features.pool[[j]] <- as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)]
-          coeffss = clf$coeffss_[[j]]
-          features.pool_ = features.pool[[j]]
-          #features.pool_ = unlist(features.pool_)
-          features.pool.coeffs[[j]] <- coeffss[features.pool_]
-          # negative
-          features.pool.coeffs_ = features.pool.coeffs[[j]]
-          neg.ind[[j]] <- features.pool.coeffs_ == "-1" & !is.na(features.pool.coeffs_)
-          neg.ind_ = neg.ind[[j]]
-          nb.selected.features.neg_ = nb.selected.features.neg[[j]]
-          selected.features.neg[[j]] <- features.pool_[neg.ind_][1:min(sum(neg.ind_), nb.selected.features.neg_)]
-          # positive
-          pos.ind[[j]] <- features.pool.coeffs_ == "1" & !is.na(features.pool.coeffs_)
-          pos.ind_ = pos.ind[[j]]
-          selected.features.pos[[j]] <- features.pool_[pos.ind_][1:min(sum(pos.ind_), nb.selected.features.neg_)]
-          selected.features.neg_ = selected.features.neg[[j]]
-          selected.features.pos_ = selected.features.pos[[j]]
-          selected.features[[j]] <- c(selected.features.neg_, selected.features.pos_)
+          # for the ration language, force to have the same number of negative and positive features selected
+          if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc")
+          {
+            # select the best features here no need to compute all
+            nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]),clf$params$maxNbOfModels)
+            nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]]/2)
+            # get the pool of features
+            features.pool[[j]] <- as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)]
+            coeffss = clf$coeffss_[[j]]
+            features.pool_ = features.pool[[j]]
+            #features.pool_ = unlist(features.pool_)
+            features.pool.coeffs[[j]] <- coeffss[features.pool_]
+            # negative
+            features.pool.coeffs_ = features.pool.coeffs[[j]]
+            neg.ind[[j]] <- features.pool.coeffs_ == "-1" & !is.na(features.pool.coeffs_)
+            neg.ind_ = neg.ind[[j]]
+            nb.selected.features.neg_ = nb.selected.features.neg[[j]]
+            selected.features.neg[[j]] <- features.pool_[neg.ind_][1:min(sum(neg.ind_), nb.selected.features.neg_)]
+            # positive
+            pos.ind[[j]] <- features.pool.coeffs_ == "1" & !is.na(features.pool.coeffs_)
+            pos.ind_ = pos.ind[[j]]
+            selected.features.pos[[j]] <- features.pool_[pos.ind_][1:min(sum(pos.ind_), nb.selected.features.neg_)]
+            selected.features.neg_ = selected.features.neg[[j]]
+            selected.features.pos_ = selected.features.pos[[j]]
+            selected.features[[j]] <- c(selected.features.neg_, selected.features.pos_)
+          }else
+          {
+            nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]), clf$params$maxNbOfModels)
+            # get the pool of features
+            features.pool[[j]] <- rownames(clf$feature.cor[[j]])[order(clf$feature.cor[[j]]$p)]
+            # select the best features here no need to compute all
+            selected.features[[j]] <- features.pool_[1:nb.selected.features[[j]]]
+          }
+          selected.features_ = selected.features[[j]]
+          # get the index in the rownames
+          ind.features[[j]]    <- which(rownames(X) %in% selected.features_)
+          if(clf$params$verbose) print(paste("... ... generating only best single feature models"))
         }else
         {
-          nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]), clf$params$maxNbOfModels)
-          # get the pool of features
-          features.pool[[j]] <- rownames(clf$feature.cor[[j]])[order(clf$feature.cor[[j]]$p)]
-          # select the best features here no need to compute all
-          selected.features[[j]] <- features.pool_[1:nb.selected.features[[j]]]
+          if(clf$params$verbose) print(paste("... ... generating all single feature models"))
+          stop("terBeam_fit: clf$feature.cor is missing")
+          ind.features[[j]]    <- seq_len(nrow(X))
         }
-        selected.features_ = selected.features[[j]]
-        # get the index in the rownames
-        ind.features[[j]]    <- which(rownames(X) %in% selected.features_)
-        if(clf$params$verbose) print(paste("... ... generating only best single feature models"))
-      }else
-      {
-        if(clf$params$verbose) print(paste("... ... generating all single feature models"))
-        stop("terBeam_fit: clf$feature.cor is missing")
-        ind.features[[j]]    <- seq_len(nrow(X))
-      }
 
-      pop               <- generateAllSingleFeatureModel_mc(X, y, clf, ind.sub = ind.features, approch = approch)
+        pop               <- generateAllSingleFeatureModel_mc(X, y, clf, ind.sub = ind.features, approch = approch)
 
       }
 
-      } else
+    } else
     {
       ### Get the features to keep for next k
       nbCombinaisons    <- choose(n = c(1:length(features.to.keep)), k = k)
@@ -321,41 +325,41 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
       if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc")
       {
         for(j in 1:(length(feature.cor))){
-        # select the best features here no need to compute all
-        nb.selected.features[[j]] <- max(which(nbCombinaisons < clf$params$maxNbOfModels))
-        nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]]/2)
-        # get the pool of features
-        features.pool[[j]] <- intersect(as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)], features.to.keep_)
-        coeffss = clf$coeffss_[[j]]
-        features.pool_ = features.pool[[j]]
-        #features.pool_ = unlist(features.pool_)
-        features.pool.coeffs[[j]] <- coeffss[features.pool_]
-        # negative
-        features.pool.coeffs_ = features.pool.coeffs[[j]]
-        nb.selected.features.neg_ = nb.selected.features.neg[[j]]
-        neg.ind[[j]] <- features.pool.coeffs_ == "-1" & !is.na(features.pool.coeffs_)
-        neg.ind_ = neg.ind[[j]]
-        selected.features.neg[[j]] <- features.pool_[neg.ind_][1:min(sum(neg.ind_), nb.selected.features.neg_)]
-        # positive
+          # select the best features here no need to compute all
+          nb.selected.features[[j]] <- max(which(nbCombinaisons < clf$params$maxNbOfModels))
+          nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]]/2)
+          # get the pool of features
+          features.pool[[j]] <- intersect(as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)], features.to.keep_)
+          coeffss = clf$coeffss_[[j]]
+          features.pool_ = features.pool[[j]]
+          #features.pool_ = unlist(features.pool_)
+          features.pool.coeffs[[j]] <- coeffss[features.pool_]
+          # negative
+          features.pool.coeffs_ = features.pool.coeffs[[j]]
+          nb.selected.features.neg_ = nb.selected.features.neg[[j]]
+          neg.ind[[j]] <- features.pool.coeffs_ == "-1" & !is.na(features.pool.coeffs_)
+          neg.ind_ = neg.ind[[j]]
+          selected.features.neg[[j]] <- features.pool_[neg.ind_][1:min(sum(neg.ind_), nb.selected.features.neg_)]
+          # positive
 
-        pos.ind[[j]] <- features.pool.coeffs_ == "1" & !is.na(features.pool.coeffs_)
-        pos.ind_ =  pos.ind[[j]]
-        selected.features.neg_ = selected.features.neg[[j]]
-        selected.features.pos[[j]] <- features.pool_[pos.ind_][1:min(sum(pos.ind_), nb.selected.features.neg_)]
-        selected.features.pos_ = selected.features.pos[[j]]
-        l_features.to.keep[[j]] <- selected.features[[j]] <- c(selected.features.neg_, selected.features.pos_)
-      }
+          pos.ind[[j]] <- features.pool.coeffs_ == "1" & !is.na(features.pool.coeffs_)
+          pos.ind_ =  pos.ind[[j]]
+          selected.features.neg_ = selected.features.neg[[j]]
+          selected.features.pos[[j]] <- features.pool_[pos.ind_][1:min(sum(pos.ind_), nb.selected.features.neg_)]
+          selected.features.pos_ = selected.features.pos[[j]]
+          l_features.to.keep[[j]] <- selected.features[[j]] <- c(selected.features.neg_, selected.features.pos_)
+        }
       }else
       {
         for(j in 1:(length(feature.cor))){
-        nb.selected.features[[j]] <- max(which(nbCombinaisons < clf$params$maxNbOfModels))
-        # get the pool of features
-        features.pool[[j]] <- intersect(as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)], features.to.keep)
+          nb.selected.features[[j]] <- max(which(nbCombinaisons < clf$params$maxNbOfModels))
+          # get the pool of features
+          features.pool[[j]] <- intersect(as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)], features.to.keep)
 
-        # select the best features here no need to compute all
-        features.pool_ = features.pool[[j]]
-        features.to.keep <- selected.features <- features.pool_[1:min(nb.selected.features[[j]], length(features.pool[[j]]))]
-      }
+          # select the best features here no need to compute all
+          features.pool_ = features.pool[[j]]
+          features.to.keep <- selected.features <- features.pool_[1:min(nb.selected.features[[j]], length(features.pool[[j]]))]
+        }
       }
 
 
@@ -370,9 +374,9 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
       if(length(list_ind.features.to.keep[[1]]) >= k)
       {
         pop               <- generateAllCombinations_mc(X = X, y = y, clf = clf,
-                                                     ind.features.to.keep = list_ind.features.to.keep,
-                                                     sparsity = k,
-                                                     allFeatures = allFeatures,approch=approch)
+                                                        ind.features.to.keep = list_ind.features.to.keep,
+                                                        sparsity = k,
+                                                        allFeatures = allFeatures,approch=approch)
       }else
       {
         break
@@ -381,16 +385,18 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
     }
 
     # Evaluate the population
+
     pop                 <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop,
-                                              eval.all = TRUE,
-                                              force.re.evaluation = TRUE,
-                                              estim.feat.importance = FALSE,
-                                              mode = "train",
-                                              approch = approch,
-                                              delete.null.models = TRUE)
+                                                 eval.all = TRUE,
+                                                 force.re.evaluation = TRUE,
+                                                 estim.feat.importance = FALSE,
+                                                 mode = "train",
+                                                 approch = approch,
+                                                 delete.null.models = TRUE)
 
     # Sort the population according to the clf$params$evalToFit attribute
     pop                 <- sortPopulation(pop, evalToOrder = "fit_")
+
 
     # it may happen that the population is empty, in this case we break and return
     if(is.null(pop))
@@ -398,15 +404,18 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
       next
     }
 
+
     # Sample the best and veryBest population
     best                <- pop[1:min(clf$params$nbBest,length(pop))]
     veryBest            <- pop[1:min(clf$params$nbVeryBest,length(pop))]
-
     # features.to.keep
     ### Evaluate the apperance of every features in the best and veryBest models
     featuresApperance   <- countEachFeatureApperance_mc(clf, allFeatures, pop, best, veryBest,approch=approch)
     features.to.keep    <- getFeatures2Keep_mc(clf, featuresApperance,approch=approch)
-
+    listf <- list()
+    listf <- features.to.keep[[1]]
+    features.to.keep <- list()
+    features.to.keep <-  listf
 
 
 
@@ -434,6 +443,11 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
     {
       break
     } # end if stopping test
+
+    ###if (any(sapply(features.to.keep, length) < k + 2) & (k != 1)) {
+
+      ###break
+   ### }
   } # end loop sparsity
 
   if(clf$params$verbose) print(paste("... ... models are created"))
@@ -462,14 +476,3 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
   if(clf$params$verbose) print(paste("... ... models are coverted onto a model collection"))
   return(res.mod.coll)
 }
-
-
-
-
-
-
-
-
-
-
-

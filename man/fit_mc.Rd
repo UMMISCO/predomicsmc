@@ -10,7 +10,7 @@ fit_mc(
   clf,
   cross.validate = FALSE,
   lfolds = NULL,
-  nfolds = 2,
+  nfolds = 4,
   parallelize.folds = TRUE,
   compute.importance = TRUE,
   return.all = FALSE,
