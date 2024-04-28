@@ -4454,8 +4454,6 @@ listOfModels2ModelCollection <- function(pop, nBest = NA)
 
 
 
-
-
 #' This function predicts outcomes for a one-versus-all (OvA) classification model.
 #' @title predictModel_ova
 #' @description This function predicts outcomes for a one-versus-all (OvA) classification model.
@@ -4473,9 +4471,11 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   scorelist <- list()
   nClasse <- unique(y)
   list_y <- list()
+
   # Determine the number of combinations
   n_combinations <- length(mod$score_)
   mods <- vector("list", n_combinations)
+
   for (i in 1:n_combinations) {
     mods[[i]] <- list(
       learner = mod$learner,
@@ -4491,64 +4491,49 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
       score_ = mod$score_[[i]]
     )
   }
+
   # Calculate scores for each model and store in scorelist
   for(i in 1:length(mods)){
     scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = force.re.evaluation)
   }
 
   # Extract scores only
-  score_only_list <- lapply(scorelist, function(x) x$score_)
-  score_list <-  score_only_list
-  class_names <- unique(y)
-  class_names <- as.vector(class_names)
-  intercept_list = mod$list_intercept_mc
+  score_list <- lapply(scorelist, function(x) x$score_)
+
   # List of prediction vectors for each combination.
   predictions_list <- lapply(seq_along(score_list), function(j) {
-    class_name <- class_names[j]
+    class_name <- unique(y)[j]
     sapply(score_list[[j]], function(score) {
-      ifelse(score > intercept_list[[j]], class_name, "ALL")
+      ifelse(score > mod$list_intercept_mc[[j]], class_name, "ALL")
     })
   })
 
-  # Calculate distances between scores and intercepts
-  intercept <- mod$list_intercept_mc
-  scores_distance <- list()
+  # Identifier les seuils minimum et maximum
+  seuils_min <- min(unlist(mod$list_intercept_mc))
+  seuils_max <- max(unlist(mod$list_intercept_mc))
 
-  # Check if 'score_list' contains only zeros
-  if (all(sapply(score_only_list, function(scores_distance) all(scores_distance == 0)))) {
-    # If 'score_list' contains only zeros, fill 'scores_distance' with zero lists of the same length
-    scores_distance <- lapply(score_only_list, function(scores_distance) rep(0, length(scores_distance)))
-  } else {
-    # If 'score_list' contains other values, calculate the distances
-    for(i in 1:length(intercept)){
-      # Calculate the absolute difference between 'score_list' and 'intercept'
-      scores_distance[[i]] = abs((score_only_list[[i]]) - intercept[[i]])
-    }
-  }
+  # Normalisation des scores
+  scores_normalises <- lapply(score_list, function(scores) {
+    denominateur <- seuils_max - seuils_min
+    denominateur[denominateur == 0] <- 1e-10  # Remplacer les zéros par une petite valeur
+    scores <- as.numeric(unlist(scores))  # Conversion en type numérique
+    seuils_min <- as.numeric(seuils_min)  # Conversion en type numérique
+    (scores - seuils_min) / denominateur
+  })
 
-  # Normalize function
-  normalize <- function(x) {
-    if (all(x == 0)) {
-      # If the vector contains only zeros, return it unchanged
-      return(x)
-    } else {
-      # Otherwise, normalize the vector
-      return((x - min(x)) / (max(x) - min(x)))
-    }
-  }
+  # Remplacer les valeurs -Inf par 0
+  scores_normalises <- lapply(scores_normalises, function(scores) {
+    scores[is.infinite(scores)] <- 0  # Remplacer les valeurs -Inf par 0
+    scores
+  })
 
-  # Apply the normalize function to each vector in the list,
-  # checking if it contains only 0's or needs normalization.
-  normalized_scores <- lapply(scores_distance, normalize)
-  new_scores <- lapply(normalized_scores, function(x) 1 - x)
-  mod$score_ <- list()
-  mod$score_ <- new_scores
+  mod$score_ <- scores_normalises
   mod$predictions <- predictions_list
 
   # Return predicted class labels for each combination, the corresponding score vectors, and the distances
   return(mod)
-
 }
+
 
 
 
