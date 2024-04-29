@@ -269,6 +269,9 @@ best_model_weighted_aggregation$predictions_aggre
 
 ```
 
+```{r}
+printy_mc(best_model_weighted_aggregation)
+```
 
 
 
@@ -337,6 +340,14 @@ best_model_newapproach_aggregation$predictions_aggre
 ```
 
 
+
+
+
+```{r}
+printy_mc(best_model_newapproach_aggregation)
+```
+
+
 ## maximizationAggregation
 
 ### Evaluate the population of the best one-versus-all models using the multiclass aggregation method by maximization  with the test data.
@@ -385,6 +396,9 @@ best_model_maximization_aggregation$coeffs_
 best_model_maximization_aggregation$predictions_aggre
 ```
  
+```{r}
+printy_mc(best_model_maximization_aggregation)
+```
 
 ## Ranking Aggregation
 
@@ -1009,12 +1023,5 @@ ggplot(df_voting, aes(x = Metrics, y = Values, color = Metrics)) +
 ```
 
 
-```{r}
-# get the best model
-best.model =  best_model_weighted_aggregation
-printy(best.model)
-grid.arrange(plotModel(best.model, X, y, sort.features = FALSE, feature.name = TRUE),
-             plotModel(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE),
-             ncol=2)
-```
+
 
