@@ -164,10 +164,20 @@ bests_models_parsimony_ovo <- digestmc(obj = res_clf_ovo, penalty = 0.75/100, pl
 
 ```{r}
 pop = res_clf_ovo$classifier$models
-Population_voting_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "votingAggregation")
+Voting_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "votingAggregation")
+# Sauvegarder l'objet sous forme d'un fichier .rda
+save(Voting_Aggregation_FBM, file = "Voting_Aggregation_FBM.rda")
+
 ```
 
 ### Function to extract the values of each metric for each method
+
+
+
+```{r}
+load("Voting_Aggregation_FBM.rda")
+```
+
 
 
 ```{r}
@@ -187,10 +197,10 @@ extract_metric_values <- function(aggregation_list, metric_name) {
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Population_voting_Aggregation, "accuracy_") * 100,
-    extract_metric_values(Population_voting_Aggregation, "precision_") * 100,
-    extract_metric_values(Population_voting_Aggregation, "recall_") * 100,
-    extract_metric_values(Population_voting_Aggregation, "f1_") * 100
+    extract_metric_values(Voting_Aggregation_FBM, "accuracy_") * 100,
+    extract_metric_values(Voting_Aggregation_FBM, "precision_") * 100,
+    extract_metric_values(Voting_Aggregation_FBM, "recall_") * 100,
+    extract_metric_values(Voting_Aggregation_FBM, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -212,11 +222,11 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 ### Best Model Voting Aggregation
 
 ```{r}
-best_model_voting_aggregation = Population_voting_Aggregation[[4]][[1]]
-best_model_voting_aggregation$accuracy_
-best_model_voting_aggregation$confusionMatrix_
-best_model_voting_aggregation$coeffs_
-best_model_voting_aggregation$predictions_aggre
+Voting_Aggregation_FBM_ = Voting_Aggregation_FBM[[4]][[1]]
+Voting_Aggregation_FBM_$accuracy_
+Voting_Aggregation_FBM_$confusionMatrix_
+Voting_Aggregation_FBM_$coeffs_
+Voting_Aggregation_FBM_$predictions_aggre
 ```
 
 
@@ -227,8 +237,19 @@ best_model_voting_aggregation$predictions_aggre
 
 ```{r}
 pop = res_clf_ovo$classifier$models
-Population_weighted_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "weightedAggregation")
+Weighted_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "weightedAggregation")
+# Sauvegarder l'objet sous forme d'un fichier .rda
+save(Weighted_Aggregation_FBM, file = "Weighted_Aggregation_FBM.rda")
 ```
+
+
+```{r}
+load("Weighted_Aggregation_FBM.rda")
+```
+
+
+
+
 
 ### Visualize the performance of each metric for the best model of each sparsity used.
 
@@ -236,10 +257,10 @@ Population_weighted_Aggregation <- evaluatePopulation_aggregation(pop = pop, y =
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Population_weighted_Aggregation, "accuracy_") * 100,
-    extract_metric_values(Population_weighted_Aggregation, "precision_") * 100,
-    extract_metric_values(Population_weighted_Aggregation, "recall_") * 100,
-    extract_metric_values(Population_weighted_Aggregation, "f1_") * 100
+    extract_metric_values(Weighted_Aggregation_FBM, "accuracy_") * 100,
+    extract_metric_values(Weighted_Aggregation_FBM, "precision_") * 100,
+    extract_metric_values(Weighted_Aggregation_FBM, "recall_") * 100,
+    extract_metric_values(Weighted_Aggregation_FBM, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -261,11 +282,11 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 ### best model Weighted Aggregation
 
 ```{r}
-best_model_weighted_aggregation = Population_weighted_Aggregation[[4]][[1]]
-best_model_weighted_aggregation$accuracy_
-best_model_weighted_aggregation$confusionMatrix_
-best_model_weighted_aggregation$coeffs_
-best_model_weighted_aggregation$predictions_aggre
+Weighted_Aggregation_FBM_ = Weighted_Aggregation_FBM[[4]][[1]]
+Weighted_Aggregation_FBM_$accuracy_
+Weighted_Aggregation_FBM_$confusionMatrix_
+Weighted_Aggregation_FBM_$coeffs_
+Weighted_Aggregation_FBM_$predictions_aggre
 
 ```
 
@@ -297,7 +318,15 @@ bests_models_parsimony_ova <- digestmc(obj = res_clf_ova, penalty = 0.75/100, pl
 
 ```{r}
 pop = res_clf_ova$classifier$models
-Population_newApproach_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "NewApproach")
+NewApproach_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "NewApproach")
+# Sauvegarder l'objet sous forme d'un fichier .rda
+save(NewApproach_Aggregation_FBM, file = "NewApproach_Aggregation_FBM.rda")
+```
+
+
+
+```{r}
+load("NewApproach_Aggregation_FBM.rda")
 ```
 
 
@@ -307,10 +336,10 @@ Population_newApproach_Aggregation <- evaluatePopulation_aggregation(pop = pop, 
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Population_newApproach_Aggregation, "accuracy_") * 100,
-    extract_metric_values(Population_newApproach_Aggregation, "precision_") * 100,
-    extract_metric_values(Population_newApproach_Aggregation, "recall_") * 100,
-    extract_metric_values(Population_newApproach_Aggregation, "f1_") * 100
+    extract_metric_values(NewApproach_Aggregation_FBM, "accuracy_") * 100,
+    extract_metric_values(NewApproach_Aggregation_FBM, "precision_") * 100,
+    extract_metric_values(NewApproach_Aggregation_FBM, "recall_") * 100,
+    extract_metric_values(NewApproach_Aggregation_FBM, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -332,19 +361,11 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 ### best model new approach Aggregation
 
 ```{r}
-best_model_newapproach_aggregation = Population_newApproach_Aggregation[[4]][[1]]
-best_model_newapproach_aggregation$accuracy_
-best_model_newapproach_aggregation$confusionMatrix_
-best_model_newapproach_aggregation$coeffs_
-best_model_newapproach_aggregation$predictions_aggre
-```
-
-
-
-
-
-```{r}
-printy_mc(best_model_newapproach_aggregation)
+NewApproach_Aggregation_FBM_ = NewApproach_Aggregation_FBM[[4]][[1]]
+NewApproach_Aggregation_FBM_$accuracy_
+NewApproach_Aggregation_FBM_$confusionMatrix_
+NewApproach_Aggregation_FBM_$coeffs_
+NewApproach_Aggregation_FBM_$predictions_aggre
 ```
 
 
@@ -354,8 +375,16 @@ printy_mc(best_model_newapproach_aggregation)
 
 ```{r}
 pop = res_clf_ova$classifier$models
-Population_maximization_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "maximizationAggregation")
+Maximization_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "maximizationAggregation")
+# Sauvegarder l'objet sous forme d'un fichier .rda
+save(Maximization_Aggregation_FBM, file = "Maximization_Aggregation_FBM.rda")
 ```
+
+
+```{r}
+load("Maximization_Aggregation_FBM.rda")
+```
+
 
 
 ### Visualize the performance of each metric for the best model of each sparsity used.
@@ -364,10 +393,10 @@ Population_maximization_Aggregation <- evaluatePopulation_aggregation(pop = pop,
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Population_maximization_Aggregation, "accuracy_") * 100,
-    extract_metric_values(Population_maximization_Aggregation, "precision_") * 100,
-    extract_metric_values(Population_maximization_Aggregation, "recall_") * 100,
-    extract_metric_values(Population_maximization_Aggregation, "f1_") * 100
+    extract_metric_values(Maximization_Aggregation_FBM, "accuracy_") * 100,
+    extract_metric_values(Maximization_Aggregation_FBM, "precision_") * 100,
+    extract_metric_values(Maximization_Aggregation_FBM, "recall_") * 100,
+    extract_metric_values(Maximization_Aggregation_FBM, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -389,15 +418,15 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 
 ### best model maximization Aggregation
 ```{r}
-best_model_maximization_aggregation = Population_maximization_Aggregation[[4]][[1]]
-best_model_maximization_aggregation$accuracy_
-best_model_maximization_aggregation$confusionMatrix_
-best_model_maximization_aggregation$coeffs_
-best_model_maximization_aggregation$predictions_aggre
+Maximization_Aggregation_FBM_ = Maximization_Aggregation_FBM[[4]][[1]]
+Maximization_Aggregation_FBM_$accuracy_
+Maximization_Aggregation_FBM_$confusionMatrix_
+Maximization_Aggregation_FBM_$coeffs_
+Maximization_Aggregation_FBM_$predictions_aggre
 ```
  
 ```{r}
-printy_mc(best_model_maximization_aggregation)
+printy_mc(Maximization_Aggregation_FBM_)
 ```
 
 ## Ranking Aggregation
@@ -406,9 +435,17 @@ printy_mc(best_model_maximization_aggregation)
 
 ```{r warning=FALSE}
 pop = res_clf_ova$classifier$models
-Population_ranking_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "rankingAggregation")
-
+Ranking_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "rankingAggregation")
+# Sauvegarder l'objet sous forme d'un fichier .rda
+save(Ranking_Aggregation_FBM, file = "Ranking_Aggregation_FBM.rda")
 ```
+
+
+```{r}
+load("Ranking_Aggregation_FBM.rda")
+```
+
+
 
 
 ### Visualize the performance of each metric for the best model of each sparsity used.
@@ -417,10 +454,10 @@ Population_ranking_Aggregation <- evaluatePopulation_aggregation(pop = pop, y = 
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Population_ranking_Aggregation, "accuracy_") * 100,
-    extract_metric_values(Population_ranking_Aggregation, "precision_") * 100,
-    extract_metric_values(Population_ranking_Aggregation, "recall_") * 100,
-    extract_metric_values(Population_ranking_Aggregation, "f1_") * 100
+    extract_metric_values(Ranking_Aggregation_FBM, "accuracy_") * 100,
+    extract_metric_values(Ranking_Aggregation_FBM, "precision_") * 100,
+    extract_metric_values(Ranking_Aggregation_FBM, "recall_") * 100,
+    extract_metric_values(Ranking_Aggregation_FBM, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -442,11 +479,11 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 
 ### best model ranking Aggregation
 ```{r}
-best_model_ranking_aggregation = Population_ranking_Aggregation[[4]][[1]]
-best_model_ranking_aggregation$accuracy_
-best_model_ranking_aggregation$confusionMatrix_
-best_model_ranking_aggregation$coeffs_
-best_model_ranking_aggregation$predictions_aggre
+Ranking_Aggregation_FBM_ = Ranking_Aggregation_FBM[[4]][[1]]
+Ranking_Aggregation_FBM_$accuracy_
+Ranking_Aggregation_FBM_$confusionMatrix_
+Ranking_Aggregation_FBM_$coeffs_
+Ranking_Aggregation_FBM_$predictions_aggre
 ```
 
 
