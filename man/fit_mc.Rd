@@ -16,6 +16,7 @@ fit_mc(
   return.all = FALSE,
   log.file = "parallel.log",
   approch = "ovo",
+  aggregation_ = "votingAggregation",
   path = NULL
 )
 }

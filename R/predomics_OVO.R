@@ -58,6 +58,7 @@ fit_mc <- function(X,
                    return.all = FALSE,
                    log.file = "parallel.log",
                    approch ="ovo",
+                   aggregation_ = "votingAggregation",
                    path = NULL)
 {
   # test the classifier object
@@ -425,7 +426,7 @@ fit_mc <- function(X,
   {
     cat("... No cross validation mode\n")
     res.clf               <- list()
-    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch)
+    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch, aggregation_ = aggregation_)
 
   } else
   {
@@ -434,7 +435,7 @@ fit_mc <- function(X,
     res.clf$classifier    <- list()
     res.clf$lfolds        <- lfolds
 
-    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch)
+    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch, aggregation_ = aggregation_)
 
     # store the whole dataset results in the right place
     res.clf$classifier    <- res.clf$crossVal$whole
@@ -476,55 +477,55 @@ fit_mc <- function(X,
 
         # for each model add a vector with feature importance
 
-          mda.cv_ <- list() # Initializing the list of MDA results
-          ind.features <- list() # Initializing the list of feature indices
-          prev.cv_ <- list()
-          mda_ <- list()
+        mda.cv_ <- list() # Initializing the list of MDA results
+        ind.features <- list() # Initializing the list of feature indices
+        prev.cv_ <- list()
+        mda_ <- list()
 
-          for (i in 1:length(pop)) {
-            # Generalizing MDA
+        for (i in 1:length(pop)) {
+          # Generalizing MDA
 
-            # Initializing mda.cv_ for each model in the population
-            pop[[i]]$mda.cv_ <- list()
+          # Initializing mda.cv_ for each model in the population
+          pop[[i]]$mda.cv_ <- list()
 
-            # Looping over feature names for each model
-            for (j in 1:length(pop[[1]]$names_)) {
-              # Assigning feature names to mda.cv_
-              pop[[i]]$mda.cv_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
-              names(pop[[i]]$mda.cv_[[j]]) <- pop[[i]]$names_[[j]]
+          # Looping over feature names for each model
+          for (j in 1:length(pop[[1]]$names_)) {
+            # Assigning feature names to mda.cv_
+            pop[[i]]$mda.cv_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
+            names(pop[[i]]$mda.cv_[[j]]) <- pop[[i]]$names_[[j]]
 
-              # Intersection of feature names with the names of feature importance
-              ind.features[[j]] <- intersect(pop[[i]]$names_[[j]], names(feature.importance.cv))
-            }
+            # Intersection of feature names with the names of feature importance
+            ind.features[[j]] <- intersect(pop[[i]]$names_[[j]], names(feature.importance.cv))
+          }
 
-            # Assigning feature importance results to mda.cv_
-            for (j in 1:length(ind.features)) {
-              pop[[i]]$mda.cv_[[j]][ind.features[[j]]] <- feature.importance.cv[ind.features[[j]]]
-            }
+          # Assigning feature importance results to mda.cv_
+          for (j in 1:length(ind.features)) {
+            pop[[i]]$mda.cv_[[j]][ind.features[[j]]] <- feature.importance.cv[ind.features[[j]]]
+          }
 
           # Initializing mda.cv_ for each model in the population
           pop[[i]]$prev.cv_ <- list()
 
-            # Looping over feature names for each model
+          # Looping over feature names for each model
           for (j in 1:length(pop[[1]]$names_)) {
-          # prevalence in top models in the folds
-          pop[[i]]$prev.cv_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
-          names(pop[[i]]$prev.cv_[[j]]) <- pop[[i]]$names_[[j]]
-          ind.features[[j]] <-intersect(pop[[i]]$names_[[j]], names(feature.prevalence.cv))
+            # prevalence in top models in the folds
+            pop[[i]]$prev.cv_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
+            names(pop[[i]]$prev.cv_[[j]]) <- pop[[i]]$names_[[j]]
+            ind.features[[j]] <-intersect(pop[[i]]$names_[[j]], names(feature.prevalence.cv))
           }
           for (j in 1:length(ind.features)) {
-          pop[[i]]$prev.cv_[[j]][ind.features[[j]]] <-feature.prevalence.cv[ind.features[[j]]]
+            pop[[i]]$prev.cv_[[j]][ind.features[[j]]] <-feature.prevalence.cv[ind.features[[j]]]
           }
 
           # MDA empirical
           pop[[i]]$mda_ <- list()
           for (j in 1:length(pop[[1]]$names_)) {
-          pop[[i]]$mda_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
-          names(pop[[i]]$mda_[[j]]) <- pop[[i]]$names_[[j]]
-          ind.features[[j]] <-intersect(pop[[i]]$names_[[j]], names(feature.importance))
+            pop[[i]]$mda_[[j]] <- rep(0, length(pop[[i]]$names_[[j]]))
+            names(pop[[i]]$mda_[[j]]) <- pop[[i]]$names_[[j]]
+            ind.features[[j]] <-intersect(pop[[i]]$names_[[j]], names(feature.importance))
           }
           for (j in 1:length(ind.features)) {
-          pop[[i]]$mda_[[j]][ind.features[[j]]] <-feature.importance[ind.features[[j]]]
+            pop[[i]]$mda_[[j]][ind.features[[j]]] <-feature.importance[ind.features[[j]]]
           }
         }
 
@@ -583,7 +584,7 @@ fit_mc <- function(X,
 #' @param x_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @param y_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @return the classifier along with the classification results as a sub-element
-runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo")
+runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo", aggregation_ = "votingAggregation")
 {
 
   if(clf$params$verbose) cat("... Entering runClassifier\n")
@@ -645,7 +646,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terBeam_mc=
            {
              if(clf$params$verbose) cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
-             res <- terBeam_fit_mc(X, y, clf,approch = approch)
+             res <- terBeam_fit_mc(X, y, clf,approch = approch, aggregation_ = aggregation_)
            },
 
          metal=
@@ -715,6 +716,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
                                                           seed = c(1:10), # 10 times the perturbation for more accurate importance
                                                           aggregation = "mean",
                                                           approch = approch,
+                                                          aggregation_ = aggregation_,
                                                           verbose = clf$params$verbose)
     clf$fip <- efip.fold
   }
@@ -745,7 +747,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
 #' @param return.all: return all results from the crossvalidation for feature stability testing
 #' @return a list containing empirical, generalisation scores for each fold as well as a matrix with the mean values.
 #' @export
-runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE)
+runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE, aggregation_ = "votingAggregation")
 {
 
   # test the classifier object
@@ -883,12 +885,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
             cat("=> DBG: before runclassifier\n")
 
-            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_)
           }else
           {
             try(
               {
-                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch)
+                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_)
               }, silent = TRUE
             )
           }
@@ -954,12 +956,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
       if(clf$params$debug)
       {
-        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch)
+        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_)
       }else
       {
         res.all[[i]]                    <- try(
           {
-            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch, aggregation_ = aggregation_)
           }, silent = FALSE
         ) # end try
       } # end else debug
@@ -1054,7 +1056,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
         mod               <- updateObjectIndex_mc(obj = mod, features = rownames(X))
         #mod.train         <- evaluateModel(mod = mod, X=x_train, y=y_train, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, mode='train')
         mod.train         <- mod # since this is the same as computed above
-        mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test')
+        mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test', aggregation_ = aggregation_)
 
         if(!is.null(mod.train) & !is.null(mod.test))
         {

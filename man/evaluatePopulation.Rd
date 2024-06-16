@@ -16,6 +16,7 @@ evaluatePopulation_mc(
   mode = "train",
   delete.null.models = TRUE,
   approch = "ovo",
+  aggregation_ = "votingAggregation",
   lfolds = NULL
 )
 }

@@ -11,7 +11,8 @@ runCrossval_mc(
   lfolds = NULL,
   nfolds = 10,
   approch = "ovo",
-  return.all = FALSE
+  return.all = FALSE,
+  aggregation_ = "votingAggregation"
 )
 }
 \arguments{

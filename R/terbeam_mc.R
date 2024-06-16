@@ -151,7 +151,7 @@ terBeam_mc <- function(sparsity = 1:5, max.nb.features = 1000,
 
 
 
-terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
+terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggregation")
 {
   # Setting the language environment
   switch(clf$params$language,
@@ -371,7 +371,7 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
       for(j in 1:(length(l_features.to.keep))){
         list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[j]])
       }
-      if(length(list_ind.features.to.keep[[1]]) >= k)
+      if(length(list_ind.features.to.keep) >= k)
       {
         pop               <- generateAllCombinations_mc(X = X, y = y, clf = clf,
                                                         ind.features.to.keep = list_ind.features.to.keep,
@@ -392,6 +392,7 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
                                                  estim.feat.importance = FALSE,
                                                  mode = "train",
                                                  approch = approch,
+                                                 aggregation_ = aggregation_,
                                                  delete.null.models = TRUE)
 
     # Sort the population according to the clf$params$evalToFit attribute
@@ -439,15 +440,15 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo")
     }
 
     # stopping testing
-    if((length(features.to.keep) < k + 2) & (k != 1)) # If we exhausted all the combinations
+    if((length(features.to.keep) < k + 1) & (k != 1)) # If we exhausted all the combinations
     {
       break
     } # end if stopping test
 
     ###if (any(sapply(features.to.keep, length) < k + 2) & (k != 1)) {
 
-      ###break
-   ### }
+    ###break
+    ### }
   } # end loop sparsity
 
   if(clf$params$verbose) print(paste("... ... models are created"))

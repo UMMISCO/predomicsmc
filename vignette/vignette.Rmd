@@ -86,7 +86,7 @@ dim(X.test)
 #Classifying using the terbeam algorithm
 
 ```{r setting the classifier}
-clf <- terBeam_mc(sparsity = c(2,3,4,5), 
+clf <- terBeam_mc(sparsity = c(2,3,4), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -107,9 +107,9 @@ clf <- terBeam_mc(sparsity = c(2,3,4,5),
 runit = TRUE
 if(runit)
 {
-res_clf_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE, nfolds= 10); # class(res_clf_ovo)
+Uue_maxi <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "weightedAggregation", nfolds= 1); # class(res_clf_ovo)
   # save results
-  save(res_clf_ovo, clf, file = "res_clf_ovo.rda", compression_level = 9)
+ ### save(res_clf_ovo_weightedAggregation , clf, file = ###"res_clf_ovo_weightedAggregation.rda", compression_level = 9)
 }
 
 # ... Database X is not a matrix! Converting ...
@@ -153,9 +153,107 @@ res_clf_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TR
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
 
-bests_models_parsimony_ovo <- digestmc(obj = res_clf_ovo, penalty = 0.75/100, plot = TRUE)
+clf_ovo_we <- digestmc(obj = Uue_maxi , penalty = 0.75/100, plot = TRUE)
 
 ```
+
+```{r}
+best.model.test <- evaluateModel_mc(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE,  approch = approch, aggregation_ = aggregation_, mode = "test")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############### terga1_mc ##################################################
+
+```{r}
+# terga1_mc
+clf <- terga1_mc(nCores = 1,
+              seed = 1,
+              plot = TRUE
+)
+printy(clf) # print the object for more information
+isClf(clf)  # test whether the object is a classifier
+class(clf)  # the class of the classifier object
+```
+
+
+
+```{r}
+runit = TRUE
+if(runit)
+{
+terga1mc_maximizationAggregation <- fit_mc(X = X, y = y, clf = clf,approch="ova", aggregation_ = "maximizationAggregation", cross.validate = TRUE, nfolds= 1); # class(res_clf_ovo)
+  # save results
+  save(terga1mc_maximizationAggregation  , clf, file = "terga1mc_maximizationAggregation.rda", compression_level = 9)
+}
+
+# ... Database X is not a matrix! Converting ...
+# ... Classification mode, computing factor(y) for speedup and robustness
+# ... Loading feature correlation for speedup
+# ... Correlation file loaded
+# ... Storing data in the classifier object for speedup
+# ... Computing ternary coefficients for speedup
+# ... One seed found, setting by default
+# ... Running the classifier terga2 with a single CPU
+# ... Second and faster version of terga fitting based on Genetic Algorithm heuristics ...
+# ... Cross validation mode
+# ... Starting cross validation not in parallel
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ... Learning process is finished succesfuly
+# ... Thank you for using Predomics. Don't forget to digest the results now.
+# 
+# [1] "experiment" "predomics" 
+```
+
+
+
+
+
+```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
+clf_ovo_weightedAggre <- digestmc(obj =terga1mc_maximizationAggregation   , penalty = 0.75/100, plot = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
 
 ## Voting Aggregation
 
@@ -163,10 +261,10 @@ bests_models_parsimony_ovo <- digestmc(obj = res_clf_ovo, penalty = 0.75/100, pl
 ### Evaluate the population of the best one-versus-one models using the multiclass aggregation method by majority voting with the test data.
 
 ```{r}
-pop = res_clf_ovo$classifier$models
-Voting_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "votingAggregation")
+pop2 = res_clf_ovo_$classifier$models
+Voting_Aggregation_FBM_11 <- evaluatePopulation_aggregation(pop = pop1, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "votingAggregation")
 # Sauvegarder l'objet sous forme d'un fichier .rda
-save(Voting_Aggregation_FBM, file = "Voting_Aggregation_FBM.rda")
+#save(Voting_Aggregation_FBM_1, file = "Voting_Aggregation_FBM_1.rda")
 
 ```
 
@@ -175,7 +273,7 @@ save(Voting_Aggregation_FBM, file = "Voting_Aggregation_FBM.rda")
 
 
 ```{r}
-load("Voting_Aggregation_FBM.rda")
+load("res_clf_ovo_votingAggregation.rda")
 ```
 
 
@@ -197,10 +295,10 @@ extract_metric_values <- function(aggregation_list, metric_name) {
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Voting_Aggregation_FBM, "accuracy_") * 100,
-    extract_metric_values(Voting_Aggregation_FBM, "precision_") * 100,
-    extract_metric_values(Voting_Aggregation_FBM, "recall_") * 100,
-    extract_metric_values(Voting_Aggregation_FBM, "f1_") * 100
+    extract_metric_values(Voting_Aggregation_FBM_11, "accuracy_") * 100,
+    extract_metric_values(Voting_Aggregation_FBM_11, "precision_") * 100,
+    extract_metric_values(Voting_Aggregation_FBM_11, "recall_") * 100,
+    extract_metric_values(Voting_Aggregation_FBM_11, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -222,12 +320,38 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 ### Best Model Voting Aggregation
 
 ```{r}
-Voting_Aggregation_FBM_ = Voting_Aggregation_FBM[[4]][[1]]
+Voting_Aggregation_FBM_ = Voting_Aggregation_FBM_11[[2]][[1]]
 Voting_Aggregation_FBM_$accuracy_
 Voting_Aggregation_FBM_$confusionMatrix_
 Voting_Aggregation_FBM_$coeffs_
 Voting_Aggregation_FBM_$predictions_aggre
+
+
 ```
+
+```{r}
+accuracy_val = Voting_Aggregation_FBM_$accuracy_
+precision_val = Voting_Aggregation_FBM_$precision_
+recall_val = Voting_Aggregation_FBM_$recall_
+f1_val <- Voting_Aggregation_FBM_$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_voting1 <- data.frame(
+  Algorithme = "Voting Aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_voting1
+
+```
+
+
+
+
+
+
 
 
 
@@ -236,15 +360,16 @@ Voting_Aggregation_FBM_$predictions_aggre
 ### Evaluate the population of the best one-versus-one models using the multiclass aggregation method by Weighted voting with the test data.
 
 ```{r}
-pop = res_clf_ovo$classifier$models
-Weighted_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "weightedAggregation")
+pop3 = res_clf_ovo_$classifier$models
+Weighted_Aggregation_FBM_22 <- evaluatePopulation_aggregation(pop = pop3, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "weightedAggregation")
 # Sauvegarder l'objet sous forme d'un fichier .rda
-save(Weighted_Aggregation_FBM, file = "Weighted_Aggregation_FBM.rda")
+#save(Weighted_Aggregation_FBM_2, file = "Weighted_Aggregation_FBM_2.rda")
 ```
 
 
+
 ```{r}
-load("Weighted_Aggregation_FBM.rda")
+load("Weighted_Aggregation_FBM_2.rda")
 ```
 
 
@@ -257,10 +382,10 @@ load("Weighted_Aggregation_FBM.rda")
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Weighted_Aggregation_FBM, "accuracy_") * 100,
-    extract_metric_values(Weighted_Aggregation_FBM, "precision_") * 100,
-    extract_metric_values(Weighted_Aggregation_FBM, "recall_") * 100,
-    extract_metric_values(Weighted_Aggregation_FBM, "f1_") * 100
+    extract_metric_values(Weighted_Aggregation_FBM_22, "accuracy_") * 100,
+    extract_metric_values(Weighted_Aggregation_FBM_22, "precision_") * 100,
+    extract_metric_values(Weighted_Aggregation_FBM_22, "recall_") * 100,
+    extract_metric_values(Weighted_Aggregation_FBM_22, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -282,7 +407,7 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 ### best model Weighted Aggregation
 
 ```{r}
-Weighted_Aggregation_FBM_ = Weighted_Aggregation_FBM[[4]][[1]]
+Weighted_Aggregation_FBM_ = Weighted_Aggregation_FBM_22[[2]][[1]]
 Weighted_Aggregation_FBM_$accuracy_
 Weighted_Aggregation_FBM_$confusionMatrix_
 Weighted_Aggregation_FBM_$coeffs_
@@ -291,9 +416,25 @@ Weighted_Aggregation_FBM_$predictions_aggre
 ```
 
 ```{r}
-printy_mc(best_model_weighted_aggregation)
+printy_mc(Weighted_Aggregation_FBM_)
 ```
 
+```{r}
+accuracy_val = Weighted_Aggregation_FBM_$accuracy_
+precision_val = Weighted_Aggregation_FBM_$precision_
+recall_val =Weighted_Aggregation_FBM_$recall_
+f1_val <- Weighted_Aggregation_FBM_$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_weighted1 <- data.frame(
+  Algorithme = "weighted Aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_weighted1
+```
 
 
 
@@ -306,8 +447,19 @@ load("res_clf_ova.rda")
 ## Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-bests_models_parsimony_ova <- digestmc(obj = res_clf_ova, penalty = 0.75/100, plot = TRUE)
+bests_models_parsimony_ova <- digestmc(obj = res_clf_ova_, penalty = 0.75/100, plot = TRUE)
 ```
+
+
+```{r}
+#df_voting1
+#df_weighted1
+#df_predomics_aggregation_ova1
+#df_maximization1
+#df_ranking1
+```
+
+
 
 
 ## New Approach
@@ -317,16 +469,16 @@ bests_models_parsimony_ova <- digestmc(obj = res_clf_ova, penalty = 0.75/100, pl
 
 
 ```{r}
-pop = res_clf_ova$classifier$models
-NewApproach_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "NewApproach")
+pop1 = res_clf_ova_$classifier$models
+NewApproach_Aggregation_FBM11 <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "NewApproach")
 # Sauvegarder l'objet sous forme d'un fichier .rda
-save(NewApproach_Aggregation_FBM, file = "NewApproach_Aggregation_FBM.rda")
+#save(NewApproach_Aggregation_FBM1, file = "NewApproach_Aggregation_FBM1.rda")
 ```
 
 
 
 ```{r}
-load("NewApproach_Aggregation_FBM.rda")
+load("NewApproach_Aggregation_FBM1.rda")
 ```
 
 
@@ -336,10 +488,10 @@ load("NewApproach_Aggregation_FBM.rda")
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(NewApproach_Aggregation_FBM, "accuracy_") * 100,
-    extract_metric_values(NewApproach_Aggregation_FBM, "precision_") * 100,
-    extract_metric_values(NewApproach_Aggregation_FBM, "recall_") * 100,
-    extract_metric_values(NewApproach_Aggregation_FBM, "f1_") * 100
+    extract_metric_values(NewApproach_Aggregation_FBM11, "accuracy_") * 100,
+    extract_metric_values(NewApproach_Aggregation_FBM11, "precision_") * 100,
+    extract_metric_values(NewApproach_Aggregation_FBM11, "recall_") * 100,
+    extract_metric_values(NewApproach_Aggregation_FBM11, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -361,11 +513,33 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 ### best model new approach Aggregation
 
 ```{r}
-NewApproach_Aggregation_FBM_ = NewApproach_Aggregation_FBM[[4]][[1]]
+NewApproach_Aggregation_FBM_ = NewApproach_Aggregation_FBM11[[4]][[1]]
 NewApproach_Aggregation_FBM_$accuracy_
 NewApproach_Aggregation_FBM_$confusionMatrix_
 NewApproach_Aggregation_FBM_$coeffs_
 NewApproach_Aggregation_FBM_$predictions_aggre
+```
+
+
+```{r}
+predomics_aggregation_ova1 = NewApproach_Aggregation_FBM_
+```
+
+```{r}
+accuracy_val = predomics_aggregation_ova1$accuracy_
+precision_val = predomics_aggregation_ova1$precision_
+recall_val =predomics_aggregation_ova1$recall_
+f1_val <- predomics_aggregation_ova1$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_predomics_aggregation_ova1 <- data.frame(
+  Algorithme = "predomics_aggregation_ova",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_predomics_aggregation_ova1
 ```
 
 
@@ -374,15 +548,15 @@ NewApproach_Aggregation_FBM_$predictions_aggre
 ### Evaluate the population of the best one-versus-all models using the multiclass aggregation method by maximization  with the test data.
 
 ```{r}
-pop = res_clf_ova$classifier$models
-Maximization_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "maximizationAggregation")
+pop1 = res_clf_ova_$classifier$models
+Maximization_Aggregation_FBM11 <- evaluatePopulation_aggregation(pop = pop1, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "maximizationAggregation")
 # Sauvegarder l'objet sous forme d'un fichier .rda
-save(Maximization_Aggregation_FBM, file = "Maximization_Aggregation_FBM.rda")
+#save(Maximization_Aggregation_FBM1, file = "Maximization_Aggregation_FBM1.rda")
 ```
 
 
 ```{r}
-load("Maximization_Aggregation_FBM.rda")
+load("Maximization_Aggregation_FBM1.rda")
 ```
 
 
@@ -393,10 +567,10 @@ load("Maximization_Aggregation_FBM.rda")
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Maximization_Aggregation_FBM, "accuracy_") * 100,
-    extract_metric_values(Maximization_Aggregation_FBM, "precision_") * 100,
-    extract_metric_values(Maximization_Aggregation_FBM, "recall_") * 100,
-    extract_metric_values(Maximization_Aggregation_FBM, "f1_") * 100
+    extract_metric_values(Maximization_Aggregation_FBM1, "accuracy_") * 100,
+    extract_metric_values(Maximization_Aggregation_FBM1, "precision_") * 100,
+    extract_metric_values(Maximization_Aggregation_FBM1, "recall_") * 100,
+    extract_metric_values(Maximization_Aggregation_FBM1, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -418,7 +592,7 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 
 ### best model maximization Aggregation
 ```{r}
-Maximization_Aggregation_FBM_ = Maximization_Aggregation_FBM[[4]][[1]]
+Maximization_Aggregation_FBM_ = Maximization_Aggregation_FBM1[[4]][[1]]
 Maximization_Aggregation_FBM_$accuracy_
 Maximization_Aggregation_FBM_$confusionMatrix_
 Maximization_Aggregation_FBM_$coeffs_
@@ -428,16 +602,42 @@ Maximization_Aggregation_FBM_$predictions_aggre
 ```{r}
 printy_mc(Maximization_Aggregation_FBM_)
 ```
+```{r}
+accuracy_val = Maximization_Aggregation_FBM_$accuracy_
+precision_val = Maximization_Aggregation_FBM_$precision_
+recall_val = Maximization_Aggregation_FBM_$recall_
+f1_val <- Maximization_Aggregation_FBM_$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_maximization1 <- data.frame(
+  Algorithme = "maximization aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_maximization1
+```
+
+
+
+
+
+
+
+
+
+
 
 ## Ranking Aggregation
 
 ### Evaluate the population of the best one-versus-all models using the multiclass aggregation method by ranking  with the test data.
 
 ```{r warning=FALSE}
-pop = res_clf_ova$classifier$models
-Ranking_Aggregation_FBM <- evaluatePopulation_aggregation(pop = pop, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "rankingAggregation")
+pop1 = res_clf_ova_$classifier$models
+Ranking_Aggregation_FBM1 <- evaluatePopulation_aggregation(pop = pop1, y = y.test, X = X.test, force.re.evaluation = TRUE, clf,  aggregation = "rankingAggregation")
 # Sauvegarder l'objet sous forme d'un fichier .rda
-save(Ranking_Aggregation_FBM, file = "Ranking_Aggregation_FBM.rda")
+#save(Ranking_Aggregation_FBM, file = "Ranking_Aggregation_FBM.rda")
 ```
 
 
@@ -454,10 +654,10 @@ load("Ranking_Aggregation_FBM.rda")
 data <- data.frame(
   Metric = rep(c("Accuracy", "Precision", "Recall", "F1"), each = 4),
   Value = c(
-    extract_metric_values(Ranking_Aggregation_FBM, "accuracy_") * 100,
-    extract_metric_values(Ranking_Aggregation_FBM, "precision_") * 100,
-    extract_metric_values(Ranking_Aggregation_FBM, "recall_") * 100,
-    extract_metric_values(Ranking_Aggregation_FBM, "f1_") * 100
+    extract_metric_values(Ranking_Aggregation_FBM1, "accuracy_") * 100,
+    extract_metric_values(Ranking_Aggregation_FBM1, "precision_") * 100,
+    extract_metric_values(Ranking_Aggregation_FBM1, "recall_") * 100,
+    extract_metric_values(Ranking_Aggregation_FBM1, "f1_") * 100
   ),
   Method = rep(c("K_2", "K_3", "K_4", "K_5"), times = 4)
 )
@@ -479,12 +679,86 @@ ggplot(data, aes(x = Method, y = Value, fill = Metric)) +
 
 ### best model ranking Aggregation
 ```{r}
-Ranking_Aggregation_FBM_ = Ranking_Aggregation_FBM[[4]][[1]]
+Ranking_Aggregation_FBM_ = Ranking_Aggregation_FBM1[[4]][[1]]
 Ranking_Aggregation_FBM_$accuracy_
 Ranking_Aggregation_FBM_$confusionMatrix_
 Ranking_Aggregation_FBM_$coeffs_
 Ranking_Aggregation_FBM_$predictions_aggre
 ```
+
+
+
+
+
+
+
+
+```{r}
+accuracy_val = Ranking_Aggregation_FBM_$accuracy_
+precision_val =Ranking_Aggregation_FBM_$precision_
+recall_val = Ranking_Aggregation_FBM_$recall_
+f1_val <-Ranking_Aggregation_FBM_$f1_
+
+# Création du dataframe sans la matrice de confusion
+df_ranking1 <- data.frame(
+  Algorithme = "ranking aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(accuracy_val, precision_val, recall_val, f1_val)
+)
+
+df_ranking1
+```
+
+
+```{r}
+df_all1 <- rbind(df_ranking1, df_maximization1,df_predomics_aggregation_ova1, df_voting1,df_weighted1)
+
+# Créer une liste des métriques à comparer
+metrics_list <- c("Accuracy", "Precision", "Recall", "F1")
+
+# Parcourir chaque métrique pour créer un plot unique
+for (metric in metrics_list) {
+  # Filtrer les données par métrique
+  df_metric <- df_all1[df_all1$Metrics == metric, ]
+  
+  # Créer le plot
+  plot <- ggplot(df_metric, aes(x = Algorithme, y = Values, fill = Algorithme)) +
+    geom_bar(stat = "identity") +
+    labs(title = paste("Comparison of", metric, "between the models"), y = metric, x = "Algorithms") +
+    theme_minimal() +
+    geom_text(aes(label = round(Values, 2), y = Values), vjust = -0.3, size = 3)
+  
+  # Afficher le plot
+  print(plot)
+
+
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1001,7 +1275,7 @@ df_SVM
 ```{r warning=FALSE, fig.height=6, fig.width=10, message=FALSE}
 
 # Combinez les dataframes en un seul dataframe
-df_all <- rbind(df_ranking, df_maximization,df_newapproach, df_voting,df_weighted, df_rf,df_LR, df_SVM)
+df_all <- rbind(df_ranking1, df_maximization1,df_predomics_aggregation_ova1, df_voting1,df_weighted1, df_rf,df_LR, df_SVM)
 
 # Créer une liste des métriques à comparer
 metrics_list <- c("Accuracy", "Precision", "Recall", "F1")
@@ -1060,5 +1334,240 @@ ggplot(df_voting, aes(x = Metrics, y = Values, color = Metrics)) +
 ```
 
 
+```{r}
+install.packages("writexl")
+library(writexl)
 
+```
+
+```{r}
+# Supposons que votre data frame soit stocké dans res_clf_ovo_$crossVal$scores$empirical.auc
+df <- res_clf_ovo_$crossVal$scores$generalization.auc
+
+# Spécifiez le chemin et le nom du fichier Excel à créer
+file_path <- "~/Documents/auc_generalise.xlsx"
+
+# Exporter le data frame en fichier Excel
+write_xlsx(df, file_path)
+```
+
+
+
+
+```{r}
+# Charger les packages nécessaires
+library(ggplot2)
+library(dplyr)
+
+# Vos dataframes
+df_ranking1 <- data.frame(
+  Algorithme = "ranking aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.5606061, 0.6953305, 0.5606061, 0.6207423)
+)
+
+df_maximization1 <- data.frame(
+  Algorithme = "maximization aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.5606061, 0.6953305, 0.5606061, 0.6207423)
+)
+
+df_predomics_aggregation_ova1 <- data.frame(
+  Algorithme = "predomics_aggregation_ova",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.6287879, 0.6465446, 0.6287879, 0.6375426)
+)
+
+# Combiner les dataframes
+combined_df <- bind_rows(df_ranking1, df_maximization1, df_predomics_aggregation_ova1)
+
+# Créer le graphique
+ggplot(combined_df, aes(x = Metrics, y = Values, fill = Algorithme)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Algorithme) +
+  theme_minimal() +
+  labs(title = "Performance des Algorithmes selon Différentes Métriques",
+       x = "Métriques",
+       y = "Valeurs",
+       fill = "Algorithme") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r warning=FALSE, fig.height=5, fig.width=8, message=FALSE}
+# Charger les packages nécessaires
+library(ggplot2)
+library(dplyr)
+
+# Combiner les dataframes
+ 
+combined_df <- bind_rows(
+  df_ranking1, df_maximization1, df_predomics_aggregation_ova1, df_voting1,
+  df_weighted1, df_rf, df_LR, df_SVM
+)
+
+# Créer le graphique avec les valeurs au-dessus des barres
+ggplot(combined_df, aes(x = Algorithme, y = Values, fill = Algorithme)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(Values, 2)), vjust = -0.5, position = position_dodge(width = 0.9), size = 3) +
+  facet_wrap(~ Metrics, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Performance des Algorithmes selon Différentes Métriques",
+       x = "Algorithmes",
+       y = "Valeurs",
+       fill = "Algorithme") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+```{r}
+# Vos dataframes (remplacer avec vos données réelles)
+df_ranking1 <- data.frame(
+  Algorithme = "ranking aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.5606061, 0.6953305, 0.5606061, 0.6207423)
+)
+
+df_maximization1 <- data.frame(
+  Algorithme = "maximization aggregation",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.5606061, 0.6953305, 0.5606061, 0.6207423)
+)
+
+df_predomics_aggregation_ova1 <- data.frame(
+  Algorithme = "predomics_aggregation_ova",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.6287879, 0.6465446, 0.6287879, 0.6375426)
+)
+
+df_voting1 <- data.frame(
+  Algorithme = "voting",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.5806061, 0.6853305, 0.5806061, 0.6307423)
+)
+
+df_weighted1 <- data.frame(
+  Algorithme = "weighted",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.5906061, 0.6753305, 0.5906061, 0.6407423)
+)
+
+df_rf <- data.frame(
+  Algorithme = "random forest",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.6006061, 0.6653305, 0.6006061, 0.6507423)
+)
+
+df_LR <- data.frame(
+  Algorithme = "logistic regression",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.6106061, 0.6553305, 0.6106061, 0.6607423)
+)
+
+df_SVM <- data.frame(
+  Algorithme = "SVM",
+  Metrics = c("Accuracy", "Precision", "Recall", "F1"),
+  Dataset = "Test",
+  Values = c(0.6206061, 0.6453305, 0.6206061, 0.6707423)
+)
+
+```
+
+
+
+
+
+
+```{r warning=FALSE, fig.height=2.5, fig.width=6, message=FALSE}
+v2 = printy_mc(pop1$k_2[[1]])
+v3 = printy_mc(pop1$k_3[[1]])
+v4 = printy_mc(pop1$k_4[[1]])
+v5 = printy_mc(pop1$k_5[[1]])
+```
+```{r}
+#v2 
+#v3 
+#v4 
+v5 
+```
+
+
+
+
+
+```{r}
+pop11 <- list(
+  k_2 = v2,
+  k_3 = v3,
+  k_4 = v4,
+  k_5 = v5
+)
+
+# Transformer les listes en data frames
+df_list <- lapply(names(pop11), function(k) {
+  data.frame(Model = unlist(pop11[[k]]), Group = k, stringsAsFactors = FALSE)
+})
+
+# Combiner les data frames en un seul
+combined_df <- do.call(rbind, df_list)
+
+```
+
+```{r}
+library(gridExtra)
+library(ggplot2)
+
+# Définir une fonction pour créer un graphique ggplot à partir d'une liste de données
+create_plot <- function(data, title) {
+  ggplot(data, aes(x = 1, y = Model, label = Model)) +
+    geom_point(size = 3, color = "blue") +
+    theme_void() +
+    theme(axis.text.y = element_text(size = 12)) +
+    ggtitle(title) +
+    geom_text(size = 3, hjust = 0, vjust = 0.5, color = "black")
+}
+
+# Créer les graphiques individuels
+plot_v2 <- create_plot(data.frame(Model = unlist(v2)), "K=2")
+plot_v3 <- create_plot(data.frame(Model = unlist(v3)), "K=3")
+plot_v4 <- create_plot(data.frame(Model = unlist(v4)), "K=4")
+plot_v5 <- create_plot(data.frame(Model = unlist(v5)), "K=5")
+
+# Afficher les graphiques côte à côte
+grid.arrange(plot_v2, plot_v3, plot_v4, plot_v5, ncol = 1)
+
+
+```
+
+```{r}
+num_outer <- length(res)
+num_inner <- length(res[[1]])
+
+# Initialiser une nouvelle liste vide pour stocker les résultats
+res_inverted <- vector("list", num_inner)
+
+# Boucler sur les indices intérieurs et extérieurs pour inverser la structure
+for (j in 1:num_inner) {
+  res_inverted[[j]] <- lapply(res, function(x) x[[j]])
+}
+
+
+```
+
+```{r}
+res_inverted[[1]]
+```
 

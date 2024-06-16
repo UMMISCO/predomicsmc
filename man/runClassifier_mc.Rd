@@ -4,7 +4,15 @@
 \alias{runClassifier_mc}
 \title{runClassifier_ovo}
 \usage{
-runClassifier_mc(X, y, clf, x_test = NULL, y_test = NULL, approch = "ovo")
+runClassifier_mc(
+  X,
+  y,
+  clf,
+  x_test = NULL,
+  y_test = NULL,
+  approch = "ovo",
+  aggregation_ = "votingAggregation"
+)
 }
 \arguments{
 \item{X:}{The dataset to classify}

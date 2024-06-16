@@ -353,28 +353,6 @@ evaluateFit_mc <- function(mod, X, y, clf, force.re.evaluation = FALSE,approch="
 
   listcoeffs <- clf$coeffs_
   list_mod <- mod
-
-  ### for(i in 1: length(list_y)) {
-
-  # if the models is not a valid object
-  ### if(!isModel(mod[[1]]))
-  ### {
-  ### if(!is.character(mod[[1]]) | !is.numeric(mod[[1]]))
-  ### {
-  ### stop("evaluateFit: please provide a valid model object or a feature index vector.")
-  ###}
-
-  ###if(is.character(mod[[1]]))
-  ###{
-  # if model is of the form of variable names
-  ### mod[[1]] <- names2index(X = list_X[[1]], var.names = mod[[1]])
-  ###}
-  ###clf$coeffs_ <- listcoeffs[[1]]
-  ###mod[[1]] <- individual(X= list_X[[1]], y= list_y[[1]], clf = clf, ind = mod[[1]])
-  ###}
-  ###}
-
-
   # compute the score in the case it is asked to recompute
   for(i in 1: length(list_y)) {
     if(force.re.evaluation)
@@ -685,7 +663,7 @@ evaluateFit_mc <- function(mod, X, y, clf, force.re.evaluation = FALSE,approch="
 #' @return a model ovo object with the fitting scores evaluated
 #' @export
 
-evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, approch="ovo",mode = 'train')
+evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, approch="ovo",mode = 'train', aggregation_ = "votingAggregation")
 {
 
   if(mode != "train" & mode != "test")
@@ -734,126 +712,57 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     }
   }
 
-  list_mod = mod
-
   if (mode == "test") {
-    if (isModelSota(mod)) {
-      list_mod <- list()
 
-      for(ite in 1:(length(list_y))){
-        list_mod[[ite]] <- mod
-      }
+    n_combinations <- length(mod$list_intercept_)
+    list_mod <- vector("list", n_combinations)
 
-      for (i in 1:length(list_y)) {
-        # Create a vector with unique values from  list_y[[i]]
-        valeurs_uniques <- unique(unlist(list_y[[i]]))
+    for (i in 1:n_combinations) {
+      list_mod[[i]] <- list(
+        learner = mod$learner,
+        language = mod$language,
+        objective = mod$objective,
+        indices_ = mod$indices_[[i]],
+        names_ = mod$names_[[i]],
+        coeffs_ = mod$coeffs_[[i]],
+        fit_ = mod$fit_,
+        unpenalized_fit_ = mod$unpenalized_fit_,
+        auc_ = mod$auc_,
+        accuracy_ = mod$accuracy_,
+        cor_ = mod$cor_,
+        aic_ = mod$aic_,
+        intercept_ = mod$list_intercept_[[i]],
+        eval.sparsity = mod$eval.sparsity,
+        precision_ = mod$precision_,
+        recall_ = mod$recall_,
+        f1_ = mod$f1_,
+        sign_ = mod$sign_[[i]],
+        rsq_ = mod$rsq_[[i]],
+        ser_ = mod$ser_[[i]],
+        score_ = mod$score_[[i]],
+        pos_score_ = mod$pos_score_[[i]],
+        neg_score_ = mod$neg_score_[[i]],
+        confusionMatrix_ = mod$confusionMatrix_[[i]]
 
-        #  Initialize the variables obj, names_, indices_, etc. to NULL.
-        obj <- NULL
-        names_ <- NULL
-        indices_ <- NULL
-        score_ = NULL
-        pos_score_ = NULL
-        neg_score_ = NULL
-        confusionMatrix_ = NULL
 
-        for (j in 1:length(list_y)) {
-          # Create a vector with unique values from list_mod[[j]]$obj$y
-          boo <- unique(as.vector(mod$obj[[j]]$y))
-
-          # Check if the vectors contain the same elements.
-          if (all(valeurs_uniques %in% boo) && all(boo %in% valeurs_uniques)) {
-            obj <- mod$obj[[j]]
-            names_ <- mod$names_[[j]]
-            indices_ <- mod$indices_[[j]]
-            score_ <- mod$score_[[j]]
-            pos_score_ <- mod$pos_score_[[j]]
-            neg_score_ <- mod$neg_score_[[j]]
-            confusionMatrix_ <- mod$confusionMatrix_[[j]]
-            break
-          }
-        }
-
-        if (!is.null(obj)) {
-          list_mod[[i]]$obj <- obj
-          list_mod[[i]]$names_ <- names_
-          list_mod[[i]]$indices_ <- indices_
-          list_mod[[i]]$score_ <- score_
-          list_mod[[i]]$pos_score_ <- pos_score_
-          list_mod[[i]]$neg_score_ <- neg_score_
-          list_mod[[i]]$confusionMatrix_ <- confusionMatrix_
-        } else {
-          print(paste("No match found for list_y[", i, "]."))
-        }
-      }
-    } else{
-
-      liste_indicess <- list()
-      liste_namess <- list()
-      liste_coeffss <- list()
-      liste_signn <- list()
-      liste_scoree <- list()
-      liste_pos <- list()
-      liste_neg <- list()
-      liste_matrix <- list()
-      list_mod <- list()
-      liste_indicess = mod$indices_
-      liste_namess = mod$names_
-      liste_coeffss = mod$coeffs_
-      liste_signn = mod$sign_
-      liste_scoree = mod$score_
-      liste_pos = mod$pos_score_
-      liste_neg = mod$neg_score_
-      liste_matrix = mod$confusionMatrix_
-
-      for (j in 1:(length(list_y))){
-        temp_list <- list(
-          learner = mod$learner,
-          language = mod$language,
-          objective = mod$objective,
-          evalToFit = mod$evalToFit,
-          indices_ = liste_indicess[[j]],
-          names_ = liste_namess[[j]],
-          coeffs_ = liste_coeffss[[j]],
-          fit_ = mod$fit_,
-          unpenalized_fit_ = mod$unpenalized_fit_,
-          auc_ = mod$auc_,
-          accuracy_ = mod$accuracy_,
-          cor_ = mod$cor_,
-          aic_ = mod$aic_,
-          intercept_ = mod$intercept_,
-          eval.sparsity = mod$eval.sparsity,
-          precision_ = mod$precision_,
-          recall_ = mod$recall_,
-          f1_ = mod$f1_,
-          sign_ = liste_signn[[j]],
-          rsq_ = mod$rsq_,
-          ser_ = mod$ser_,
-          score_ = liste_scoree[[j]],
-          pos_score_ = liste_pos[[j]],
-          neg_score_ = liste_neg[[j]],
-          confusionMatrix_ = liste_matrix[[j]]
-        )
-        list_mod[[j]] <- temp_list
-      }
+      )
     }
+    mod.res = list_mod
   }
-  mod_res <- list()
-  mod_res <- list_mod[[1]]
-  mod.res = list_mod
-
-  # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
-  for(i in 1:length(list_mod)){
-    if(!isModelSota(list_mod[[i]]))
-    {
-      # at this stage the model should be a valid one. If not return NULL
-      if(!isModel(list_mod[[i]]))
-      {
-        if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
-        return(NULL)
-      }
-    }
-  }
+  # mod.res = list_mod
+  #
+  # # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
+  # for(i in 1:length(mod.res)){
+  #   if(!isModelSota(mod.res[[i]]))
+  #   {
+  #     # at this stage the model should be a valid one. If not return NULL
+  #     if(!isModel(mod.res[[i]]))
+  #     {
+  #       if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
+  #       return(NULL)
+  #     }
+  #   }
+  # }
 
 
   # make a copy of the model object
@@ -861,6 +770,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
 
   if(mode == "train")
   {
+    mod.res <- mod
     for(i in 1:length(mod.res)){
       # reset the attributes that need to be recomputed
       # general attributes
@@ -978,119 +888,10 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
       return(NULL)
     }
   }
-
-  replace_NaN_with_0 <- function(x) {
-    ifelse(is.nan(x), 0, x)
-  }
-
-  # Unification phase of the multiclass model in binary
-  nClass <- length(mod.res)
-
-  learnerr <- mod.res[[1]]$learner
-  languagee <- mod.res[[1]]$language
-  objectivee <- mod.res[[1]]$objective
-  evalToFitt <- mod.res[[1]]$evalToFit
-  indicess <- vector("list", nClass)
-  fit_ovo <- 0
-  unpenalized_fit_ovo <- 0
-  auc_ovo <- 0
-  accuracy_ovo <- 0
-  intercept_ovo <- 0
-  list_intercept_mc <- vector("list", nClass)
-  eval.sparsity_ovo <- 0
-  precision_ovo <- 0
-  recall_ovo <- 0
-  f1_ovo <- 0
-  confusionMatrix_ovo <- vector("list", nClass)
-  namess <- vector("list", nClass)
-  coeffss <- vector("list", nClass)
-  corr <- NA
-  aicc <- NA
-  signn <- vector("list", nClass)
-  rsqq <- NA
-  serr <- NA
-  scoree <- vector("list", nClass)
-  pos_scoree <- vector("list", nClass)
-  neg_scoree <- vector("list", nClass)
-
-  for(i in 1:length(mod.res)){
-    indicess[[i]] = mod.res[[i]]$indices_
-    namess[[i]] = mod.res[[i]]$names_
-    coeffss[[i]] = mod.res[[i]]$coeffs_
-    fit_ovo = fit_ovo + mod.res[[i]]$fit_
-    unpenalized_fit_ovo = unpenalized_fit_ovo + replace_NaN_with_0(mod.res[[i]]$unpenalized_fit_)
-    auc_ovo = auc_ovo + replace_NaN_with_0(mod.res[[i]]$auc_)
-    accuracy_ovo = accuracy_ovo + replace_NaN_with_0(mod.res[[i]]$accuracy_)
-    intercept_ovo =  intercept_ovo + replace_NaN_with_0(mod.res[[i]]$intercept_)
-    list_intercept_mc[[i]] =  replace_NaN_with_0(mod.res[[i]]$intercept_)
-    eval.sparsity_ovo = eval.sparsity_ovo + replace_NaN_with_0(mod.res[[i]]$eval.sparsity)
-    signn[[i]] =  mod.res[[i]]$sign_
-    precision_ovo = precision_ovo + replace_NaN_with_0(mod.res[[i]]$precision_)
-    recall_ovo = recall_ovo + replace_NaN_with_0(mod.res[[i]]$recall_)
-    f1_ovo = f1_ovo + replace_NaN_with_0(mod.res[[i]]$f1_)
-    scoree[[i]] = mod.res[[i]]$score_
-    pos_scoree[[i]] = mod.res[[i]]$pos_score_
-    neg_scoree[[i]] = mod.res[[i]]$neg_score_
-    confusionMatrix_ovo[[i]] = mod.res[[i]]$confusionMatrix_
-  }
-
-  # Calcul des moyennes des métriques d'évaluation
-  fit_ovo = fit_ovo / nClass
-  unpenalized_fit_ovo = unpenalized_fit_ovo / nClass
-  auc_ovo = auc_ovo / nClass
-  accuracy_ovo = accuracy_ovo / nClass
-  eval.sparsity_ovo = eval.sparsity_ovo / nClass
-  precision_ovo = precision_ovo / nClass
-  recall_ovo = recall_ovo / nClass
-  f1_ovo = f1_ovo / nClass
-  intercept_ovo = intercept_ovo / nClass
-
-  # Génération d'une seule sortie de modèle
-  mod_res$learner <- learnerr
-  mod_res$language <- languagee
-  mod_res$objective <- objectivee
-  mod_res$evalToFit <- evalToFitt
-
-  if(isModelSota(mod.res[[1]])){
-
-    list_obj <- list()
-    for(ko in 1:(length(mod.res))){
-      list_obj[[ko]] <-  mod.res[[ko]]$obj
-    }
-
-  }
-
-  mod_res$coeffs_ <- coeffss
-  mod_res$indices_ <- indicess
-  mod_res$names_ <- namess
-
-
-  if(isModelSota(mod_res)){
-    mod_res$obj <- list_obj
-
-  }
-
-  mod_res$fit_ <- fit_ovo
-  mod_res$unpenalized_fit_ <- unpenalized_fit_ovo
-  mod_res$auc_ <- auc_ovo
-  mod_res$accuracy_ <- accuracy_ovo
-  mod_res$intercept_ <- intercept_ovo
-  mod_res$list_intercept_mc <- list_intercept_mc
-  mod_res$eval.sparsity <- eval.sparsity_ovo
-  mod_res$precision_ <- precision_ovo
-  mod_res$recall_ <- recall_ovo
-  mod_res$f1_ <- f1_ovo
-  mod_res$cor_ <- corr
-  mod_res$aic_ <- aicc
-  mod_res$sign_ <- signn
-  mod_res$rsq_ <- rsqq
-  mod_res$ser_ <- serr
-  mod_res$score_ <- scoree
-  mod_res$pos_score_ <- pos_scoree
-  mod_res$neg_score_ <- neg_scoree
-  mod_res$confusionMatrix_ <- confusionMatrix_ovo
-  mod.res <- list()
-  mod.res <- mod_res
+  # mod.res <- predictModel_ovo(mod = mod.res, y = y, X= X, clf=clf, force.re.evaluation = TRUE)
+  # mod.res <-  votingAggregation(mod = mod.res)
+  # mod.res <- evaluateModel_aggregation(mod = mod.res, y=y)
+  mod.res <- evaluateModels_aggregation(mod = mod.res, y = y, X = X, force.re.evaluation = TRUE, clf = clf, approch = approch, aggregation_ =  aggregation_)
 
   return(mod.res)
 }
@@ -1121,6 +922,7 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                   mode = "train",
                                   delete.null.models = TRUE,
                                   approch = "ovo",
+                                  aggregation_ = "votingAggregation",
                                   lfolds = NULL)
 {
   # test the classifier object
@@ -1153,6 +955,7 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                                  mode = mode,
                                                  delete.null.models = delete.null.models,
                                                  approch = approch,
+                                                 aggregation_ =  aggregation_,
                                                  lfolds = NULL)
       }else # test
       {
@@ -1166,6 +969,7 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                                  mode = mode,
                                                  delete.null.models = delete.null.models,
                                                  approch = approch,
+                                                 aggregation_ =  aggregation_,
                                                  lfolds = NULL)
       }
     }
@@ -1189,6 +993,7 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                    force.re.evaluation = force.re.evaluation,
                                    estim.feat.importance = estim.feat.importance,
                                    approch = approch,
+                                   aggregation_ =  aggregation_,
                                    mode = mode)
 
       #print(i)
@@ -1314,7 +1119,7 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
 #' @export
 
 evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
-                                                     seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE)
+                                                     seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE, aggregation_ = "votingAggregation")
 {
 
   nClasse <- unique(y)
@@ -1410,7 +1215,7 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
 
 
   # Reevaluate the population in X (which is the x_test) in generalization
-  pop <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode = "test")
+  pop <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode = "test", aggregation_ = aggregation_)
   #pop <- evaluatePopulation_ovo(X = X, y = y, clf = clf, pop = pop, eval.all = TRUE, force.re.evaluation = TRUE)
   # compute the presence of features in the models
   listfa  <- makeFeatureAnnot_mc(pop = pop, X = X, y = y, clf = clf, approch = approch)
@@ -4469,32 +4274,17 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   # Initialize empty lists for models, class pairs, predictions, and scores
   predictions_list <- list()
   scorelist <- list()
+  y = as.vector(y)
   nClasse <- unique(y)
   list_y <- list()
 
   # Determine the number of combinations
-  n_combinations <- length(mod$score_)
-  mods <- vector("list", n_combinations)
-
-  for (i in 1:n_combinations) {
-    mods[[i]] <- list(
-      learner = mod$learner,
-      language = mod$language,
-      objective = mod$objective,
-      evalToFit = mod$evalToFit,
-      indices_ = mod$indices_[[i]],
-      names_ = mod$names_[[i]],
-      coeffs_ = mod$coeffs_[[i]],
-      intercept_ = mod$list_intercept_mc[[i]],
-      eval_sparsity = mod$eval.sparsity,
-      sign_ = mod$sign_[[i]],
-      score_ = mod$score_[[i]]
-    )
-  }
+  mods <- list()
+  mods = mod
 
   # Calculate scores for each model and store in scorelist
   for(i in 1:length(mods)){
-    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = force.re.evaluation)
+    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = TRUE)
   }
 
   # Extract scores only
@@ -4504,13 +4294,15 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   predictions_list <- lapply(seq_along(score_list), function(j) {
     class_name <- unique(y)[j]
     sapply(score_list[[j]], function(score) {
-      ifelse(score > mod$list_intercept_mc[[j]], class_name, "ALL")
+      ifelse(score > mods[[j]]$intercept_, class_name, "ALL")
     })
   })
 
+  list_intercept <- list()
+  list_intercept = lapply(mods, function(x) x$intercept_)
   # Identifier les seuils minimum et maximum
-  seuils_min <- min(unlist(mod$list_intercept_mc))
-  seuils_max <- max(unlist(mod$list_intercept_mc))
+  seuils_min <- min(unlist(list_intercept))
+  seuils_max <- max(unlist(list_intercept))
 
   # Normalisation des scores
   scores_normalises <- lapply(score_list, function(scores) {
@@ -4527,19 +4319,16 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
     scores
   })
 
-  mod$score_ <- scores_normalises
-  mod$predictions <- predictions_list
+  for(i in 1: length(scores_normalises)){
+    mods[[i]]$score_ <- scores_normalises[[i]]
+    mods[[i]]$predictions <- predictions_list[[i]]
+  }
+  mod <- list()
+  mod <- mods
 
   # Return predicted class labels for each combination, the corresponding score vectors, and the distances
   return(mod)
 }
-
-
-
-
-
-
-
 
 
 #' This function predicts outcomes for a one-versus-one (OvO) classification model.
@@ -4559,27 +4348,11 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   scorelist <- list()
   nClasse <- unique(y)
   list_y <- list()
-  # Determine the number of combinations
-  n_combinations <- length(mod$score_)
-  mods <- vector("list", n_combinations)
-  for (i in 1:n_combinations) {
-    mods[[i]] <- list(
-      learner = mod$learner,
-      language = mod$language,
-      objective = mod$objective,
-      evalToFit = mod$evalToFit,
-      indices_ = mod$indices_[[i]],
-      names_ = mod$names_[[i]],
-      coeffs_ = mod$coeffs_[[i]],
-      intercept_ = mod$list_intercept_mc[[i]],
-      eval_sparsity = mod$eval.sparsity,
-      sign_ = mod$sign_[[i]],
-      score_ = mod$score_[[i]]
-    )
-  }
+  mods <- list()
+  mods <- mod
   # Calculate scores for each model and store in scorelist
-  for(i in 1:length(mods)){
-    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = force.re.evaluation)
+  for(i in 1:length(mod)){
+    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = TRUE)
   }
   # Extract scores only
   score_only_list <- lapply(scorelist, function(x) x$score_)
@@ -4598,11 +4371,11 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   }
 
   # Get the number of combinations
-  num_combinations <- length(list_y)
+  num_combinations <- length(mods)
 
   # Predict class labels for each combination
   for (comb_index in 1:num_combinations) {
-    intercept <- mod$list_intercept_mc[[comb_index]]
+    intercept <- mods[[comb_index]]$intercept_
     scores <- score_only_list[[comb_index]]
     num_samples <- length(scores)
 
@@ -4625,7 +4398,7 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   }
 
   # Calculate distances between scores and intercepts
-  intercept <- mod$list_intercept_mc
+  #intercept <- mod$list_intercept_mc
   scores_distance <- list()
 
   # Check if 'score_list' contains only zeros
@@ -4634,9 +4407,9 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
     scores_distance <- lapply(score_only_list, function(scores_distance) rep(0, length(scores_distance)))
   } else {
     # If 'score_list' contains other values, calculate the distances
-    for(i in 1:length(intercept)){
+    for(i in 1:length(mods)){
       # Calculate the absolute difference between 'score_list' and 'intercept'
-      scores_distance[[i]] = abs((score_only_list[[i]]) - intercept[[i]])
+      scores_distance[[i]] = abs((score_only_list[[i]]) - mods[[i]]$intercept)
     }
   }
 
@@ -4655,9 +4428,14 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   # checking if it contains only 0's or needs normalization.
   normalized_scores <- lapply(scores_distance, normalize)
   new_scores <- lapply(normalized_scores, function(x) 1 - x)
-  mod$score_ <- list()
-  mod$score_ <- new_scores
-  mod$predictions <- predictions_list
+
+  for(i in 1: length(new_scores)){
+    mods[[i]]$score_ <- new_scores[[i]]
+    mods[[i]]$predictions <- predictions_list[[i]]
+  }
+  mod <- list()
+  mod <- mods
+
 
   # Return mod predicted class labels for each combination, the corresponding score vectors, and the distances
   return(mod)
@@ -4672,7 +4450,11 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
 #' @export
 votingAggregation <- function(mod) {
   predictions_list <- list()
-  predictions_list = mod$predictions
+
+  for(j in 1:length(mod)){
+    predictions_list[[j]] = mod[[j]]$predictions
+  }
+
   num_predictions <- length(predictions_list)  # Number of prediction vectors
   num_samples <- length(predictions_list[[1]])  # Number of samples in one vector
 
@@ -4685,8 +4467,40 @@ votingAggregation <- function(mod) {
     # Aggregate prediction for position i
     aggregated_vector[i] <- names(sort(votes, decreasing = TRUE)[1])
   }
-  mod$predictions_aggre <- aggregated_vector
 
+  #### Aggrégations
+
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
+  model$cor_<- NA
+  model$aic_<- NA
+  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
+  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_vector
+  mod <- list()
+  mod <- model
+  mod$predictions_aggre <- aggregated_vector
   return(mod)
 }
 
@@ -4701,8 +4515,8 @@ votingAggregation <- function(mod) {
 weightedAggregation <- function(mod) {
   predictions_list <- list()
   scores_list <- list()
-  predictions_list <- mod$predictions
-  scores_list <- mod$score_
+  predictions_list <- lapply(mod, function(x) x$predictions)
+  scores_list <- lapply(mod, function(x) x$score_)
 
   num_predictions <- length(predictions_list)
   num_samples <- length(predictions_list[[1]])
@@ -4733,27 +4547,62 @@ weightedAggregation <- function(mod) {
     # Assign the predicted class with the highest sum of scores to the aggregated vector
     aggregated_vector[i] <- best_class
   }
-  # Store the aggregated predictions in the model object
+
+  #### Aggrégations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
+  model$cor_<- NA
+  model$aic_<- NA
+  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
+  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_vector
+  mod <- list()
+  mod <- model
   mod$predictions_aggre <- aggregated_vector
+
   return(mod)
 }
 
 
 
 #' Aggregation function of one-versus-all predictions using search and score max.
-#' @title NewApproach
+#' @title Predomics_aggregation_ova
 #' @description  Function to aggregate one-versus-all predictions using New approach.
 #' @param mod: The model object containing predictions and scores.
 #' @param y: true class.
 #' @return The function returns the model object with aggregated predictions.
 #' @export
-NewApproach <- function(mod, y) {
+Predomics_aggregation_ova <- function(mod, y) {
   # Initialize the vector to hold the aggregated predictions with the appropriate length
-  classes_list = mod$predictions
-  score_list = mod$score_
+  classes_list <- list()
+  score_list <- list()
+  classes_list = lapply(mod, function(x) x$predictions)
+  score_list = lapply(mod, function(x) x$score_)
   aggregated_predictions <- character(length = length(classes_list[[1]]))
 
   # Create a character vector of the unique classes from y
+  y = as.vector(y)
   names_class <- unique(y)
   names_class <- as.character(names_class)
 
@@ -4789,8 +4638,37 @@ NewApproach <- function(mod, y) {
     aggregated_predictions[i] <- predicted_class
   }
 
-  mod$predictions_aggre <- aggregated_predictions
-
+  #### Aggrégations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
+  model$cor_<- NA
+  model$aic_<- NA
+  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
+  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_predictions
+  mod <- list()
+  mod <- model
   # Return the final vector of aggregated predictions
   return(mod)
 }
@@ -4809,9 +4687,10 @@ maximizationAggregation <- function(mod, y) {
   # Initialize the vector to hold the aggregated predictions with the appropriate length
   classes_list <- list()
   score_list <- list()
-  classes_list <- mod$predictions
-  score_list <- mod$score_
+  classes_list <- lapply(mod, function(x) x$predictions)
+  score_list  <- lapply(mod, function(x) x$score_)
   aggregated_predictions <- character(length = length(classes_list[[1]]))
+  y = as.vector(y)
   current_classes <- unique(y)
 
   # Iterate over each position in the aggregated predictions
@@ -4824,7 +4703,38 @@ maximizationAggregation <- function(mod, y) {
     # Fill the aggregation vector at position i with the predicted class with the maximum score
     aggregated_predictions[i] <- current_classes[max_score_index]
   }
-  mod$predictions_aggre <- aggregated_predictions
+
+  #### Aggrégations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
+  model$cor_<- NA
+  model$aic_<- NA
+  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
+  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_predictions
+  mod <- list()
+  mod <- model
 
   return(mod)
 }
@@ -4841,9 +4751,10 @@ rankingAggregation <- function(mod, y) {
   # Initializing the vector to store aggregated predictions with appropriate length
   classes_list <- list()
   score_list <- list()
-  classes_list <- mod$predictions
-  score_list <- mod$score_
+  classes_list <- lapply(mod, function(x) x$predictions)
+  score_list  <- lapply(mod, function(x) x$score_)
   aggregated_predictions <- character(length = length(classes_list[[1]]))
+  y = as.vector(y)
   current_classes <- unique(y)
 
   # Iterating over each position in the aggregated predictions
@@ -4858,8 +4769,37 @@ rankingAggregation <- function(mod, y) {
     best_class_index <- which(rank_scores == 1)
     aggregated_predictions[i] <- current_classes[best_class_index]
   }
-  mod$predictions_aggre <- aggregated_predictions
-
+  #### Aggrégations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
+  model$cor_<- NA
+  model$aic_<- NA
+  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
+  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_predictions
+  mod <- list()
+  mod <- model
   return(mod)
 }
 
@@ -4893,90 +4833,63 @@ evaluateModel_aggregation <- function(mod, y) {
   mean_f1 <- 2 * (mean_precision * mean_recall) / (mean_precision + mean_recall)
   # Creation of the model object containing all metrics
   mod$fit_ <- accuracy
+  auc <- mean(unlist(mod$auc_))
+  mod$auc_ = auc
   mod$unpenalized_fit_ <- accuracy
   mod$accuracy_ <- accuracy
-  mod$intercept_ <- mod$list_intercept_mc
-  mod$list_intercept_mc <- NULL
-  mod$auc_ <- NULL
   mod$precision_ <- mean_precision
   mod$recall_ <- mean_recall
   mod$f1_ <-  mean_f1
-  mod$confusionMatrix_ <- confusion_matrix
+  mod$Multi_confusionMatrix_ <- confusion_matrix
 
   return(mod)
 }
 
-
-
-
-#' This function evaluates the aggregated models' performance on a population level.
-#' @title evaluatePopulation_aggregation
-#' @param pop: A population of model objects.
-#' @param y: The true class labels.
-#' @param X: The feature matrix of the data to be predicted.
-#' @param force.re.evaluation: Boolean to force re-evaluation of the model even if it is already evaluated.
-#' @param clf: Object clf.
-#' @param aggregation: Type of aggregation method to be used ("votingAggregation" or "weightedAggregation").
+#' This function evaluates the aggregated models' performance.
+#' @title evaluateModel_aggregation
+#' @param mod models objects.
+#' @param y The true class labels.
+#' @param X The feature matrix of the data to be predicted.
+#' @param force.re.evaluation Boolean to force re-evaluation of the model even if it is already evaluated.
+#' @param clf Object clf.
+#' @param approach Type of approach to be used ("ovo" or "ova").
+#' @param aggregation Type of aggregation method to be used ("votingAggregation", "weightedAggregation", "Predomics_aggregation_ova", "maximizationAggregation", "rankingAggregation").
 #' @return The function returns a list containing evaluated models with their respective metrics.
 #' @export
-#'
-evaluatePopulation_aggregation <- function(pop, y, X, force.re.evaluation = TRUE, clf,  aggregation = "votingAggregation") {
+evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, clf, approch = "ovo", aggregation_ = "votingAggregation") {
   # Initializing an empty list to store the overall evaluation of each model.
-  pop_overall_full <- list()
-  # Looping through each model in the population.
-  for (j in 1:length(pop)) {
-    popu <- list()
-    popu <- pop[[j]]
-    pop_overall <- list()
-    for (i in 1:length(popu)) {
-
-      if (aggregation == "votingAggregation") {
-        predict_ <- predictModel_ovo(mod = popu[[i]], y = y, X = X, clf, force.re.evaluation = force.re.evaluation)
-        voting <- votingAggregation(mod = predict_)
-        modevaluate <- evaluateModel_aggregation(mod = voting, y = y)
-      }
-      else if (aggregation == "weightedAggregation") {
-        predict_ <- predictModel_ovo(mod = popu[[i]], y = y, X = X, clf, force.re.evaluation = force.re.evaluation)
-        weighted <- weightedAggregation(mod = predict_)
-        modevaluate <- evaluateModel_aggregation(mod = weighted, y = y)
-      }
-
-      else if (aggregation == "NewApproach") {
-        predict_ <- predictModel_ova(mod = popu[[i]], y = y, X = X, clf, force.re.evaluation = force.re.evaluation)
-        newapproach <-  NewApproach(mod = predict_, y = y)
-        modevaluate <- evaluateModel_aggregation(mod = newapproach, y = y)
-      }
-
-      else if (aggregation == "maximizationAggregation") {
-        predict_ <- predictModel_ova(mod = popu[[i]], y = y, X = X, clf, force.re.evaluation = force.re.evaluation)
-        maximization <-  maximizationAggregation(mod = predict_, y = y)
-        modevaluate <- evaluateModel_aggregation(mod = maximization, y = y)
-      }
-
-      else if (aggregation == "rankingAggregation") {
-        predict_ <- predictModel_ova(mod = popu[[i]], y = y, X = X, clf, force.re.evaluation = force.re.evaluation)
-        ranking <-  rankingAggregation(mod = predict_, y = y)
-        modevaluate <- evaluateModel_aggregation(mod = ranking, y = y)
-      }
+  mod_evaluate <- NULL
 
 
-
-      else {
-        return(NULL)
-      }
-      pop_overall[[i]] <- modevaluate
+  if (approch == "ovo") {
+    if (aggregation_ == "votingAggregation") {
+      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_voting <- votingAggregation(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_voting, y = y)
+    } else if (aggregation_ == "weightedAggregation") {
+      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_weighted <- weightedAggregation(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted, y = y)
     }
-    # Sorting evaluated models based on accuracy
-    accuracys <- sapply(pop_overall, function(model) model$accuracy_)
-    indices_tri <- order(accuracys, decreasing = TRUE)
-    pop_overall_tri <- pop_overall[indices_tri]
-    pop_overall_full[[j]] <- pop_overall_tri
+  } else if (approch == "ova") {
+    if (aggregation_ == "Predomics_aggregation_ova") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_Predomics <- Predomics_aggregation_ova(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_Predomics, y = y)
+    } else if (aggregation_ == "maximizationAggregation") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_maximization <- maximizationAggregation(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_maximization, y = y)
+    } else if (aggregation_ == "rankingAggregation") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_ranking <- rankingAggregation(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_ranking, y = y)
+    }
   }
 
   # Return the list containing evaluated models with their respective metrics.
-  return(pop_overall_full)
+  return(mod_evaluate)
 }
-
 
 
 

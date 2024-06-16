@@ -15,7 +15,8 @@ evaluateFeatureImportanceInPopulation_mc(
   seed = c(1:10),
   aggregation = "mean",
   approch = "ovo",
-  verbose = TRUE
+  verbose = TRUE,
+  aggregation_ = "votingAggregation"
 )
 }
 \arguments{

@@ -13,7 +13,8 @@ evaluateModel_mc(
   force.re.evaluation = FALSE,
   estim.feat.importance = FALSE,
   approch = "ovo",
-  mode = "train"
+  mode = "train",
+  aggregation_ = "votingAggregation"
 )
 }
 \arguments{

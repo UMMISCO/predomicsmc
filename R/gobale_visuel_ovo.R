@@ -24,6 +24,7 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
   }
 
   list_res <- list()
+  list_matrices <- list()
   listindices <- mod$indices_
   listnames <- mod$names_
   listcoeffs <- mod$coeffs_
@@ -31,7 +32,14 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
   listscore <- mod$score_
   listpos <- mod$pos_score_
   listneg <- mod$neg_score_
-  list_intercept <- mod$intercept_
+  list_intercept <- mod$list_intercept_
+  list_matrices <- mod$confusionMatrix_
+  list_accura <- list()
+  accura <- mod$accuracy
+ # for(i in 1: length(list_matrices)){
+   # list_accura[[i]] =  sum(diag(list_matrices[[i]])) / sum(list_matrices[[i]])
+ # }
+
 
   for(km in 1:length(listindices)){
 
@@ -43,6 +51,8 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
     mod$pos_score_ <- listpos[[km]]
     mod$neg_score_ <- listneg[[km]]
     mod$intercept_ <- list_intercept[[km]]
+    ###mod$fit_ <- list_accura[[km]]
+    mod$fit_ <- accura
 
     switch(method,
            short={
