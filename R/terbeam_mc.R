@@ -369,7 +369,7 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
       ### For k > 1 we generate every possible combinations of features of size k
       list_ind.features.to.keep <- list()
       for(j in 1:(length(l_features.to.keep))){
-        list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[j]])
+        list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[1]])
       }
       if(length(list_ind.features.to.keep) >= k)
       {
