@@ -4893,8 +4893,104 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
 
 
 
+#' This function evaluates the models tests.
+#' @title evaluatesBestsModelsTest
+#' @param experiences experiences.
+#' @param y y
+#' @param X X
+#' @param force.re.evaluation Boolean to force re-evaluation of the model even if it is already evaluated.
+#' @param clf Object clf.
+#' @param approach Type of approach to be used ("ovo" or "ova").
+#' @param aggregation Type of aggregation method to be used ("votingAggregation", "weightedAggregation", "Predomics_aggregation_ova", "maximizationAggregation", "rankingAggregation").
+#' @return The function returns a list best modesls test evaluated
+#' @export
+evaluatesBestsModelsTest <- function(experiences, approch = "ovo", aggregation_ = "votingAggregation", clf = clf, y = y, X = X) {
 
+  bests_models_test <- list()
 
+  clf$data          <- list()
+  list_features <- list()
+  clf$data$features <- list_features
+  names(clf$data$features) <- clf$data$features
+  list_XX <- list() # List of X combinations
+  list_min <- list() # List min of X
+  list_max <- list() # List max of X
+  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
+  nClasse <- unique(y)
+  feature.cor   <- list() # List of different combinations of feature.cor
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse)-1)) {
+      for (j in (i+1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        X_pair <- X[, indices]
+        list_y[[k]] <- as.vector(y_pair)
+        list_X[[k]] <- X_pair
+        k <- k + 1
+      }
+    }
+  } else {
+    for (i in 1:length(nClasse)) {
+      class_i <- nClasse[i]
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
+    }
+  }
+  max.nb.features <-  nrow(X)
+
+  for (i in 1:(length(list_X))) {
+    Xi <- list_X[[i]][rownames(clf$feature.cor[[i]])[1:max.nb.features],]
+    mino <- min(Xi, na.rm=TRUE)
+    maxo <- max(Xi, na.rm=TRUE)
+    list_XX[[i]] <- Xi
+    list_min[[i]] <-  mino
+    list_max[[i]] <-  maxo
+  }
+  clf$data$X        <- list_XX
+  clf$data$X.min    <- list_min
+  clf$data$X.max    <- list_max
+  clf$data$y        <- list_y
+
+  # compute the coefficients once for all to improve performance
+  cat("... Computing ternary coefficients for speedup\n")
+  coeffs          <- getSign_mc(X = X, y = y, clf = clf, approch = approch, parallel.local = FALSE)
+  clf$coeffs_     <- coeffs # add them to the clf
+  for (j in 1:length(experiences$classifier$models)) {
+
+    lst_mod <- experiences$classifier$models[[j]]
+    list_ <- list()
+
+    for (i in 1:length(lst_mod)) {
+
+      mod_test <- evaluateModel_mc(
+        mod = lst_mod[[i]],
+        X = X.test,
+        y = y.test,
+        clf = clf,
+        eval.all = TRUE,
+        force.re.evaluation = TRUE,
+        approch = approch,
+        aggregation_ = aggregation_,
+        mode = "test"
+      )
+
+      list_[[i]] <- mod_test
+    }
+
+    accuracies <- sapply(list_, function(x) x$accuracy_)
+    sorted_indices <- order(accuracies, decreasing = TRUE)
+    sorted_models <- list_[sorted_indices]
+    bests_models_test[[j]] <- sorted_models[[1]]
+  }
+
+  return(bests_models_test)
+}
 
 
 

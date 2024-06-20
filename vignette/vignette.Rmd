@@ -144,17 +144,64 @@ Unique_rankingAggregation <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross
 
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 
-  load("res_clf_ovo.rda")
-
+  #load("Unique_Predomics_aggregation_ova.rda")
+  #load("Unique_maximizationAggregation.rda")
+#load("Unique_votingAggregation.rda")
+#load("Unique_weightedAggregation.rda")
 ```
 
 ## Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
 
-clf_ovo_we <- digestmc(obj =Unique_rankingAggregation   , penalty = 0.75/100, plot = TRUE)
+clf_Multi_weightedAggregation <- digestmc(obj = Multi_weightedAggregation   , penalty = 0.75/100, plot = TRUE)
 
 ```
+
+
+```{r best model test, warning=FALSE}
+
+bestsModelsTest_votingAggregation <- evaluatesBestsModelsTest(experiences = Multi_Predomics_Aggregation_ova, approch = "ova", aggregation_ = "Predomics_aggregation_ova", clf =clf, y = y, X = X)
+  
+
+```
+
+
+```{r}
+printy_mc(clf_Multi_weightedAggregation$best$model)
+```
+
+```{r}
+  mod_testi <- evaluateModel_mc(
+    mod = clf_Multi_weightedAggregation$best$model,
+    X = X.test,
+    y = y.test,
+    clf = clf,
+    eval.all = TRUE,
+    force.re.evaluation = TRUE,
+    approch = "ovo",
+    aggregation_ = "weightedAggregation",
+    mode = "test"
+  )
+```
+
+
+```{r}
+printy_mc(mod_testi)
+```
+
+
+```{r}
+##Proposez moi un plot avec ggplot qui me represente dans un graphique mes trois accuracy sachant que la liste 1 doit etre nommé comme k_2, la liste 2 K_3 et enfin la liste 3 k_4 : bestsModelsTest_votingAggregation[[1]]$accuracy_
+##[1] 0.6287879
+##> bestsModelsTest_votingAggregation[[2]]$accuracy_
+##[1] 0.6666667
+##> bestsModelsTest_votingAggregation[[3]]$accuracy_
+##[1] 0.6742424 Faites moi un graphique sur R avec ggplot qui va me présenter les accuracy de me trois valeur que voici
+```
+
+
+
 
 ## Explore the training and generalization scores using cross-validation with the same variables.
 
@@ -298,7 +345,7 @@ ggplot(data_melted, aes(x = k, y = accuracy, color = type)) +
   geom_text(aes(label = round(accuracy, 3)), vjust = -0.5, size = 3) +  # Ajouter les valeurs à côté des points
   facet_wrap(~ algorithm, ncol = 2) +  # Afficher deux graphiques par ligne
   theme_minimal() +
-  labs(title = "Empirical vs Generalization Accuracy for Different Algorithms",
+  labs(title = "Mean accuracy: empirical vs. generalization for cross-validation using the same variable",
        x = "Valeur de k",
        y = "Accuracy",
        color = "Type") +
@@ -310,11 +357,11 @@ ggplot(data_melted, aes(x = k, y = accuracy, color = type)) +
 ##Explore the training and generalization scores using cross-validation with different variables.
 
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
- load("Multi_Predomics_aggregation_ova.rda")
+ #load("Multi_Predomics_aggregation_ova.rda")
 load("Multi_maximizationAggregation.rda")
-load("Multi_rankingAggregation.rda")
-load("Multi_weightedAggregation.rda")
-load("Multi_votingAggregation.rda")
+#load("Multi_rankingAggregation.rda")
+#load("Multi_weightedAggregation.rda")
+#load("Multi_votingAggregation.rda")
 ```
 
 
@@ -453,7 +500,7 @@ ggplot(data_melted, aes(x = k, y = accuracy, color = type)) +
   geom_text(aes(label = round(accuracy, 3)), vjust = -0.5, size = 3) +  # Ajouter les valeurs à côté des points
   facet_wrap(~ algorithm, ncol = 2) +  # Afficher deux graphiques par ligne
   theme_minimal() +
-  labs(title = "Empirical vs Generalization Accuracy for Different Algorithms",
+  labs(title = "Mean accuracy: empirical vs. generalization for cross-validation using the specific variables of each combination.",
        x = "Valeur de k",
        y = "Accuracy",
        color = "Type") +
