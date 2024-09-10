@@ -466,3 +466,291 @@ printy_mc <- function(obj)
   )
 
 }
+
+
+################################################################
+# Multi-class Model Plots for Predomics
+################################################################
+
+#' @title Plots a model or a population of model objectsas barplots of scaled coefficients.
+#'
+#' @description Plots a model or a population of models as a barplots, representing each feature, the length being the coefficient
+#' @import ggplot2
+#' @param mod: a model to plot
+#' @param X: the data matrix with variables in the rows and observations in the columns
+#' @param y: the class vector
+#' @param sort.features: wether the features need to be sorted by correlation with 'y' or not (default: TRUE)
+#' @param sort.ind: computing sorting can take time if computed for every model and can be computed outside the function and passed as a parameter
+#' @param feature.name: show the name of the features (default:FALSE)
+#' @param col.sign: the colors of the cofficients based on the sign of the coefficients (default: -1=deepskyblue1, 1:firebrick1)
+#' @param main: possibility to change the title of the function (default:"")
+#' @param slim: plot without axis information (default:FALSE)
+#' @param importance: the importance (mda) of the features in crossval
+#' @param res_clf: the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.
+#' @export
+plotModel_mc <- function(mod, X, y,
+                         sort.features = FALSE,
+                         sort.ind = NULL,
+                         feature.name = FALSE,
+                         col.sign = c("deepskyblue1", "firebrick1"),
+                         main = "",
+                         slim = FALSE,
+                         importance = FALSE,
+                         res_clf = NULL,approch = "ova")
+{
+  # Création de la liste vide pour stocker les sous-modèles
+  list_mod <- list()
+  plot_sub_model <- list()
+
+  # Boucle pour remplir la liste de sous-modèles
+  for (i in 1:length(mod$names_)) {
+    # Initialiser une liste pour chaque sous-modèle
+    list_mod[[i]] <- list()
+
+    # Assigner les éléments de 'mod' aux sous-modèles
+    list_mod[[i]]$learner <- mod$learner
+    list_mod[[i]]$language <- mod$language
+    list_mod[[i]]$objective <- mod$objective
+    list_mod[[i]]$indices_ <- mod$indices_[[i]]
+    list_mod[[i]]$names_ <- mod$names_[[i]]
+    list_mod[[i]]$coeffs_ <- mod$coeffs_[[i]]
+    list_mod[[i]]$fit_ <- mod$fit_
+    list_mod[[i]]$unpenalized_fit_ <-mod$unpenalized_fit_
+    list_mod[[i]]$auc_ <- mod$auc_
+    list_mod[[i]]$accuracy_ <- mod$accuracy_
+    list_mod[[i]]$cor_ <- mod$cor_
+    list_mod[[i]]$aic_ <- mod$aic_
+    list_mod[[i]]$intercept_ <- mod$list_intercept_[[i]]
+    list_mod[[i]]$eval.sparsity <- mod$eval.sparsity
+    list_mod[[i]]$precision_ <- mod$precision_
+    list_mod[[i]]$recall_ <- mod$recall_
+    list_mod[[i]]$f1_ <- mod$f1_
+    list_mod[[i]]$sign_ <- mod$sign_[[i]]
+    list_mod[[i]]$rsq_ <- mod$rsq_[[i]]
+    list_mod[[i]]$ser_ <- mod$ser_[[i]]
+    list_mod[[i]]$score_ <- mod$score_[[i]]
+    list_mod[[i]]$mda.cv_ <- mod$mda.cv_[[i]]
+    list_mod[[i]]$prev.cv_ <- mod$prev.cv_[[i]]
+    list_mod[[i]]$mda_ <- mod$mda_[[i]]
+  }
+
+  nClasse <- unique(y)
+  list_y <- list()   # List for different combinations of y
+  list_X <- list()   # List for different combinations of X
+
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse) - 1)) {
+      for (j in (i + 1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        X_pair <- X[, indices]
+        list_y[[k]] <- as.vector(y_pair)
+        list_X[[k]] <- X_pair
+        k <- k + 1
+      }
+    }
+  } else {
+    for (i in 1:length(nClasse)) {
+      class_i <- nClasse[i]
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
+    }
+  }
+
+  for (i in 1:length(list_y)){
+    plot_sub_model[[i]] <- plotModel(mod = list_mod[[i]], X = list_X[[i]], y=list_y[[i]],
+                                     sort.features = sort.features,
+                                     feature.name = feature.name, importance = importance)
+  }
+
+  return(plot_sub_model)
+}
+
+
+#' Analyze the results from a list of classifiers
+#'
+#' @description Analyze the results from a list of classifiers.
+#' @param scores: a list where each element is a vector of scores from a given model
+#' @param y: the class to be predicted
+#' @param main: title of the graph
+#' @param ci: the point shape for the graph
+#' @param percent: color for the graph
+#' @return a list of roc objects
+#' @export
+plotAUC_mc <- function(scores, y, main="", ci = TRUE, percent = TRUE, approch = "ova")
+{
+  require(pROC)
+
+  # Initialize an empty list to store ROC objects
+  roc_objects <- list()
+
+  # Create a plot with appropriate title
+  plot(NULL, xlim=c(0, 100), ylim=c(0, 100), xlab="False Positive Rate", ylab="True Positive Rate", main=main, type="n")
+
+  # Loop through each set of scores
+  for (i in seq_along(scores)) {
+    score <- scores[[i]]
+
+    # Calculate ROC object
+    rocobj <- roc(response = y, predictor = score, percent = percent, ci = ci, of = "se", sp = seq(0, 100, 5))
+    roc_objects[[i]] <- rocobj
+
+    # Plot ROC curve
+    plot(rocobj, add=TRUE, col=i)
+  }
+
+  # Add legend
+  legend("bottomright", legend = paste("Model", seq_along(scores)), col = seq_along(scores), lty = 1)
+
+  # Add information on the threshold for each model
+  for (i in seq_along(roc_objects)) {
+    rocobj2 <- roc_objects[[i]]
+    resa <- coords(rocobj2, x = "best", input = "threshold", best.method = "youden")
+    abline(v=resa[2], col="red", lty=2)
+    abline(h=resa[3], col="red", lty=2)
+  }
+
+  return(roc_objects)
+}
+
+
+
+#' Plots the prevalence of a list of features in the whole dataset and per each class
+#'
+#' @description Plots the abundance of a given number of features for each class and tests significance
+#' @import reshape2
+#' @import ggplot2
+#' @param features: a list of features or features indexes for which we wish to compute prevalence
+#' @param X: dataset where to compute the prevalence
+#' @param y: if provided it will also compute hte prevalence per each class (default:NULL)
+#' @param topdown: showing features from top-down or the other way around (default:TRUE)
+#' @param main: main title (default:none)
+#' @param plot: if TRUE this provides a plot, otherwise will return different metrics such as prevalence and enrichment statistics
+#' @param col.pt: colors for the point border (-1:deepskyblue4, 1:firebrick4)
+#' @param col.bg: colors for the point fill (-1:deepskyblue1, 1:firebrick1)
+#' @return a ggplot object
+#' @export
+plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE,
+                                    main = "", plot = TRUE,
+                                    col.pt = c("deepskyblue4", "firebrick4"),
+                                    col.bg = c("deepskyblue1", "firebrick1"), approch = "ovo")
+{
+  nClasse <- unique(y)  # Récupère les classes uniques
+  list_y <- list()   # Liste pour les différentes combinaisons de y
+  list_X <- list()   # Liste pour les différentes combinaisons de X
+  list_plot <- list()  # Liste pour stocker les graphiques
+
+  # Si l'approche est one-vs-one (ovo)
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse) - 1)) {
+      for (j in (i + 1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)  # Sélection des indices pour les deux classes
+        y_pair <- y[indices]  # Récupère les labels pour les deux classes
+        X_pair <- X[, indices]  # Récupère les données correspondantes
+        list_y[[k]] <- as.vector(y_pair)  # Ajoute le vecteur y dans la liste
+        list_X[[k]] <- X_pair  # Ajoute les données X dans la liste
+        k <- k + 1
+      }
+    }
+  } else {  # Pour les autres approches (e.g. one-vs-all)
+    for (i in 1:length(nClasse)) {
+      class_i <- nClasse[i]
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")  # Crée un vecteur one-vs-all
+      list_y[[i]] <- as.vector(y_temp)  # Ajoute ce vecteur à la liste
+      list_X[[i]] <- X  # Ajoute toutes les données X (elles ne changent pas pour one-vs-all)
+    }
+  }
+
+  # Générer les graphiques
+  for (i in 1:length(list_y)) {
+    list_plot[[i]] <- plotAbundanceByClass(
+      features = rownames(features[[i]]$pop.noz),
+      X = list_X[[i]],
+      y = list_y[[i]],
+      topdown = topdown,  # Transmet l'argument topdown
+      main = main,  # Transmet l'argument main
+      plot = plot,  # Transmet l'argument plot
+      col.pt = col.pt,  # Transmet les couleurs pour les points
+      col.bg = col.bg   # Transmet les couleurs pour le fond
+    )
+  }
+
+  return(list_plot)  # Retourne la liste des graphiques
+}
+
+
+
+#' Plots the prevalence of a list of features in the whole dataset and per each class
+#'
+#' @description Plots the prevalence of a given number of features
+#' @import ggplot2
+#' @param features: a list of features or features indexes for which we wish to compute prevalence
+#' @param X: dataset where to compute the prevalence
+#' @param y: if provided it will also compute hte prevalence per each class (default:NULL)
+#' @param topdown: showing features from top-down or the other way around (default:TRUE)
+#' @param main: main title (default:none)
+#' @param plot: if TRUE this provides a plot, otherwise will return different metrics such as prevalence and enrichment statistics
+#' @param col.pt: colors for the point border (-1:deepskyblue4, 1:firebrick4)
+#' @param col.bg: colors for the point fill (-1:deepskyblue1, 1:firebrick1)
+#' @param zero.value: the value that specifies what is zero. This can be a different than 0 in log transformed data for instance (default = 0)
+#' @return a ggplot object
+#' @export
+plotPrevalence_mc <- function(features, X, y, topdown = TRUE, main = "", plot = TRUE,
+                           col.pt = c("deepskyblue4", "firebrick4"),
+                           col.bg = c("deepskyblue1", "firebrick1"),
+                           zero.value = 0, approch="ovo")
+{
+  nClasse <- unique(y)  # Récupère les classes uniques
+  list_y <- list()   # Liste pour les différentes combinaisons de y
+  list_X <- list()   # Liste pour les différentes combinaisons de X
+  list_plot <- list()  # Liste pour stocker les graphiques
+
+  # Si l'approche est one-vs-one (ovo)
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse) - 1)) {
+      for (j in (i + 1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)  # Sélection des indices pour les deux classes
+        y_pair <- y[indices]  # Récupère les labels pour les deux classes
+        X_pair <- X[, indices]  # Récupère les données correspondantes
+        list_y[[k]] <- as.vector(y_pair)  # Ajoute le vecteur y dans la liste
+        list_X[[k]] <- X_pair  # Ajoute les données X dans la liste
+        k <- k + 1
+      }
+    }
+  } else {  # Pour les autres approches (e.g. one-vs-all)
+    for (i in 1:length(nClasse)) {
+      class_i <- nClasse[i]
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")  # Crée un vecteur one-vs-all
+      list_y[[i]] <- as.vector(y_temp)  # Ajoute ce vecteur à la liste
+      list_X[[i]] <- X  # Ajoute toutes les données X (elles ne changent pas pour one-vs-all)
+    }
+  }
+
+  # Générer les graphiques
+  for (i in 1:length(list_y)) {
+    list_plot[[i]] <- plotPrevalence(
+      features = rownames(features[[i]]$pop.noz),
+      X = list_X[[i]],
+      y = list_y[[i]],
+      topdown = topdown,  # Transmet l'argument topdown
+      main = main,  # Transmet l'argument main
+      plot = plot,  # Transmet l'argument plot
+      col.pt = col.pt,  # Transmet les couleurs pour les points
+      col.bg = col.bg,  # Transmet les couleurs pour le fond
+      zero.value = 0
+    )
+  }
+
+  return(list_plot)  # Retourne la liste des graphiques
+}
+

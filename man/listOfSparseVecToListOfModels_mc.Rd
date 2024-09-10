@@ -28,7 +28,7 @@ listOfSparseVecToListOfModels_mc(
 \item{eval.all:}{evaluate population (default:FALSE)}
 }
 \value{
-an list of model object one versus one
+an list of model object ovo and ova
 }
 \description{
 Converts an list of "SparseVec" objects onto a list of predomics objects

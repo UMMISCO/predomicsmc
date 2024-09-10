@@ -142,8 +142,6 @@ fit_mc <- function(X,
         X.nona <- X
       }
 
-
-
       feature.cor     <- filterfeaturesK(data = t(apply(X.nona, 1, rank)), # for speedup
                                          trait = rank(y.nona),             # for speedup
                                          k = max.nb.features,
@@ -236,7 +234,6 @@ fit_mc <- function(X,
   coeffs          <- getSign_mc(X = X, y = y, clf = clf, approch = approch, parallel.local = FALSE)
   clf$coeffs_     <- coeffs # add them to the clf
 
-
   # check sparsity not to be larger than variables in X
   if(any(is.na(clf$params$sparsity > nrow(X))))
   {
@@ -251,7 +248,6 @@ fit_mc <- function(X,
   # set the seed while sanity checking
   if(!(any(clf$params$seed=="NULL")))
   {
-
     # convert from list to a vector
     if(is.list(clf$params$seed))
     {
@@ -261,7 +257,6 @@ fit_mc <- function(X,
         stop("fit: convertion of seed from list to numeric vector failed.")
       }
     }
-
     # we can have multiple k-folds per experiment if the seed is vectors of seeds
     if(length(clf$params$seed)==1)
     {
@@ -405,11 +400,6 @@ fit_mc <- function(X,
              cat('... SOTA: state of the art Ranfom Forest fitting ...\n')
            },
 
-         sota.rf_ovo =
-           {
-             cat('... SOTA: state of the art Ranfom Forest fitting MC ...\n')
-           },
-
          {
            warning('This method does not exist !')
          }
@@ -434,9 +424,7 @@ fit_mc <- function(X,
     res.clf               <- list()
     res.clf$classifier    <- list()
     res.clf$lfolds        <- lfolds
-
     res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch, aggregation_ = aggregation_)
-
     # store the whole dataset results in the right place
     res.clf$classifier    <- res.clf$crossVal$whole
     # unweight the crossVal object that played the role of the transporter
@@ -569,9 +557,7 @@ fit_mc <- function(X,
   class(res.clf) <- c("experiment","predomics")
 
   return(res.clf)
-
 }
-
 #' Runs the learning on a dataset
 #' @title runClassifier_ovo
 #' @export
@@ -630,7 +616,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terga1_mc=
            {
              if(clf$params$verbose) cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
-             res <- terga1_ovo_fit(X, y, clf,approch = approch)
+             res <- terga1_ovo_fit(X, y, clf,approch = approch , aggregation_ = aggregation_)
            },
          terga2=
            {
@@ -665,11 +651,6 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
              res <- sota.rf_fit(X, y, clf)
            },
 
-         sota.rf_ovo=
-           {
-             if(clf$params$verbose) cat('... SOTA: state of the art Ranfom Forest fitting ...\n')
-             res <- sota.rf_fit_ovo(X, y, clf)
-           },
          {
            warning('This method does not exist !')
          }
@@ -755,7 +736,6 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   {
     stop("fit: please provide a valid classifier object!")
   }
-
 
   # if folds exist
   if(!is.null(lfolds))
@@ -877,7 +857,6 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
             dir.create(dirName)
             setwd(dirName)
           }
-
           # Launch the classifier in the train dataset and digest results
           clf$params$current_seed <- clf$params$seed[1] + i # set the current seed
           if(clf$params$debug)
@@ -978,12 +957,8 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   res.all <- res.all[-1]
   # also clean the lfolds object
   lfolds  <- lfolds[-1]
-
-
-
   # results for FEATURE IMPORTANCE
   # the MDA for each fold
-
   mda.all <- as.data.frame(matrix(NA, nrow = nrow(X), ncol = length(res.all)))
   rownames(mda.all) <- rownames(X); colnames(mda.all) <- names(res.all)
   # create also results for the standard deviation and the prevalence in the folds
@@ -1155,7 +1130,6 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
     ind <- as.numeric(gsub("k_","",rownames(mat)))
     mat <- mat[order(ind),]
   }
-
   # reorder results
   res.crossval$scores$empirical.auc       <- reorderByRownamesNumeric(res.crossval$scores$empirical.auc)
   res.crossval$scores$empirical.acc       <- reorderByRownamesNumeric(res.crossval$scores$empirical.acc)
@@ -1169,7 +1143,6 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   res.crossval$scores$generalization.prc  <- reorderByRownamesNumeric(res.crossval$scores$generalization.prc)
   res.crossval$scores$generalization.f1s  <- reorderByRownamesNumeric(res.crossval$scores$generalization.f1s)
   res.crossval$scores$generalization.cor  <- reorderByRownamesNumeric(res.crossval$scores$generalization.cor)
-
 
   # auc
   if(!is.null(dim(res.crossval$scores$empirical.auc)))
@@ -1202,7 +1175,6 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
                                                                 rowMeans(res.crossval$scores$generalization.prc, na.rm = TRUE)))
     colnames(res.crossval$scores$mean.prc)  <- c("empirical","generalization")
 
-
   }
 
   # f1-score
@@ -1233,12 +1205,4 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
   return(res.crossval)
 }
-
-
-
-
-
-
-
-
 

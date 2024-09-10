@@ -22,6 +22,16 @@ library(reshape2)
 library(randomForest)
 library(caret)
 library(gtools)
+library(ggpubr)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(e1071)
+library(glmnet)
+
 ```
 
 # Loading and Analysis of Used Data
@@ -81,8 +91,6 @@ dim(X)
 dim(X.test)
 ```
 
-
-
 #Classifying using the terbeam algorithm
 
 ```{r setting the classifier}
@@ -107,8 +115,8 @@ clf <- terBeam_mc(sparsity = c(2,3,4),
 runit = TRUE
 if(runit)
 {
-Unique_rankingAggregation <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "rankingAggregation", nfolds= 10); 
-  save(Unique_rankingAggregation , clf, file ="Unique_rankingAggregation.rda", compression_level = 9)
+tMulti_Predomics_aggregation_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ovo", nfolds= 1); 
+  #save(Multi_Predomics_aggregation_ovo , clf, file ="Multi_Predomics_aggregation_ovo.rda", compression_level = 9)
 }
 
 # ... Database X is not a matrix! Converting ...
@@ -143,83 +151,208 @@ Unique_rankingAggregation <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross
 # Load the results of the one-versus-one training.
 
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-
-  #load("Unique_Predomics_aggregation_ova.rda")
-  #load("Unique_maximizationAggregation.rda")
-#load("Unique_votingAggregation.rda")
-#load("Unique_weightedAggregation.rda")
+load("Unique_Predomics_aggregation_ova.rda")
+load("Unique_Predomics_aggregation_ovo.rda")
+load("Unique_votingAggregation.rda")
+load("Unique_maximizationAggregation.rda")
+load("Unique_rankingAggregation.rda")
+load("Unique_weightedAggregation.rda")
+load("Multi_Predomics_aggregation_ova.rda")
+load("Multi_maximizationAggregation.rda")
+load("Multi_rankingAggregation.rda")
+load("Multi_weightedAggregation.rda")
+load("Multi_votingAggregation.rda")
+load("Multi_Predomics_aggregation_ovo.rda")
 ```
 
-## Digesting the results
+# Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
+res_clf.dig <- digestmc(obj =Unique_Predomics_aggregation_ova , penalty = 0.75/100, plot = TRUE)
+```
+# Visualizing the best model
 
-clf_Multi_weightedAggregation <- digestmc(obj = Multi_weightedAggregation   , penalty = 0.75/100, plot = TRUE)
+```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+# get the best model
+best.model <- res_clf.dig$best$model
+printy_mc(best.model)
+
+plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
+plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
+
+# Extract the plots from each list and pass them to `grid.arrange
+grid.arrange(grobs = c(plots1, plots2), ncol = 2)
 
 ```
 
 
-```{r best model test, warning=FALSE}
+# Regenerate the clf object
 
-bestsModelsTest_votingAggregation <- evaluatesBestsModelsTest(experiences = Multi_Predomics_Aggregation_ova, approch = "ova", aggregation_ = "Predomics_aggregation_ova", clf =clf, y = y, X = X)
-  
-
+```{r warning=FALSE}
+clf <- regenerate_clf(clf, X, y, approch = "ova")
 ```
 
-
+# Testing the model in another dataset
 ```{r}
-printy_mc(clf_Multi_weightedAggregation$best$model)
-```
-
-```{r}
-  mod_testi <- evaluateModel_mc(
-    mod = clf_Multi_weightedAggregation$best$model,
+  best.model.test <- evaluateModel_mc(
+    mod = best.model,
     X = X.test,
     y = y.test,
     clf = clf,
     eval.all = TRUE,
     force.re.evaluation = TRUE,
-    approch = "ovo",
-    aggregation_ = "weightedAggregation",
+    approch = "ova",
+    aggregation_ = "Predomics_aggregation_ova",
     mode = "test"
   )
+printy_mc(best.model.test)
 ```
 
-
-```{r}
-printy_mc(mod_testi)
-```
-
-
-```{r}
-##Proposez moi un plot avec ggplot qui me represente dans un graphique mes trois accuracy sachant que la liste 1 doit etre nommé comme k_2, la liste 2 K_3 et enfin la liste 3 k_4 : bestsModelsTest_votingAggregation[[1]]$accuracy_
-##[1] 0.6287879
-##> bestsModelsTest_votingAggregation[[2]]$accuracy_
-##[1] 0.6666667
-##> bestsModelsTest_votingAggregation[[3]]$accuracy_
-##[1] 0.6742424 Faites moi un graphique sur R avec ggplot qui va me présenter les accuracy de me trois valeur que voici
-```
-
-
-
-
-## Explore the training and generalization scores using cross-validation with the same variables.
-
-
-```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
- load("Unique_Predomics_aggregation_ova.rda")
-load("Unique_maximizationAggregation.rda")
-load("Unique_rankingAggregation.rda")
-load("Unique_weightedAggregation.rda")
-load("Unique_votingAggregation.rda")
-```
-
-
-```{r fig.height=6, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-
-library(reshape2)
+# Visualizing model performance AUC
+```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+tmp <- plotAUC_mc(best.model$score_, y, percent = TRUE); rm(tmp)
+library(pROC)
 library(ggplot2)
-library(ggpubr)
+
+# Create ROC objects for the training set
+roc_objects_train <- lapply(best.model$score_, function(score) {
+  roc(response = y, predictor = score)
+})
+
+# Create ROC objects for the test set
+roc_objects_test <- lapply(best.model.test$score_, function(score) {
+  roc(response = y.test, predictor = score)
+})
+
+# Assign labels and combine ROC objects
+roc_objects_train <- lapply(seq_along(roc_objects_train), function(i) {
+  roc_obj <- roc_objects_train[[i]]
+  roc_obj$dataset <- "Train"
+  roc_obj$submodel <- paste("Submodel", i)
+  return(roc_obj)
+})
+
+roc_objects_test <- lapply(seq_along(roc_objects_test), function(i) {
+  roc_obj <- roc_objects_test[[i]]
+  roc_obj$dataset <- "Test"
+  roc_obj$submodel <- paste("Submodel", i)
+  return(roc_obj)
+})
+
+# Combine ROC objects into a single list
+all_roc_objects <- c(roc_objects_train, roc_objects_test)
+
+# Convert to a format compatible with ggplot
+roc_df <- do.call(rbind, lapply(all_roc_objects, function(roc_obj) {
+  data.frame(
+    FPR = 1 - roc_obj$specificities,  # False Positive Rate
+    TPR = roc_obj$sensitivities,       # True Positive Rate
+    Submodel = roc_obj$submodel,
+    Dataset = roc_obj$dataset
+  )
+}))
+
+# Plot ROC curves using ggplot
+ggplot(roc_df, aes(x = FPR, y = TPR, color = Dataset)) +
+  geom_line() +
+  facet_wrap(~ Submodel, scales = "free", labeller = label_both) +
+  labs(title = "ROC Curves", x = "False Positive Rate", y = "True Positive Rate") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+# Family of Best Models (FBM)
+
+```{r}
+# Convert the model collection into a population of models scrambled by model size
+pop <- modelCollectionToPopulation(Unique_Predomics_aggregation_ova$classifier$models)
+printy_mc(pop)
+
+# Convert the population to a data frame
+pop.df <- populationToDataFrame_mc(pop)
+
+# Plotting for the original population
+g.before <- list()  # Initialize a list to store the plots
+for(i in 1: length(pop.df)) {
+  pop.dff  <- as.data.frame(pop.df[[i]])  # Convert each submodel to a data frame
+  
+  # Display the head of the dataframe excluding some columns
+  head(pop.dff[,-c(3, 4, 7, 8, 14)])
+  
+  # Melt the dataframe for ggplot
+  pop.df.melt <- melt(pop.dff, id.vars = c("accuracy_", "eval.sparsity"))
+  
+  # Create the ggplot for the original population
+  g.before[[i]] <- ggplot(data = pop.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
+    geom_boxplot(notch = FALSE, outlier.shape = NA, position = position_dodge(width=0.9), alpha = 0.3) + 
+    geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+    ylim(c(0,1)) +
+    xlab("Model parsimony") +
+    ggtitle("Original population") +
+    theme_bw() +
+    theme(legend.position="bottom", legend.direction="horizontal") +
+    guides(colour="none")
+}
+
+# Select the best population models
+fbm <- selectBestPopulation(pop)
+printy_mc(fbm)
+
+# Convert the best population models to a data frame
+fbm.df <- populationToDataFrame_mc(fbm)
+
+# Plotting for the selected best models
+g.after <- list()  # Initialize a list to store the plots
+for(j in 1:length(fbm.df)) {
+  fbm.dff  <- as.data.frame(fbm.df[[j]])  # Convert each submodel to a data frame
+  
+  # Melt the dataframe for ggplot
+  fbm.df.melt <- melt(fbm.dff, id.vars = c("accuracy_", "eval.sparsity"))
+  
+  # Create the ggplot for the best population models
+  g.after[[j]] <- ggplot(data = fbm.df.melt, aes(y = accuracy_, x = eval.sparsity)) + 
+    geom_boxplot(notch = FALSE, position = position_dodge(width=0.9), alpha = 0.3) + 
+    geom_point(aes(color = eval.sparsity), position=position_jitterdodge(dodge.width=0.9), size = 1, alpha = 0.5) +
+    ylim(c(0,1)) +
+    xlab("Model parsimony") +
+    ggtitle("FBM") +
+    theme_bw() +
+    theme(legend.position="bottom", legend.direction="horizontal") +
+    guides(colour="none")
+}
+
+# Arrange the plots side by side
+grid.arrange(g.before[[1]], g.after[[1]], ncol = 2)
+
+```
+# Analyzing the FBM 
+
+```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+fa <- makeFeatureAnnot_mc(pop = fbm, 
+                       X = X, 
+                       y = y, 
+                       clf = clf,
+                       approch = "ova")
+dim(fa[[1]]$pop.noz)
+for (i in 1:length(fa)) {
+
+  g <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[i]]$pop.noz)
+  
+  print(g)
+}
+(g2 <- plotAbundanceByClass_mc(features = fa, X = X, y = y, approch = "ova"))
+(g3 <- plotPrevalence_mc(features = fa, X = X, y = y , approch = "ova"))
+
+```
+
+
+
+
+
+```{r fig.height=5, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 
 transform_model_data <- function(model_data, model_name) {
   testlist <- model_data$crossVal$scores[grep("generalization|empirical", names(model_data$crossVal$scores))]
@@ -248,8 +381,9 @@ df2 <- transform_model_data(Unique_Predomics_aggregation_ova, "Unique_Predomics_
 df3 <- transform_model_data(Unique_rankingAggregation, "Unique_rankingAggregation")
 df4 <- transform_model_data(Unique_weightedAggregation, "Unique_weightedAggregation")
 df5 <- transform_model_data(Unique_votingAggregation, "Unique_votingAggregation")
+df6 <- transform_model_data(Unique_votingAggregation, "Unique_Predomics_aggregation_ovo")
 
-alldf <- rbind(df1, df2, df3, df4, df5)
+alldf <- rbind(df1, df2, df3, df4, df5,df6)
 
 ggplot(alldf, aes(x=model, y=value)) + 
   geom_point(aes(colour=sparsity)) + 
@@ -259,7 +393,7 @@ ggplot(alldf, aes(x=model, y=value)) +
 ```
 
 
-```{r fig.height=6, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r fig.height=5, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 # Fonction pour transformer les données des modèles
 transform_model_data <- function(model_data, model_name) {
   testlist <- model_data$crossVal$scores[grep("generalization|empirical", names(model_data$crossVal$scores))]
@@ -288,8 +422,9 @@ df2 <- transform_model_data(Unique_Predomics_aggregation_ova, "Unique_Predomics_
 df3 <- transform_model_data(Unique_rankingAggregation, "Unique_rankingAggregation")
 df4 <- transform_model_data(Unique_weightedAggregation, "Unique_weightedAggregation")
 df5 <- transform_model_data(Unique_votingAggregation, "Unique_votingAggregation")
+df6 <- transform_model_data(Unique_votingAggregation, "Unique_Predomics_aggregation_ovo")
 
-alldf <- rbind(df1, df2, df3, df4, df5)
+alldf <- rbind(df1, df2, df3, df4, df5,df6)
 
 ggplot(alldf, aes(x=model, y=value)) + 
   geom_point(aes(colour=sparsity)) + 
@@ -298,47 +433,37 @@ ggplot(alldf, aes(x=model, y=value)) +
 ```
 
 
-
-
-
-```{r fig.height=7, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
-library(ggplot2)
-library(reshape2)
-
+```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
 Unique_weighted <- Unique_weightedAggregation$crossVal$scores$mean.acc
 Unique_maximization <- Unique_maximizationAggregation$crossVal$scores$mean.acc
 Unique_Predomics_Aggre <- Unique_Predomics_aggregation_ova$crossVal$scores$mean.acc 
 Unique_ranking <- Unique_rankingAggregation$crossVal$scores$mean.acc
 Unique_voting <- Unique_votingAggregation$crossVal$scores$mean.acc
-
+Unique_Predomics_ovo <- Unique_Predomics_aggregation_ovo$crossVal$scores$mean.acc
 Unique_weighted$k <- rownames(Unique_weighted)
 Unique_maximization$k <- rownames(Unique_maximization)
 Unique_Predomics_Aggre$k <- rownames(Unique_Predomics_Aggre)
 Unique_ranking$k <- rownames(Unique_ranking)
 Unique_voting$k <- rownames(Unique_voting)
-
-Unique_weighted$algorithm <- "Unique_weightedAggregation"
-Unique_maximization$algorithm <- "Unique_maximizationAggregation"
-Unique_Predomics_Aggre$algorithm <- "Unique_Predomics_Aggregation_ova"
-Unique_voting$algorithm <- "Unique_votingAggregation"
-Unique_ranking$algorithm <- "Unique_rankingAggregation"
-
+Unique_Predomics_ovo$k <- rownames(Unique_Predomics_ovo)
+Unique_weighted$algorithm <- "Weighted voting"
+Unique_maximization$algorithm <- "Maximization"
+Unique_Predomics_Aggre$algorithm <- "Predomics_Aggregation_ova"
+Unique_voting$algorithm <- "Voting"
+Unique_ranking$algorithm <- "Ranking"
+Unique_Predomics_ovo$algorithm <- "Predomics_Aggregation_ovo"
 Unique_weighted <- Unique_weighted[, c("k", "empirical", "generalization", "algorithm")]
 Unique_maximization <- Unique_maximization[, c("k", "empirical", "generalization", "algorithm")]
 Unique_Predomics_Aggre <-Unique_Predomics_Aggre[, c("k", "empirical", "generalization", "algorithm")]
 Unique_voting <- Unique_voting[, c("k", "empirical", "generalization", "algorithm")]
 Unique_ranking <- Unique_ranking[, c("k", "empirical", "generalization", "algorithm")]
-
+Unique_Predomics_ovo <- Unique_Predomics_ovo[, c("k", "empirical", "generalization", "algorithm")]
 combined_df <- rbind(Unique_weighted,Unique_maximization, 
                      Unique_Predomics_Aggre, Unique_ranking, 
-                     Unique_voting)
+                     Unique_voting, Unique_Predomics_ovo)
 
 combined_df <- na.omit(combined_df)
-
-
 data_melted <- melt(combined_df, id.vars = c("k", "algorithm"), variable.name = "type", value.name = "accuracy")
-
-
 ggplot(data_melted, aes(x = k, y = accuracy, color = type)) +
   geom_point(size = 3) +
   geom_line(aes(group = interaction(algorithm, type), linetype = type)) +
@@ -354,21 +479,7 @@ ggplot(data_melted, aes(x = k, y = accuracy, color = type)) +
 ```
 
 
-##Explore the training and generalization scores using cross-validation with different variables.
-
-```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
- #load("Multi_Predomics_aggregation_ova.rda")
-load("Multi_maximizationAggregation.rda")
-#load("Multi_rankingAggregation.rda")
-#load("Multi_weightedAggregation.rda")
-#load("Multi_votingAggregation.rda")
-```
-
-
 ```{r fig.height=6, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-library(reshape2)
-library(ggplot2)
-library(ggpubr)
 
 transform_model_data <- function(model_data, model_name) {
   testlist <- model_data$crossVal$scores[grep("generalization|empirical", names(model_data$crossVal$scores))]
@@ -444,20 +555,14 @@ ggplot(alldf, aes(x=model, y=value)) +
 ```
 
 
-
-
-
-```{r fig.height=7, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
-
-library(ggplot2)
-library(reshape2)
-
+```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
 # Données fournies
 Multi_weighted <- Multi_weightedAggregation$crossVal$scores$mean.acc
 Multi_maximization <- Multi_maximizationAggregation$crossVal$scores$mean.acc
 Multi_Predomics_Aggre <- Multi_Predomics_Aggregation_ova$crossVal$scores$mean.acc
 Multi_ranking <- Multi_rankingAggregation$crossVal$scores$mean.acc
 Multi_voting <- Multi_votingAggregation$crossVal$scores$mean.acc
+Multi_Predomics_Aggre_ovo <- Multi_Predomics_aggregation_ovo$crossVal$scores$mean.acc
 
 # Ajouter la colonne 'k'
 Multi_weighted$k <- rownames(Multi_weighted)
@@ -465,6 +570,7 @@ Multi_maximization$k <- rownames(Multi_maximization)
 Multi_Predomics_Aggre$k <- rownames(Multi_Predomics_Aggre)
 Multi_ranking$k <- rownames(Multi_ranking)
 Multi_voting$k <- rownames(Multi_voting)
+Multi_Predomics_Aggre_ovo$k <- rownames(Multi_Predomics_Aggre_ovo)
 
 # Ajouter une colonne 'algorithm' pour chaque dataframe
 Multi_weighted$algorithm <- "Multi_weightedAggregation"
@@ -472,7 +578,7 @@ Multi_maximization$algorithm <- "Multi_maximizationAggregation"
 Multi_Predomics_Aggre$algorithm <- "Multi_Predomics_Aggregation_ova"
 Multi_voting$algorithm <- "Multi_votingAggregation"
 Multi_ranking$algorithm <- "Multi_rankingAggregation"
-
+Multi_Predomics_Aggre_ovo$algorithm <- "Multi_Predomics_Aggregation_ovo"
 
 # Réordonner les colonnes pour avoir "k" et "algorithm" en premier
 Multi_weighted <- Multi_weighted[, c("k", "empirical", "generalization", "algorithm")]
@@ -480,12 +586,13 @@ Multi_maximization <- Multi_maximization[, c("k", "empirical", "generalization",
 Multi_Predomics_Aggre <- Multi_Predomics_Aggre[, c("k", "empirical", "generalization", "algorithm")]
 Multi_voting <- Multi_voting[, c("k", "empirical", "generalization", "algorithm")]
 Multi_ranking <- Multi_ranking[, c("k", "empirical", "generalization", "algorithm")]
+Multi_Predomics_Aggre_ovo <- Multi_Predomics_Aggre_ovo[, c("k", "empirical", "generalization", "algorithm")]
 
 
 # Combiner les dataframes
 combined_df <- rbind(Multi_weighted, Multi_maximization, 
                      Multi_Predomics_Aggre, Multi_ranking, 
-                     Multi_voting)
+                     Multi_voting,Multi_Predomics_Aggre_ovo)
 
 # Supprimer les lignes contenant des valeurs NaN
 combined_df <- na.omit(combined_df)
@@ -507,227 +614,188 @@ ggplot(data_melted, aes(x = k, y = accuracy, color = type)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = c("empirical" = "#377EB8", "generalization" = "#E41A1C"))
 
-
-
-
 ```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Etat de l'art
+## RF
 
 ```{r}
-best.model.test <- evaluateModel_mc(mod = best.model, X = X.test, y = y.test, clf = clf, eval.all = TRUE, force.re.evaluation = TRUE,  approch = approch, aggregation_ = aggregation_, mode = "test")
+# Fixer une graine aléatoire pour assurer la reproductibilité
+set.seed(123)
 
-```
+# Préparation des données
+X_train <- t(X)
+y_train <- as.factor(y)
+X_test <- t(X.test)
+y_test <- as.factor(y.test)
 
+# Définir la validation croisée à 10 plis
+train_control <- trainControl(method = "cv", number = 10, savePredictions = TRUE)
 
-# State of the art 
-
-
-## Random Forest
-
-
-```{r warning=FALSE}
-library(caret)
-library(e1071)
-X_train = t(X)
-y_train = y
-X_test = t(X.test)
-y_test =y.test
-y_train <- as.factor(y_train)
-y_test <- as.factor(y_test)
-
-
-# Define 10-fold cross-validation
-train_control <- trainControl(method = "cv", number = 10)
-
-# Train the multiclass random forest model with 10-fold cross-validation
+# Entraîner le modèle Random Forest avec validation croisée à 10 plis
 rf_model <- train(x = X_train, y = y_train, method = "rf", trControl = train_control)
 
-
-```
-
-
-```{r warning=FALSE}
-# Prediction on the training data
+# Prédictions sur les données d'entraînement
 train_pred <- predict(rf_model, X_train)
-
-# Calculation of metrics for the training data
 train_metrics <- confusionMatrix(train_pred, y_train)
 
-# Calculation of the AUC for training
+# Calcul de l'AUC pour les données d'entraînement
 roc_train <- multiclass.roc(y_train, as.numeric(train_pred))
 auc_train <- auc(roc_train)
 
-# Displaying metrics for training
+# Affichage des métriques pour les données d'entraînement
 print(train_metrics)
 print(auc_train)
 
-# Prediction on the test data
+# Prédictions sur les données de test
 test_pred <- predict(rf_model, X_test)
-
-# Calculation of metrics for the test data
 test_metrics <- confusionMatrix(test_pred, y_test)
 
-# Calculation of the AUC for the test data.
+# Calcul de l'AUC pour les données de test
 roc_test <- multiclass.roc(y_test, as.numeric(test_pred))
 auc_test <- auc(roc_test)
 
-# Displaying metrics for the test data
+# Affichage des métriques pour les données de test
 print(test_metrics)
 print(auc_test)
-```
 
-
-```{r warning=FALSE}
-# Calculating metrics for the training data
+# Calcul des métriques pour l'entraînement et le test
 train_accuracy <- train_metrics$overall["Accuracy"]
 train_precision <- mean(train_metrics$byClass[,"Precision"], na.rm = TRUE)
 train_recall <- mean(train_metrics$byClass[,"Recall"], na.rm = TRUE)
-train_auc <- auc_train
-# Calculer le score F1 pour les données d'entraînement
 f1_train <- 2 * (train_precision * train_recall) / (train_precision + train_recall)
 
-# Afficher le score F1 pour les données d'entraînement
-print(paste("Train F1 Score:", f1_train))
-
-# Displaying metrics for the training data
-print(paste("Train Accuracy:", train_accuracy))
-print(paste("Train Precision:", train_precision))
-print(paste("Train Recall:", train_recall))
-print(paste("Train AUC:", train_auc))
-
-# Calculating metrics for the test data
-test_metrics <- confusionMatrix(test_pred, y_test)
 test_accuracy <- test_metrics$overall["Accuracy"]
-test_precision <- mean(test_metrics$byClass[,"Precision"], na.rm = TRUE)
-test_recall <- mean(test_metrics$byClass[,"Recall"], na.rm = TRUE)
-
-# Calculating the AUC for the test data
-roc_test <- multiclass.roc(y_test, as.numeric(test_pred))
-test_auc <- auc(roc_test)
-# Calculer et afficher le score F1 pour les données de test
 test_precision <- mean(test_metrics$byClass[,"Precision"], na.rm = TRUE)
 test_recall <- mean(test_metrics$byClass[,"Recall"], na.rm = TRUE)
 f1_test <- 2 * (test_precision * test_recall) / (test_precision + test_recall)
 
-print(paste("Test F1 Score:", f1_test))
-# Displaying metrics for the test data
-print(paste("Test Accuracy:", test_accuracy))
-print(paste("Test Precision:", test_precision))
-print(paste("Test Recall:", test_recall))
-print(paste("Test AUC:", test_auc))
+# Calcul de l'écart type des métriques des 10 folds de la validation croisée
+accuracy_sd <- sd(rf_model$resample$Accuracy)
+precision_sd <- sd(rf_model$resample$Precision, na.rm = TRUE)
+recall_sd <- sd(rf_model$resample$Recall, na.rm = TRUE)
+f1_sd <- sd(rf_model$resample$F1, na.rm = TRUE)
 
-```
+# Affichage de l'écart type des métriques
+print(paste("Ecart type de l'Accuracy:", accuracy_sd))
+print(paste("Ecart type de la Précision:", precision_sd))
+print(paste("Ecart type du Rappel:", recall_sd))
+print(paste("Ecart type du F1 Score:", f1_sd))
 
-
-```{r warning=FALSE, fig.height=4.5, fig.width=6, message=FALSE}
-library(ggplot2)
-
-# Example of metrics for the training data
-accuracy_train <- train_accuracy
-precision_train <- train_precision
-AUC_train <- train_auc
-recall_train <- train_recall
-f1_train <- f1_train
-
-# Example of metrics for the test data
-accuracy_test <- test_accuracy
-precision_test <- test_precision
-AUC_test <- test_auc
-recall_test <- test_recall
-f1_test <- f1_test
-
-# Create a data frame for the training metrics
-train_metrics <- data.frame(
+# Création des dataframes pour les métriques d'entraînement et de test
+train_metrics_df <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_train, precision_train, f1_train, recall_train),
+  Value = c(train_accuracy, train_precision, f1_train, train_recall),
   Dataset = "Training"
 )
 
-# Create a data frame for the test metrics
-test_metrics <- data.frame(
+test_metrics_df <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_test, precision_test, f1_test, recall_test),
+  Value = c(test_accuracy, test_precision, f1_test, test_recall),
   Dataset = "Test"
 )
 
-# Combine the training and test metrics
-all_metrics <- rbind(train_metrics, test_metrics)
+# Combiner les métriques d'entraînement et de test
+all_metrics <- rbind(train_metrics_df, test_metrics_df)
 
-# Create the graph
+# Création du graphique comparant les métriques d'entraînement et de test
 plot <- ggplot(all_metrics, aes(x = Metric, y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 1), vjust = -0.5) +
-  labs(title = "Comparison of test and training metrics Sota RF",
+  labs(title = "Comparison of test and training metrics - Random Forest",
        x = "Metrics", y = "Values") +
   theme_minimal()
 
-# Display the graph
+# Affichage du graphique
 print(plot)
 
 ```
 
 
-## Regression Logistique
+##Regression Logistique
 
 ```{r warning=FALSE}
-library(nnet)
-# Create a data.frame from matrix X
-library(glmnet)
-# Utilize cv.glmnet with 10-fold cross-validation
+# Fixer une graine aléatoire pour assurer la reproductibilité
+set.seed(123)  # Choisissez n'importe quel nombre
+
+# Préparation des données
 df <- as.data.frame(t(X))
 df$y <- factor(y)
-cv_model_rl <- cv.glmnet(as.matrix(df[, -ncol(df)]), df$y, family = "multinomial", alpha = 1, nfolds = 10)
 
-# Get the best model based on cross-validation
-best_model_rl <- cv_model_rl$glmnet.fit
+# Vérifiez la répartition des classes
+class_distribution <- table(df$y)
+print(class_distribution)
 
-# Obtain predictions directly from cross-validation
-predictions_rl <- predict(cv_model_rl, newx = as.matrix(df[, -ncol(df)]), s = "lambda.min", type = "class")
-predictions_rl <- factor(predictions_rl)
+# Filtrer les classes avec suffisamment d'observations (par exemple, au moins 5)
+min_observations <- 5
+valid_classes <- names(class_distribution[class_distribution >= min_observations])
+df_filtered <- df[df$y %in% valid_classes, ]
+df_filtered$y <- factor(df_filtered$y)
 
-# Check the dimensions and create the confusion matrix
-if(length(predictions_rl) == length(df$y)) {
-  confusionMatrix(predictions_rl, df$y)
-} else {
-  print("The dimensions of the predictions do not match those of the ground truth")
+# Vérification après filtrage
+print(table(df_filtered$y))
+
+# Répartition des données pour la validation croisée manuelle
+set.seed(123)  # Pour la reproductibilité
+folds <- createFolds(df_filtered$y, k = 10, list = TRUE)
+
+# Initialiser un vecteur pour stocker les précisions de chaque fold
+fold_accuracies <- numeric(length(folds))
+
+# Calculer l'accuracy pour chaque fold
+for (i in seq_along(folds)) {
+  # Indices des données de validation pour ce fold
+  val_indices <- folds[[i]]
+  
+  # Données d'entraînement pour ce fold
+  train_data <- df_filtered[-val_indices, ]
+  
+  # Données de validation pour ce fold
+  val_data <- df_filtered[val_indices, ]
+  
+  # Entraînement du modèle sur les données d'entraînement du fold
+  model_fold <- glmnet(as.matrix(train_data[, -ncol(train_data)]), train_data$y, family = "multinomial", alpha = 1)
+  
+  # Prédictions pour les données de validation du fold
+  fold_pred <- predict(model_fold, newx = as.matrix(val_data[, -ncol(val_data)]), type = "class", s = model_fold$lambda.min)
+  
+  # Convertir les prédictions en facteur avec les mêmes niveaux que les données originales
+  fold_pred <- factor(fold_pred, levels = levels(df_filtered$y))
+  
+  # Vérité terrain pour ce fold
+  fold_truth <- val_data$y
+  
+  # Calculer l'accuracy pour ce fold
+  fold_accuracies[i] <- mean(fold_pred == fold_truth)
 }
 
-```
+# Calcul de la moyenne des accuracies
+mean_accuracy <- mean(fold_accuracies, na.rm = TRUE)
 
+# Calcul de l'écart type des accuracies
+sd_accuracy <- sd(fold_accuracies, na.rm = TRUE)
 
+# Afficher les résultats de validation croisée
+print(paste("Cross-Validation Mean Accuracy:", round(mean_accuracy, 3)))
+print(paste("Cross-Validation Accuracy Standard Deviation:", round(sd_accuracy, 3)))
 
-```{r warning=FALSE}
-conf_matrix_rl <- confusionMatrix(predictions_rl, df$y)
+# Création du modèle final sur l'ensemble des données d'entraînement
+best_model_rl <- cv.glmnet(as.matrix(df_filtered[, -ncol(df_filtered)]), df_filtered$y, family = "multinomial", alpha = 1, nfolds = 10)
 
-# Calcul de l'exactitude
-accuracy_train_rl <- conf_matrix_rl$overall[["Accuracy"]]
+# Prédictions sur les données d'entraînement complètes
+train_predictions <- predict(best_model_rl, newx = as.matrix(df_filtered[, -ncol(df_filtered)]), s = best_model_rl$lambda.min, type = "class")
+train_predictions <- factor(train_predictions, levels = levels(df_filtered$y))
 
-# Calcul de la précision moyenne de chaque classe
-precision_train_rl <- mean(conf_matrix_rl$byClass[ , "Precision"])
+# Création de la matrice de confusion pour les données d'entraînement
+conf_matrix_train_rl <- confusionMatrix(train_predictions, df_filtered$y)
 
-# Calcul de l'AUC en utilisant la précision équilibrée moyenne (Balanced Accuracy)
-AUC_train_rl <- mean(conf_matrix_rl$byClass[ , "Balanced Accuracy"])
-
-# Calcul du rappel moyen (Sensibilité) de chaque classe
-recall_train_rl <- mean(conf_matrix_rl$byClass[ , "Sensitivity"])
-
-# Calcul du score F1 pour les données d'entraînement
+# Calcul des métriques pour les données d'entraînement
+accuracy_train_rl <- conf_matrix_train_rl$overall[["Accuracy"]]
+precision_train_rl <- mean(conf_matrix_train_rl$byClass[ , "Precision"], na.rm = TRUE)
+recall_train_rl <- mean(conf_matrix_train_rl$byClass[ , "Sensitivity"], na.rm = TRUE)
+AUC_train_rl <- mean(conf_matrix_train_rl$byClass[ , "Balanced Accuracy"], na.rm = TRUE)
 F1_train_rl <- 2 * (precision_train_rl * recall_train_rl) / (precision_train_rl + recall_train_rl)
 
 # Affichage des métriques pour les données d'entraînement
@@ -737,147 +805,174 @@ print(paste("Train Recall (Sensitivity):", recall_train_rl))
 print(paste("Train AUC (Balanced Accuracy):", AUC_train_rl))
 print(paste("Train F1 Score:", F1_train_rl))
 
+# Prédictions sur les données de test
+predictions_test1_rl <- predict(best_model_rl, newx = as.matrix(X_test), s = best_model_rl$lambda.min, type = "class")
+predictions_test1_rl <- factor(predictions_test1_rl, levels = levels(df_filtered$y))
 
-```
-
-
-
-```{r warning=FALSE}
-predictions_test1_rl <- predict(cv_model_rl, newx = as.matrix(X_test), type = "class")
-library(caret)
-predictions_test1_rl <- as.factor(predictions_test1_rl)
-
-
-```
-
-
-```{r warning=FALSE}
-# Create the confusion matrix for predictions on the test dataset
+# Création de la matrice de confusion pour les données de test
 conf_matrix_test_rl <- confusionMatrix(predictions_test1_rl, y_test)
 
-# Calculate accuracy, precision, AUC, and recall for the test dataset
-# Calculate accuracy, precision, AUC, and recall for the test dataset
+# Calcul des métriques pour les données de test
 accuracy_test1_rl <- conf_matrix_test_rl$overall[["Accuracy"]]
 precision_test1_rl <- mean(conf_matrix_test_rl$byClass[ , "Precision"], na.rm = TRUE)
+recall_test1_rl <- mean(conf_matrix_test_rl$byClass[ , "Sensitivity"], na.rm = TRUE)
 AUC_test1_rl <- mean(conf_matrix_test_rl$byClass[ , "Balanced Accuracy"], na.rm = TRUE)
-recall_test1_rl <- mean(conf_matrix_test_rl$byClass[ ,"Sensitivity"], na.rm = TRUE)
-# Calcul du score F1 pour les données d'entraînement
 F1_test1_rl <- 2 * (precision_test1_rl * recall_test1_rl) / (precision_test1_rl + recall_test1_rl)
 
-```
-
-
-
-```{r warning=FALSE, fig.height=4.5, fig.width=6, message=FALSE}
-library(ggplot2)
-
-# Create a data frame for the training metrics
+# Création du data frame pour les métriques d'entraînement
 train_metrics_rl <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
   Value = c(accuracy_train_rl, precision_train_rl, F1_train_rl, recall_train_rl),
   Dataset = "Training"
 )
 
-# Create a data frame for the test metrics
+# Création du data frame pour les métriques de test
 test_metrics_rl <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
   Value = c(accuracy_test1_rl, precision_test1_rl, F1_test1_rl, recall_test1_rl),
   Dataset = "Test"
 )
 
-# Combine the training and test metrics
-all_metrics_rl <- rbind(test_metrics_rl,train_metrics_rl)
+# Combinaison des métriques d'entraînement et de test
+all_metrics_rl <- rbind(test_metrics_rl, train_metrics_rl)
 
-# Create the graph
+# Création du graphique comparant les métriques de test et d'entraînement
 plot <- ggplot(all_metrics_rl, aes(x = Metric, y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 1), vjust = -0.5) +
-  labs(title = "Comparison of test and training metrics Sota LR",
+  labs(title = "Comparison of Test and Training Metrics - Logistic Regression",
        x = "Metrics", y = "Values") +
   theme_minimal()
 
-# Display the graph
+# Affichage du graphique
 print(plot)
+
 
 ```
 
-
-## SVM
+##SVM
 
 ```{r warning=FALSE}
-library(caret)
-library(pROC)
 
-# Train an SVM model with radial kernel and 10-fold cross-validation
+# Préparer les données pour la validation croisée
+set.seed(123)  # Pour la reproductibilité
+folds <- createFolds(y_train, k = 10, list = TRUE, returnTrain = TRUE)
+
+# Initialiser des vecteurs pour stocker les métriques
+fold_accuracies <- numeric(length(folds))
+fold_precisions <- matrix(0, nrow = length(folds), ncol = length(levels(y_train)))
+fold_recalls <- matrix(0, nrow = length(folds), ncol = length(levels(y_train)))
+fold_f1_scores <- matrix(0, nrow = length(folds), ncol = length(levels(y_train)))
+
+# Calculer les métriques pour chaque fold
+for (i in seq_along(folds)) {
+  train_indices <- folds[[i]]
+  val_indices <- which(!1:nrow(X_train) %in% train_indices)
+  
+  train_data <- data.frame(x = X_train[train_indices, ], y = y_train[train_indices])
+  val_data <- data.frame(x = X_train[val_indices, ], y = y_train[val_indices])
+  
+  # Entraînement du modèle SVM pour ce fold
+  svm_model_fold <- train(x = train_data[, -ncol(train_data)], y = train_data$y, method = "svmRadial", trControl = trainControl(method = "none"))
+  
+  # Prédictions pour les données de validation
+  predictions_val <- predict(svm_model_fold, newdata = val_data[, -ncol(val_data)])
+  
+  # Calculer les métriques pour ce fold
+  conf_matrix <- confusionMatrix(predictions_val, val_data$y)
+  
+  fold_accuracies[i] <- conf_matrix$overall['Accuracy']
+  
+  # Assurez-vous d'utiliser les bons noms de colonnes
+  if (!is.null(conf_matrix$byClass)) {
+    precision_values <- conf_matrix$byClass[, 'Pos Pred Value']
+    recall_values <- conf_matrix$byClass[, 'Sensitivity']
+    
+    # S'assurer que les dimensions sont correctes
+    if (length(precision_values) == ncol(fold_precisions) && length(recall_values) == ncol(fold_recalls)) {
+      fold_precisions[i, 1:length(precision_values)] <- precision_values
+      fold_recalls[i, 1:length(recall_values)] <- recall_values
+      fold_f1_scores[i, 1:length(precision_values)] <- 2 * (precision_values * recall_values) / (precision_values + recall_values)
+    }
+  }
+}
+
+# Calcul de la moyenne et de l'écart type pour les metrics
+mean_accuracy <- mean(fold_accuracies, na.rm = TRUE)
+sd_accuracy <- sd(fold_accuracies, na.rm = TRUE)
+
+# Entraînement du modèle SVM avec validation croisée complète
 svm_model <- train(x = X_train, y = y_train, method = "svmRadial", trControl = trainControl(method = "cv", number = 10))
 
-# Make predictions with the SVM model
+# Prédictions avec le modèle SVM
 svm_predictions_train <- predict(svm_model, X_train)
 svm_predictions_test <- predict(svm_model, X_test)
 
-# Calculate the accuracy for the training and test sets
-accuracy_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)$overall['Accuracy'][1]
-accuracy_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)$overall['Accuracy'][1]
+# Calculer les métriques pour les ensembles d'entraînement et de test
+conf_matrix_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)
+conf_matrix_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)
 
-# Calculate precision, recall, and AUC for the training and test sets
-precision_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Pos Pred Value']
-precision_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Pos Pred Value']
+accuracy_train_svm <- conf_matrix_train_svm$overall['Accuracy']
+accuracy_test_svm <- conf_matrix_test_svm$overall['Accuracy']
 
-recall_train_svm <- confusionMatrix(data = svm_predictions_train, reference = y_train)$byClass[, 'Sensitivity']
-recall_test_svm <- confusionMatrix(data = svm_predictions_test, reference = y_test)$byClass[, 'Sensitivity']
-F1_train_svm <- 2 * (precision_train_svm * recall_train_svm) / (precision_train_svm + recall_train_svm)
-F1_train = mean(F1_train_svm)
+precision_train_svm <- mean(conf_matrix_train_svm$byClass[, 'Pos Pred Value'], na.rm = TRUE)
+precision_test_svm <- mean(conf_matrix_test_svm$byClass[, 'Pos Pred Value'], na.rm = TRUE)
+recall_train_svm <- mean(conf_matrix_train_svm$byClass[, 'Sensitivity'], na.rm = TRUE)
+recall_test_svm <- mean(conf_matrix_test_svm$byClass[, 'Sensitivity'], na.rm = TRUE)
+F1_train_svm <- mean(2 * (precision_train_svm * recall_train_svm) / (precision_train_svm + recall_train_svm), na.rm = TRUE)
+F1_test_svm <- mean(2 * (precision_test_svm * recall_test_svm) / (precision_test_svm + recall_test_svm), na.rm = TRUE)
+
+# Calculer l'AUC
 auc_train_svm <- roc(y_train, as.numeric(svm_predictions_train))$auc
 auc_test_svm <- roc(y_test, as.numeric(svm_predictions_test))$auc
 
-
-
-```
-
-
-```{r}
-precision_train_svm = mean(precision_train_svm)
-precision_test_svm = mean(precision_test_svm)
-recall_train_svm = mean(recall_train_svm)
-recall_test_svm = mean(recall_test_svm)
-F1_test_svm <- 2 * (precision_test_svm * recall_test_svm) / (precision_test_svm + recall_test_svm)
-
-```
-
-```{r}
-F1_test_svm <- mean(F1_test_svm)
-```
-
-
-```{r warning=FALSE, fig.height=4.5, fig.width=6, message=FALSE}
-library(ggplot2)
-
-# Create a data frame for the training metrics
+# Créer un data frame pour les métriques d'entraînement
 train_metrics_svm <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
-  Value = c(accuracy_train_svm, precision_train_svm, F1_train, recall_train_svm),
+  Value = c(accuracy_train_svm, precision_train_svm, F1_train_svm, recall_train_svm),
   Dataset = "Training"
 )
 
-# Create a data frame for the test metrics
+# Créer un data frame pour les métriques de test
 test_metrics_svm <- data.frame(
   Metric = c("Accuracy", "Precision", "F1", "Recall"),
   Value = c(accuracy_test_svm, precision_test_svm, F1_test_svm, recall_test_svm),
   Dataset = "Test"
 )
 
-# Combine the training and test metrics
-all_metrics_svm <- rbind(test_metrics_svm,train_metrics_svm)
+# Combiner les métriques d'entraînement et de test
+all_metrics_svm <- rbind(test_metrics_svm, train_metrics_svm)
 
-# Create the graph
+# Créer le graphique comparant les métriques de test et d'entraînement
 plot <- ggplot(all_metrics_svm, aes(x = Metric, y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = round(Value, 3)), position = position_dodge(width = 1), vjust = -0.5) +
-  labs(title = "Comparison of test and training metrics Sota SVM",
+  labs(title = "Comparison of Test and Training Metrics - SVM",
        x = "Metrics", y = "Values") +
   theme_minimal()
 
-# Display the graph
+# Afficher le graphique
 print(plot)
 
+# Afficher les résultats de validation croisée
+print(paste("Cross-Validation Mean Accuracy:", round(mean_accuracy, 3)))
+print(paste("Cross-Validation Accuracy Standard Deviation:", round(sd_accuracy, 3)))
+
+
+
 ```
+Ma nouvelle méthode Predomics_aggregation_ovo a été développé pour combiner le vote majoritaire avec un départage basé sur les scores cumulés en cas d'égalité.
+
+Explication :
+Comptage des votes : La fonction commence par compter les votes pour chaque échantillon.
+Vérification des égalités : Si plusieurs classes obtiennent le même nombre de votes, on passe à l'étape de départage.
+Départage avec scores : Pour les classes à égalité, la fonction calcule la somme des scores pour chaque classe et choisit celle avec la somme la plus élevée.
+Retour du modèle : Le modèle avec les prédictions agrégées est renvoyé.
+Cette méthode garantit que les prédictions sont basées sur une majorité, tout en utilisant les scores pour résoudre les égalités de manière judicieuse.
+
+```{r}
+pop <- modelCollectionToPopulation(res_clf$classifier$models)
+```
+
+
+

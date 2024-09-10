@@ -15,18 +15,18 @@
 # @author: Edi Prifti
 # @date: November 2023
 ################################################################
-generateAllSingleFeatureModel_mc <- function(X, y, clf, ind.sub = NULL, eval.all = FALSE, approch ="ovo")
-{
-  nClasse <- unique(y)
+generateAllSingleFeatureModel_mc <- function(X, y, clf, ind.sub = NULL, eval.all = FALSE, approch = "ovo") {
+  nClasses <- unique(y)
   list_y <- list()
   list_X <- list()
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
+
+  # Dataset decomposition phase using One-Versus-One (OVO) or One-Versus-All (OVA) approaches
   if (approch == "ovo") {
     k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
+    for (i in 1:(length(nClasses) - 1)) {
+      for (j in (i + 1):length(nClasses)) {
+        class_i <- nClasses[i]
+        class_j <- nClasses[j]
         indices <- which(y == class_i | y == class_j)
         y_pair <- y[indices]
         X_pair <- X[, indices]
@@ -36,54 +36,47 @@ generateAllSingleFeatureModel_mc <- function(X, y, clf, ind.sub = NULL, eval.all
       }
     }
   } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
+    for (i in 1:length(nClasses)) {
+      class_i <- nClasses[i]
       y_temp <- ifelse(y == class_i, as.character(class_i), "All")
       list_y[[i]] <- as.vector(y_temp)
       list_X[[i]] <- X
     }
   }
-  # if we wish to focus on a subset
-  if(!is.null(ind.sub[[1]]))
-  {
-    for(j in 1:(length(list_X))){
-      # sanity check
-      if(any(is.na(match(ind.sub[[j]], seq_len(nrow(list_X[[j]]))))))
-      {
+
+  # If we want to focus on a subset of data
+  if (!is.null(ind.sub[[1]])) {
+    for (j in 1:length(list_X)) {
+      if (any(is.na(match(ind.sub[[j]], seq_len(nrow(list_X[[j]])))))) {
         stop("generateAllSingleFeatureModel_ovo: index does not match with X")
       }
     }
-
-  }else
-  {
-    # otherwise take all
-    ind.sub <- seq_len(nrow(X))
+  } else {
+    ind.sub <- seq_len(nrow(X))  # Otherwise, take all
   }
 
-  # if we want to generate all the models
-  if(clf$params$testAllSigns)
-  {
+  # Generate models based on the sign of the coefficients
+  if (clf$params$testAllSigns) {
     listOfVecPos <- as.list(ind.sub)
     clfPos <- clf
-    clf$coeffs <- abs(clf$coeffs)
-    popPos <- listOfSparseVecToListOfModels_mc(X, y, clfPos, v = listOfVecPos,approch = approch)
+    clfPos$coeffs <- abs(clfPos$coeffs)
+    popPos <- listOfSparseVecToListOfModels_mc(X, y, clfPos, v = listOfVecPos, approch = approch)
 
     listOfVecNeg <- as.list(ind.sub)
     clfNeg <- clf
-    clf$coeffs <- -abs(clf$coeffs)
-    popNeg <- listOfSparseVecToListOfModels_mc(X, y, clgNeg, v = listOfVecNeg, approch = approch)
+    clfNeg$coeffs <- -abs(clfNeg$coeffs)
+    popNeg <- listOfSparseVecToListOfModels_mc(X, y, clfNeg, v = listOfVecNeg, approch = approch)
 
     pop <- c(popPos, popNeg)
-
-  } else
-  {
+  } else {
     listOfVec <- as.list(ind.sub)
     pop <- listOfSparseVecToListOfModels_mc(X, y, clf, v = listOfVec, approch = approch)
   }
 
-  # return the population
+  # Return the population of models
   return(pop)
 }
+
 
 
 
@@ -227,3 +220,6 @@ getFeatures2Keep_mc <- function(clf, featuresApperance, threshold = 0.01,approch
 
   return(tokeep)
 }
+
+
+
