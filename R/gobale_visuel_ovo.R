@@ -574,48 +574,52 @@ plotModel_mc <- function(mod, X, y,
 #' Analyze the results from a list of classifiers
 #'
 #' @description Analyze the results from a list of classifiers.
-#' @param scores: a list where each element is a vector of scores from a given model
+#' @param scores: a list where each element is a vector of scores from a given models
 #' @param y: the class to be predicted
 #' @param main: title of the graph
 #' @param ci: the point shape for the graph
 #' @param percent: color for the graph
 #' @return a list of roc objects
 #' @export
-plotAUC_mc <- function(scores, y, main="", ci = TRUE, percent = TRUE, approch = "ova")
-{
-  require(pROC)
+plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
 
-  # Initialize an empty list to store ROC objects
-  roc_objects <- list()
+  nClasse <- unique(y)
+  list_y <- list()
+  list_plo <- list()
+  list_scores <- list()
 
-  # Create a plot with appropriate title
-  plot(NULL, xlim=c(0, 100), ylim=c(0, 100), xlab="False Positive Rate", ylab="True Positive Rate", main=main, type="n")
+  list_scores <- scores
 
-  # Loop through each set of scores
-  for (i in seq_along(scores)) {
-    score <- scores[[i]]
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(nClasse) - 1)) {
+      for (j in (i + 1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
 
-    # Calculate ROC object
-    rocobj <- roc(response = y, predictor = score, percent = percent, ci = ci, of = "se", sp = seq(0, 100, 5))
-    roc_objects[[i]] <- rocobj
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        list_y[[k]] <- as.vector(y_pair)
+        k <- k + 1
+      }
+    }
 
-    # Plot ROC curve
-    plot(rocobj, add=TRUE, col=i)
+  } else {
+    for (i in 1:length(nClasse)) {
+      class_i <- nClasse[i]
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+      list_y[[i]] <- as.vector(y_temp)
+
+    }
   }
 
-  # Add legend
-  legend("bottomright", legend = paste("Model", seq_along(scores)), col = seq_along(scores), lty = 1)
-
-  # Add information on the threshold for each model
-  for (i in seq_along(roc_objects)) {
-    rocobj2 <- roc_objects[[i]]
-    resa <- coords(rocobj2, x = "best", input = "threshold", best.method = "youden")
-    abline(v=resa[2], col="red", lty=2)
-    abline(h=resa[3], col="red", lty=2)
+  for (i in 1:length(list_y)) {
+    list_plo[[i]] <- plotAUC(score = list_scores[[i]], y = list_y[[i]], percent = TRUE)
   }
 
-  return(roc_objects)
+  return(list_plo)
 }
+
 
 
 
