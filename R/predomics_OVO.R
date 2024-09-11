@@ -1029,7 +1029,6 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
         mod               <- res_train.digest$best_models[[k_sparse.name]]
         # update the final indexes as the input X
         mod               <- updateObjectIndex_mc(obj = mod, features = rownames(X))
-        #mod.train         <- evaluateModel(mod = mod, X=x_train, y=y_train, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, mode='train')
         mod.train         <- mod # since this is the same as computed above
         mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test', aggregation_ = aggregation_)
 

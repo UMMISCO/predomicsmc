@@ -84,7 +84,7 @@ generateAllSingleFeatureModel_mc <- function(X, y, clf, ind.sub = NULL, eval.all
 #'
 #' @title generateAllCombinations
 #' @importFrom  gtools combinations
-generateAllCombinations_mc <- function(X, y, clf, ind.features.to.keep, sparsity, allFeatures,approch=approch)
+generateAllCombinations_mc <- function(X, y, clf, ind.features.to.keep, sparsity, allFeatures,approch="ovo")
 {
   # Generate a matrix containing every combination of size sparsity of the
   # features contained in ind.features.to.keep
@@ -141,7 +141,7 @@ generateAllCombinations_mc <- function(X, y, clf, ind.features.to.keep, sparsity
 }
 
 
-countEachFeatureApperance_mc <- function(clf, allFeatures, pop, best, veryBest,approch = approch)
+countEachFeatureApperance_mc <- function(clf, allFeatures, pop, best, veryBest,approch = "ovo")
 {
   if(!isPopulation(pop))
   {
@@ -181,7 +181,7 @@ countEachFeatureApperance_mc <- function(clf, allFeatures, pop, best, veryBest,a
 }
 
 
-getFeatures2Keep_mc <- function(clf, featuresApperance, threshold = 0.01,approch=approch)
+getFeatures2Keep_mc <- function(clf, featuresApperance, threshold = 0.01,approch = "ovo")
 {
   # added threshold as the minimum percentage of models where a feature apprers in the best models
   if(is.null(featuresApperance))

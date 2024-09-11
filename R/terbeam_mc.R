@@ -19,7 +19,7 @@
 
 #' terbeam: ternary beam searching algorithm
 #'
-#' @title terbeam_ova
+#' @title terbeam_mc
 #' @description one versus one terbeam is a model search algorithm on a beam search approach.
 #' @param sparsity: number of features in a given model. This is a vector with multiple lengths.
 #' @param maxNbOfModels: number of models to be explored for a given k_sparsity. This is equivalent to a population size in terga.

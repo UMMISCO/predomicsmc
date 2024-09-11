@@ -36,13 +36,7 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
   list_matrices <- mod$confusionMatrix_
   list_accura <- list()
   accura <- mod$accuracy
- # for(i in 1: length(list_matrices)){
-   # list_accura[[i]] =  sum(diag(list_matrices[[i]])) / sum(list_matrices[[i]])
- # }
-
-
   for(km in 1:length(listindices)){
-
     mod$indices_ <- listindices[[km]]
     mod$names_ <- listnames[[km]]
     mod$coeffs_ <- listcoeffs[[km]]
@@ -51,7 +45,6 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
     mod$pos_score_ <- listpos[[km]]
     mod$neg_score_ <- listneg[[km]]
     mod$intercept_ <- list_intercept[[km]]
-    ###mod$fit_ <- list_accura[[km]]
     mod$fit_ <- accura
 
     switch(method,
@@ -405,8 +398,6 @@ printClassifier_mc <- function(obj, indent="\t--- ")
 }
 
 
-
-
 #' Prints as text the detail on a given object from the predomics package.
 #'
 #' @description This function will summarize any of the predomics package objects such as can be an Experiment,
@@ -466,7 +457,6 @@ printy_mc <- function(obj)
   )
 
 }
-
 
 ################################################################
 # Multi-class Model Plots for Predomics
@@ -650,26 +640,6 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
   return(list_plo)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #' Plots the prevalence of a list of features in the whole dataset and per each class
 #'
 #' @description Plots the abundance of a given number of features for each class and tests significance
@@ -735,7 +705,6 @@ plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE,
 
   return(list_plot)  # Retourne la liste des graphiques
 }
-
 
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class

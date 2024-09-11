@@ -743,25 +743,10 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
         pos_score_ = mod$pos_score_[[i]],
         neg_score_ = mod$neg_score_[[i]],
         confusionMatrix_ = mod$confusionMatrix_[[i]]
-
-
       )
     }
     mod.res = list_mod
   }
-  #
-  # # DON'T EVALUATE RATIO, TER and TERINTER MODELS WITHOUT NEGATIVE AND POSITIVE TERMS
-  # for(i in 1:length(mod.res)){
-  #   if(!isModelSota(mod.res[[i]]))
-  #   {
-  #     # at this stage the model should be a valid one. If not return NULL
-  #     if(!isModel(mod.res[[i]]))
-  #     {
-  #       if(clf$params$warnings) warning("evaluateModel: the model to be evaluated does not exist and at this stage it should be one, returning NULL.")
-  #       return(NULL)
-  #     }
-  #   }
-  # }
 
   # make a copy of the model object
   if(mode == "train")
@@ -816,10 +801,6 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
       }
     }
   }
-
-
-
-
   for(i in 1:length(list_y)){
     # If sparsity is not the same
     if(mod.res[[i]]$eval.sparsity != length(unique(mod.res[[i]]$indices_)))
@@ -832,8 +813,6 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
       mod.res[[i]]$eval.sparsity <- length(unique(mod.res[[i]]$indices_))
     }
   }
-
-
   # first evaluate the fit
   mod.res <- evaluateFit_mc(mod = mod.res, X=X, y=y, clf=clf, force.re.evaluation = force.re.evaluation,approch = approch, mode = mode)
 
@@ -848,7 +827,6 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
         return(NULL)
       }
     }
-
     mod.res  <- evaluateAdditionnalMetrics_mc(mod = mod.res, X = X, y = y, clf = clf, approch = approch, mode = mode)
     for(i in 1:length(mod.res)){
       if(!isModel(mod.res[[i]]))
@@ -891,8 +869,8 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
 }
 
 
-#' evaluate Model multi class
-#' @title evaluateModel_mc
+#' evaluate Population multi class
+#' @title evaluatePopulation_mc
 #' @description Evaluates an entire population of models, that be predomics objects or individuals
 #' @import foreach
 #' @title evaluatePopulation
@@ -1079,7 +1057,6 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
   pop <- list()
   pop = list_pop
 
-
   return(pop)
 }
 
@@ -1108,7 +1085,6 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
 #' @param verbose: wether to print out information during the execution process.
 #' @return a data.frame with features in rows and the population mean/median score for each model*seed of the population
 #' @export
-
 evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
                                                      seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE, aggregation_ = "votingAggregation")
 {
@@ -1441,11 +1417,6 @@ modelToDenseVec_mc <- function(natts, mod)
 }
 
 
-
-
-
-
-
 #' Builds a list of dense vector coefficients from a list of models
 #'
 #' @param clf: classifier
@@ -1486,7 +1457,6 @@ listOfModelsToDenseCoefMatrix_mc <- function(clf, X, y, list.models, rm.empty = 
   {
     stop("listOfModelsToDenseCoefMatrix: please provide a valid population of models")
   }
-
 
   # Transform the model objects into dense vectors
   pop.dense <- listOfModelsToListOfDenseVec_mc(clf = clf, X=X, y=y, list.models = list.models)
@@ -1752,329 +1722,6 @@ computeCardEnrichment_mc <- function(v.card.mat, y)
   return(res)
 }
 
-#' Plots the prevalence of a list of features in the whole dataset and per each class
-#'
-#' @description Plots the prevalence of a given number of features
-#' @param features: a list of features or features indexes for which we wish to compute prevalence
-#' @param X: dataset where to compute the prevalence
-#' @param y: if provided it will also compute hte prevalence per each class (default:NULL)
-#' @param topdown: showing features from top-down or the other way around (default:TRUE)
-#' @param main: main title (default:none)
-#' @param plot: if TRUE this provides a plot, otherwise will return different metrics such as prevalence and enrichment statistics
-#' @param col.pt: colors for the point border (-1:deepskyblue4, 1:firebrick4)
-#' @param col.bg: colors for the point fill (-1:deepskyblue1, 1:firebrick1)
-#' @param zero.value: the value that specifies what is zero. This can be a different than 0 in log transformed data for instance (default = 0)
-#' @return a ggplot object
-#' @export
-plotPrevalence_mc <- function(features, X, y, topdown = TRUE, main = "", plot = TRUE,
-                              col.pt = c("deepskyblue4", "firebrick4"),
-                              col.bg = c("deepskyblue1", "firebrick1"),
-                              zero.value = 0)
-{
-  # build object
-  v.prop <- getFeaturePrevalence_ovo(features = features, X = X, y = y, prop = TRUE, zero.value = zero.value)
-  v.card <- getFeaturePrevalence_ovo(features = features, X = X, y = y, prop = FALSE, zero.value = zero.value)
-  v.prop.mat <- do.call(rbind, v.prop)
-  v.card.mat <- do.call(rbind, v.card)
-  # build melted version
-  v.prop.melt <- meltScoreList_ovo(v = v.prop, prepare.for.graph = FALSE, topdown = topdown)
-  colnames(v.prop.melt) <- c("feature","prevalence", "group")
-
-  # convert to percentage
-  v.prop.melt$prevalence <- v.prop.melt$prevalence *100
-
-  # get enrichment information
-  prev.enrichment <- computeCardEnrichment_ovo(v.card.mat = v.card.mat, y = y)
-  if(!is.null(prev.enrichment$chisq.q))
-  {
-    qvals <- rep("",length(prev.enrichment$chisq.q))
-    qvals[prev.enrichment$chisq.q<0.05] <- "*"
-
-    # plot object
-    p <- ggplot(v.prop.melt, aes(x=feature, y=prevalence, fill=group)) +
-      geom_bar(data=subset(v.prop.melt, group %in% c("all")), stat="identity", position="identity") +
-      coord_flip() +
-      geom_point(data = subset(v.prop.melt, group %in% c("-1", "1")), aes(x=feature, y=prevalence, color=group, shape=group)) +
-      scale_color_manual("Dataset", values = c("all"="gray90", "-1"=col.pt[1], "1"=col.pt[2])) +
-      scale_fill_manual("Dataset", values = c("all"="gray90", "-1"=col.bg[1], "1"=col.bg[2])) +
-      scale_shape_manual(values=c(25,24)) +
-      theme_bw() +
-      theme(legend.position="none", axis.text=element_text(size=9)) +
-      ggtitle(main)
-
-    if(topdown){
-      p <- p +  annotate("text", y = rep(101,length(qvals)), x = seq(1,length(qvals),1)-0.3, label = rev(qvals), color="gray", size=7)
-    }else{
-      p <- p +  annotate("text", y = rep(101,length(qvals)), x = seq(1,length(qvals),1)-0.3, label = qvals, color="gray", size=7)
-    }
-
-  }else
-  {
-    # plot object
-    p <- ggplot(v.prop.melt, aes(x=feature, y=prevalence, fill=group)) +
-      geom_bar(data=subset(v.prop.melt, group %in% c("all")), stat="identity", position="identity") +
-      coord_flip() +
-      scale_color_manual("Dataset", values = c("all"="gray90")) +
-      scale_fill_manual("Dataset", values = c("all"="gray90")) +
-      theme_bw() +
-      theme(legend.position="none", axis.text=element_text(size=9)) +
-      ggtitle(main)
-  }
-
-  if(!plot)
-  {
-    return(prev.enrichment)
-  }else
-  {
-    return(p)
-  }
-}
-
-
-#' Plots the prevalence of a list of features in the whole dataset and per each class
-#'
-#' @description Plots the abundance of a given number of features for each class and tests significance
-#' @import reshape2
-#' @param features: a list of features or features indexes for which we wish to compute prevalence
-#' @param X: dataset where to compute the prevalence
-#' @param y: if provided it will also compute hte prevalence per each class (default:NULL)
-#' @param topdown: showing features from top-down or the other way around (default:TRUE)
-#' @param main: main title (default:none)
-#' @param plot: if TRUE this provides a plot, otherwise will return different metrics such as prevalence and enrichment statistics
-#' @param col.pt: colors for the point border (-1:deepskyblue4, 1:firebrick4)
-#' @param col.bg: colors for the point fill (-1:deepskyblue1, 1:firebrick1)
-#' @return a ggplot object
-#' @export
-plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE, main = "", plot = TRUE, approch = "ovo",col.pt = c("deepskyblue4", "firebrick4"), col.bg = c("deepskyblue1", "firebrick1"))
-{
-
-  if(any(is.na(match(features, rownames(X)))))
-  {
-    stop(paste("plotAbundanceByClass: These features are not found in the dataset",
-               features[is.na(match(features, rownames(X)))]))
-  }
-
-
-  nClasse <- unique(y)
-  feature.cor   <- list()
-  list_y <- list()
-  list_X <- list()
-  list_dat.test <- list()
-  list_p <- list()
-
-
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
-  for (ik in 1:(length(list_y))) {
-
-    X = list_X[[ik]]
-    y = list_y[[ik]]
-    if(!is.matrix(X))
-    {
-      X <- as.matrix(X)
-    }
-    mode <- "classification"
-    if(class(y) == "numeric" & length(table(y)) > 2)
-    {
-      #cat("... plotAbundanceByClass will not work for a continous y - probably in regression mode. Adapting as a uniclass\n")
-      mode <- "regression"
-    }
-  }
-  if(mode == "classification")
-  {
-    for (ib in 1:(length(list_y))) {
-
-      X = list_X[[ib]]
-      y = list_y[[ib]]
-
-      # get levels
-      lev <- names(table(y))
-
-      # compute p-value of the non parametric abundance test
-      if(length(features) == 1)
-      {
-        dat <- t(as.matrix(X[features, ]))
-        rownames(dat) <- features
-        datl1 <- t(as.matrix(X[features, y == lev[1]]))
-        rownames(datl1) <- features
-        datl2 <- t(as.matrix(X[features, y == lev[2]]))
-        rownames(datl2) <- features
-      }else
-      {
-        dat <- X[features, ]
-        datl1 <- X[features, y == lev[1]]
-        datl2 <- X[features, y == lev[2]]
-        if(ncol(X) == 1)
-        {
-          dat <- as.matrix(dat)
-          datl1 <- as.matrix(datl1)
-          datl2 <- as.matrix(datl2)
-        }
-      }
-
-      dat.test <- filterfeaturesK(dat, y, k = nrow(dat), sort = FALSE)
-
-      if(plot)
-      {
-        pvals <- dat.test$p
-        qvals <- rep("",nrow(dat.test))
-        qvals[dat.test$q<0.05] <- "*"
-
-        datl1.reshape <- melt(datl1)
-        colnames(datl1.reshape) <- c("feature","observation","abundance")
-        datl1.reshape$class <- rep(lev[1], nrow(datl1.reshape))
-
-        datl2.reshape <- melt(datl2)
-        colnames(datl2.reshape) <- c("feature","observation","abundance")
-        datl2.reshape$class <- rep(lev[2], nrow(datl2.reshape))
-
-        dat.reshape <- as.data.frame(t(data.frame(t(datl1.reshape), t(datl2.reshape))))
-        dat.reshape$abundance <- as.numeric(as.character(dat.reshape$abundance))
-
-        # fix factor level order
-        if(topdown)
-        {
-          # use the same factor levels as features
-          dat.reshape$feature <- factor(dat.reshape$feature, levels=rev(features))
-        }else
-        {
-          # use the same factor levels as features
-          dat.reshape$feature <- factor(dat.reshape$feature, levels=features)
-        }
-
-        # plot object
-        p <- ggplot(dat.reshape, aes(x=feature, y = abundance, fill=class, color=class)) +
-          geom_boxplot() +
-          #scale_x_continuous(limits = range(dat.reshape$abundance)) +
-          coord_flip() +
-          #facet_grid(. ~ class) +
-          theme_bw() +
-          scale_color_manual(values = col.pt) +
-          scale_fill_manual(values = col.bg) +
-          theme(legend.position="none") +
-          ggtitle(main)
-
-        pad <- max(dat.reshape$abundance) + max(dat.reshape$abundance)*0.1
-
-        if(topdown){
-          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = rev(qvals), color="gray", size=7)
-        }else{
-          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = qvals, color="gray", size=7)
-        }
-        list_p[[ib]] = p
-        return(list_p)
-      }else
-      {
-        list_dat.test[[ib]] = data.test
-        return(list_dat.test)
-      }
-
-    }
-
-  }else # mode regression
-  {
-
-    for (m in 1:(length(list_y))) {
-
-      X = list_X[[m]]
-      y = list_y[[m]]
-
-
-      # get levels
-
-      # compute p-value of the non parametric abundance test
-      if(length(features) == 1)
-      {
-        dat <- t(as.matrix(X[features, ]))
-        rownames(dat) <- features
-      }else
-      {
-        dat <- X[features, ]
-        if(ncol(X) == 1)
-        {
-          dat <- as.matrix(dat)
-        }
-      }
-
-      # we can still correlate and compute p-values
-      dat.test <- filterfeaturesK(dat, y, k = nrow(dat), sort = FALSE)
-
-      if(plot)
-      {
-        pvals <- dat.test$p
-        qvals <- rep("",nrow(dat.test))
-        qvals[dat.test$q<0.05] <- "*"
-
-        dat.reshape <- melt(dat)
-        colnames(dat.reshape) <- c("feature","observation","abundance")
-        dat.reshape$class <- rep("all", nrow(dat.reshape))
-
-        # fix factor level order
-        if(topdown)
-        {
-          # use the same factor levels as features
-          dat.reshape$feature <- factor(dat.reshape$feature, levels=rev(features))
-        }else
-        {
-          # use the same factor levels as features
-          dat.reshape$feature <- factor(dat.reshape$feature, levels=features)
-        }
-
-        # plot object
-        p <- ggplot(dat.reshape, aes(x=feature, y = abundance, fill=class, color=class)) +
-          geom_boxplot() +
-          #scale_x_continuous(limits = range(dat.reshape$abundance)) +
-          coord_flip() +
-          #facet_grid(. ~ class) +
-          theme_bw() +
-          scale_color_manual(values = "gray40") +
-          scale_fill_manual(values = "gray80") +
-          theme(legend.position="none") +
-          ggtitle(main)
-
-        pad <- max(dat.reshape$abundance) + max(dat.reshape$abundance)*0.1
-
-        if(topdown){
-          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = rev(qvals), color="gray", size=7)
-        }else{
-          p <- p +  annotate("text", y = rep(pad,length(qvals)), x = seq(1,length(qvals),1) - 0.3, label = qvals, color="gray", size=7)
-        }
-
-        list_p[[ik]] = p
-
-        return(list_p)
-      }else
-      {
-        list_dat.test[[m]] = data.test
-        return(list_dat.test)
-      }
-    }
-  }
-
-}
-
 
 #' Prints as text the detail on a given experiment along with summarized results (if computed)
 #'
@@ -2159,8 +1806,6 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo")
   }
 
   return(listfa)
-
-
 }
 
 
@@ -2624,8 +2269,6 @@ computeConfusionMatrix <- function(mod, X, y, clf)
 }
 
 
-
-
 #' updateObjectIndex
 #'
 #' @description Update the index of a model, population, or modelCollection.
@@ -2706,10 +2349,6 @@ updateModelIndex_mc <- function(obj, features = NULL)
   }
   return(obj)
 }
-
-
-
-
 
 ################################################################
 # DIGESTING RESULTS
@@ -4013,60 +3652,7 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
 evaluatesBestsModelsTest <- function(experiences, approch = "ovo", aggregation_ = "votingAggregation", clf = clf, y = y, X = X) {
 
   bests_models_test <- list()
-
-  clf$data          <- list()
-  list_features <- list()
-  clf$data$features <- list_features
-  names(clf$data$features) <- clf$data$features
-  list_XX <- list() # List of X combinations
-  list_min <- list() # List min of X
-  list_max <- list() # List max of X
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  nClasse <- unique(y)
-  feature.cor   <- list() # List of different combinations of feature.cor
-  list_y <- list() #  List of different combinations of y
-  list_X <- list() #  List of different combinations of X
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-  max.nb.features <-  nrow(X)
-
-  for (i in 1:(length(list_X))) {
-    Xi <- list_X[[i]][rownames(clf$feature.cor[[i]])[1:max.nb.features],]
-    mino <- min(Xi, na.rm=TRUE)
-    maxo <- max(Xi, na.rm=TRUE)
-    list_XX[[i]] <- Xi
-    list_min[[i]] <-  mino
-    list_max[[i]] <-  maxo
-  }
-  clf$data$X        <- list_XX
-  clf$data$X.min    <- list_min
-  clf$data$X.max    <- list_max
-  clf$data$y        <- list_y
-
-  # compute the coefficients once for all to improve performance
-  cat("... Computing ternary coefficients for speedup\n")
-  coeffs          <- getSign_mc(X = X, y = y, clf = clf, approch = approch, parallel.local = FALSE)
-  clf$coeffs_     <- coeffs # add them to the clf
+  clf <- regenerate_clf(clf, X, y, approch = approch)
   for (j in 1:length(experiences$classifier$models)) {
 
     lst_mod <- experiences$classifier$models[[j]]
@@ -4097,8 +3683,6 @@ evaluatesBestsModelsTest <- function(experiences, approch = "ovo", aggregation_ 
 
   return(bests_models_test)
 }
-
-
 
 
 #' Regenerate the `clf` object with updated data and coefficients.
