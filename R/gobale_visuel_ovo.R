@@ -582,7 +582,6 @@ plotModel_mc <- function(mod, X, y,
 #' @return a list of roc objects
 #' @export
 plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
-
   nClasse <- unique(y)
   list_y <- list()
   list_plo <- list()
@@ -597,9 +596,22 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
         class_i <- nClasse[i]
         class_j <- nClasse[j]
 
+        # Select the indices of classes i and j
         indices <- which(y == class_i | y == class_j)
         y_pair <- y[indices]
+        # Fill with random values if necessary
+        if (length(y_pair) < length(scores[[k]])) {
+          missing_len <- length(scores[[k]]) - length(y_pair)
+
+          # Add random values from y and X
+          y_random <- sample(y_pair, missing_len, replace = TRUE)
+          # Combine existing data with random values
+          y_pair <- c(y_pair, y_random)
+        }
+
+        # Store results in lists
         list_y[[k]] <- as.vector(y_pair)
+
         k <- k + 1
       }
     }
@@ -607,18 +619,53 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
   } else {
     for (i in 1:length(nClasse)) {
       class_i <- nClasse[i]
+
+      # Create a new variable y_temp with "class_i" vs "All"
       y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+
+      # Fill with random values if necessary
+      if (length(y_temp) < length(scores[[i]])) {
+        missing_len <- length(scores[[i]]) - length(y_temp)
+
+        # Add random values from y and X
+        y_random <- sample(y_temp, missing_len, replace = TRUE)
+
+
+        # Combine existing data with random values
+        y_temp <- c(y_temp, y_random)
+
+      }
+
+      # Store in lists
       list_y[[i]] <- as.vector(y_temp)
 
     }
   }
 
+  # Loop to generate plots for each class combination
   for (i in 1:length(list_y)) {
     list_plo[[i]] <- plotAUC(score = list_scores[[i]], y = list_y[[i]], percent = TRUE)
   }
 
   return(list_plo)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
