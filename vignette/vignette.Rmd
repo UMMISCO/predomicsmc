@@ -116,8 +116,8 @@ clf <- terBeam_mc(sparsity = c(2,3,4),
 runit = TRUE
 if(runit)
 {
-tMulti_Predomics_aggregation_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ovo", nfolds= 1); 
-  #save(Multi_Predomics_aggregation_ovo , clf, file ="Multi_Predomics_aggregation_ovo.rda", compression_level = 9)
+res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ova", nfolds= 10); 
+  save(res_clf , clf, file ="res_clf.rda", compression_level = 9)
 }
 
 # ... Database X is not a matrix! Converting ...
@@ -152,18 +152,20 @@ tMulti_Predomics_aggregation_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo"
 # Load the results of the one-versus-one training.
 
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-load("Unique_Predomics_aggregation_ova.rda")
-load("Unique_Predomics_aggregation_ovo.rda")
-load("Unique_votingAggregation.rda")
-load("Unique_maximizationAggregation.rda")
-load("Unique_rankingAggregation.rda")
-load("Unique_weightedAggregation.rda")
-load("Multi_Predomics_aggregation_ova.rda")
-load("Multi_maximizationAggregation.rda")
-load("Multi_rankingAggregation.rda")
-load("Multi_weightedAggregation.rda")
-load("Multi_votingAggregation.rda")
-load("Multi_Predomics_aggregation_ovo.rda")
+#load("Unique_Predomics_aggregation_ova.rda")
+#load("Unique_Predomics_aggregation_ovo.rda")
+#load("Unique_votingAggregation.rda")
+#load("Unique_maximizationAggregation.rda")
+#load("Unique_rankingAggregation.rda")
+#load("Unique_weightedAggregation.rda")
+#load("Multi_Predomics_aggregation_ova.rda")
+#load("Multi_maximizationAggregation.rda")
+#load("Multi_rankingAggregation.rda")
+#load("Multi_weightedAggregation.rda")
+#load("Multi_votingAggregation.rda")
+#load("Multi_Predomics_aggregation_ovo.rda")
+load("res_clf.rda")
+
 ```
 
 
@@ -173,7 +175,7 @@ load("Multi_Predomics_aggregation_ovo.rda")
 
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig <- digestmc(obj =Unique_Predomics_aggregation_ova , penalty = 0.75/100, plot = TRUE)
+res_clf.dig <- digestmc(obj =res_clf, penalty = 0.75/100, plot = TRUE)
 ```
 ## Visualizing the best model
 
@@ -273,7 +275,7 @@ ggplot(roc_df, aes(x = FPR, y = TPR, color = Dataset)) +
 
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(Unique_Predomics_aggregation_ova$classifier$models)
+pop <- modelCollectionToPopulation(res_clf$classifier$models)
 printy_mc(pop)
 
 # Convert the population to a data frame
@@ -354,11 +356,17 @@ for (i in 1:length(fa)) {
 ```
 
 
+
+
+
+
+
+
 # Use of specific variables for each of our sub-models
 ## Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig_multi <- digestmc(obj = Multi_Predomics_aggregation_ovo , penalty = 0.75/100, plot = TRUE)
+res_clf.dig_multi <- digestmc(obj = Multi_Predomics_Aggregation_ova , penalty = 0.75/100, plot = TRUE)
 ```
 
 
@@ -368,8 +376,8 @@ res_clf.dig_multi <- digestmc(obj = Multi_Predomics_aggregation_ovo , penalty = 
 best.model_multi <- res_clf.dig_multi$best$model
 printy_mc(best.model_multi)
 
-plots11 <- plotModel_mc(best.model_multi, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ovo")
-plots22 <- plotModel_mc(best.model_multi, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
+plots11 <- plotModel_mc(best.model_multi, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
+plots22 <- plotModel_mc(best.model_multi, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
 
 # Extract the plots from each list and pass them to `grid.arrange
 grid.arrange(grobs = c(plots11, plots22), ncol = 2)
@@ -377,7 +385,7 @@ grid.arrange(grobs = c(plots11, plots22), ncol = 2)
 
 ## Regenerate the clf object
 ```{r warning=FALSE}
-clf <- regenerate_clf(clf, X, y, approch = "ovo")
+clf <- regenerate_clf(clf, X, y, approch = "ova")
 ```
 
 ## Testing the model in another dataset
@@ -390,8 +398,8 @@ clf <- regenerate_clf(clf, X, y, approch = "ovo")
     clf = clf,
     eval.all = TRUE,
     force.re.evaluation = TRUE,
-    approch = "ovo",
-    aggregation_ = "Predomics_aggregation_ovo",
+    approch = "ova",
+    aggregation_ = "Predomics_aggregation_ova",
     mode = "test"
   )
 printy_mc(best.model.test_multi)
@@ -401,7 +409,7 @@ printy_mc(best.model.test_multi)
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(pROC)
 library(ggplot2)
-tmp <- plotAUC_mc(best.model_multi$score_, y, percent = TRUE, approch = "ovo"); rm(tmp)
+tmp <- plotAUC_mc(best.model_multi$score_, y, percent = TRUE, approch = "ova"); rm(tmp)
 # Create ROC objects for the training set
 roc_objects_train <- lapply(best.model_multi$score_, function(score) {
   roc(response = y, predictor = score)
@@ -451,7 +459,7 @@ ggplot(roc_df, aes(x = FPR, y = TPR, color = Dataset)) +
 ## Family of Best Models (FBM)
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(Multi_Predomics_aggregation_ovo$classifier$models)
+pop <- modelCollectionToPopulation(Multi_Predomics_Aggregation_ova$classifier$models)
 printy_mc(pop)
 
 # Convert the population to a data frame
@@ -508,7 +516,7 @@ for(j in 1:length(fbm.df)) {
 }
 
 # Arrange the plots side by side
-grid.arrange(g.before[[2]], g.after[[2]], ncol = 2)
+grid.arrange(g.before[[1]], g.after[[1]], ncol = 2)
 ```
 
 ## Analyzing the FBM 
@@ -518,7 +526,7 @@ fa <- makeFeatureAnnot_mc(pop = fbm,
                        X = X, 
                        y = y, 
                        clf = clf,
-                       approch = "ovo")
+                       approch = "ova")
 dim(fa[[1]]$pop.noz)
 for (i in 1:length(fa)) {
 
@@ -526,8 +534,8 @@ for (i in 1:length(fa)) {
   
   print(g)
 }
-(g2 <- plotAbundanceByClass_mc(features = fa, X = X, y = y, approch = "ovo"))
-(g3 <- plotPrevalence_mc(features = fa, X = X, y = y , approch = "ovo"))
+(g2 <- plotAbundanceByClass_mc(features = fa, X = X, y = y, approch = "ova"))
+(g3 <- plotPrevalence_mc(features = fa, X = X, y = y , approch = "ova"))
 ```
 
 
