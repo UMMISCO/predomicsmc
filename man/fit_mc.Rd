@@ -15,8 +15,8 @@ fit_mc(
   compute.importance = TRUE,
   return.all = FALSE,
   log.file = "parallel.log",
-  approch = "ovo",
-  aggregation_ = "votingAggregation",
+  approch = "ova",
+  aggregation_ = "Predomics_aggregation_ova",
   path = NULL
 )
 }

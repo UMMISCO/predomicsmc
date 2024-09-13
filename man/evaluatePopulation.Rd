@@ -3,7 +3,7 @@
 \name{evaluatePopulation}
 \alias{evaluatePopulation}
 \alias{evaluatePopulation_mc}
-\title{evaluateModel_mc}
+\title{evaluatePopulation_mc}
 \usage{
 evaluatePopulation_mc(
   X,
@@ -49,5 +49,5 @@ an individual ovo object
 Evaluates an entire population of models, that be predomics objects or individuals
 }
 \details{
-evaluate Model multi class
+evaluate Population multi class
 }

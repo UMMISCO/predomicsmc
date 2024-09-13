@@ -164,7 +164,7 @@ res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,a
 #load("Multi_weightedAggregation.rda")
 #load("Multi_votingAggregation.rda")
 #load("Multi_Predomics_aggregation_ovo.rda")
-load("res_clf.rda")
+#load("res_clf.rda")
 
 ```
 
@@ -175,7 +175,7 @@ load("res_clf.rda")
 
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig <- digestmc(obj =res_clf, penalty = 0.75/100, plot = TRUE)
+res_clf.dig <- digestmc(obj = res_clf, penalty = 0.75/100, plot = TRUE)
 ```
 ## Visualizing the best model
 
@@ -1160,7 +1160,7 @@ Retour du modèle : Le modèle avec les prédictions agrégées est renvoyé.
 Cette méthode garantit que les prédictions sont basées sur une majorité, tout en utilisant les scores pour résoudre les égalités de manière judicieuse.
 
 ```{r}
-pop <- modelCollectionToPopulation(res_clf$classifier$models)
+pop <- "p"
 ```
 
 

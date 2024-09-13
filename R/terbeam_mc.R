@@ -19,7 +19,7 @@
 
 #' terbeam: ternary beam searching algorithm
 #'
-#' @title terbeam_mc
+#' @title terbeam_ova
 #' @description one versus one terbeam is a model search algorithm on a beam search approach.
 #' @param sparsity: number of features in a given model. This is a vector with multiple lengths.
 #' @param maxNbOfModels: number of models to be explored for a given k_sparsity. This is equivalent to a population size in terga.
@@ -143,92 +143,96 @@ terBeam_mc <- function(sparsity = 1:5, max.nb.features = 1000,
   return(clf)
 }
 
-terBeam_fit_mc <- function(X, y, clf, approch = "ovo", aggregation_ = "votingAggregation") {
+
+terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggregation")
+{
   # Setting the language environment
   switch(clf$params$language,
-         ter = {
-           # Ternary language without intercept (maximize the AUC)
-           if(clf$params$verbose) {
-             print("Setting environment for the language 'ter'")
-           }
-           if(clf$params$objective == "cor") {
-             clf$params$evalToFit <- "cor_"
-           } else {
-             clf$params$intercept = 0
-             if(clf$params$evalToFit == "auc_") {
-               clf$params$evalToFit <- "accuracy_"
-               warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
+         ter=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'ter'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }else
+             {
+               # note that here with the ter language we could not use auc to fit since the intercept should be 0
+               clf$params$intercept = 0
+               if(clf$params$evalToFit == "auc_")
+               {
+                 clf$params$evalToFit <- "accuracy_"
+                 warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
+               }
              }
-           }
-         },
-         terinter = {
-           # Ternary language without intercept (maximize the accuracy)
-           if(clf$params$verbose) {
-             print("Setting environment for the language 'terinter'")
-           }
-           if(clf$params$objective == "cor") {
-             clf$params$evalToFit <- "cor_"
-           }
-         },
-         bin = {
-           # Binary language
-           if(clf$params$verbose) {
-             print("Setting environment for the language 'bin'")
-           }
-           if(clf$params$objective == "cor") {
-             clf$params$evalToFit <- "cor_"
-           } else {
-             clf$params$intercept = 0
-             if(clf$params$evalToFit == "auc_") {
-               clf$params$evalToFit <- "accuracy_"
-               warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
+           },
+         terinter=
+           {
+             # ternary language without intercept (maximize the accuracy)
+             if(clf$params$verbose){print("Setting environment for the language 'terinter'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
              }
-           }
-         },
-         bininter = {
-           # Binary language with interaction
-           if(clf$params$verbose) {
-             print("Setting environment for the language 'bininter'")
-           }
-           if(clf$params$objective == "cor") {
-             clf$params$evalToFit <- "cor_"
-           }
-         },
-         ratio = {
-           # Ratio language
-           if(clf$params$verbose) {
-             print("Setting environment for the language 'ratio'")
-           }
-           if(clf$params$objective == "cor") {
-             clf$params$evalToFit <- "cor_"
-           }
-         },
+           },
+         bin=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'bin'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }else
+             {
+               # note that here with the ter language we could not use auc to fit since the intercept should be 0
+               clf$params$intercept = 0
+               if(clf$params$evalToFit == "auc_")
+               {
+                 clf$params$evalToFit <- "accuracy_"
+                 warning("terga1_fit: changing evalToFit from auc_ to accuracy_ because of the language.")
+               }
+             }
+           },
+         bininter=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'bininter'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }
+           },
+         ratio=
+           {
+             # ternary language without intercept (maximize the auc)
+             if(clf$params$verbose){print("Setting environment for the language 'ratio'")}
+             if(clf$params$objective == "cor")
+             {
+               clf$params$evalToFit <- "cor_"
+             }
+           },
          {
-           stop(paste("The language", clf$params$language, "is not implemented!"))
+           stop(paste("The language",clf$params$language, "is not implemented !"))
          }
   )
 
-  if(clf$params$verbose) {
-    print("... ... parameters are checked and set")
-  }
-
+  if(clf$params$verbose) print(paste("... ... parameters are checked and set"))
   # Print the experiment configuration
-  if(clf$params$verbose) {
-    printClassifier(obj = clf)
-  }
+  if(clf$params$verbose) printClassifier(obj = clf)
+  # Rprof("Profiling_terbeam", line.profiling = TRUE)
 
-  # Store all the features to keep
+  # Rprof(NULL)
+  # summaryRprof("Profiling_terbeam", lines = "show")
+  # store all the features to keep
   features.to.keep <- allFeatures <- rownames(X)
   features.to.keep_ <- allFeatures <- rownames(X)
-
-  # Initialize containers
   fullPop <- list()
   res.mod.coll <- list()
   nb.selected.features <- list()
   nb.selected.features.pos <- list()
   nb.selected.features.neg <- list()
   listcoeff <- list()
-  features.pool <- list()
+  features.pool = list()
   features.pool.coeffs <- list()
   neg.ind <- list()
   pos.ind <- list()
@@ -239,186 +243,223 @@ terBeam_fit_mc <- function(X, y, clf, approch = "ovo", aggregation_ = "votingAgg
   list_features.to.keep <- list()
   l_features.to.keep <- list()
   feature.cor <- list()
-
-  feature.cor <- clf$feature.cor
-  clf$coeffss_ <- list()
+  feature.cor <-  clf$feature.cor
+  clf$coeffss_ <-  list()
   clf$coeffss_ = clf$coeffs_
   list_best <- list()
   list_veryBest <- list()
   list_pop <- list()
-  #kl = 0
-  # For each sparsity
-  for(k in clf$params$sparsity) {
-    if(k == 1) {
-      for(j in 1:(length(feature.cor))) {
+  kl = 0
+  #features.to.keep <- list()
+  # for each sparsity
+  for(k in clf$params$sparsity)
+  {
+    if(k == 1)
+    {
+      for(j in 1:(length(feature.cor))){
         # For k = 1 we generate every possible Model with only one feature
-        if(!is.null(clf$feature.cor[[1]])) {
-          # For ratio language, force to have the same number of negative and positive features selected
-          if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc") {
-            # Select the best features; no need to compute all
-            nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]), clf$params$maxNbOfModels)
-            nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]] / 2)
-
-            # Get the pool of features
+        if(!is.null(clf$feature.cor[[1]]))
+        {
+          # for the ration language, force to have the same number of negative and positive features selected
+          if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc")
+          {
+            # select the best features here no need to compute all
+            nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]),clf$params$maxNbOfModels)
+            nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]]/2)
+            # get the pool of features
             features.pool[[j]] <- as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)]
             coeffss = clf$coeffss_[[j]]
             features.pool_ = features.pool[[j]]
+            #features.pool_ = unlist(features.pool_)
             features.pool.coeffs[[j]] <- coeffss[features.pool_]
-
-            # Negative selection
+            # negative
             features.pool.coeffs_ = features.pool.coeffs[[j]]
             neg.ind[[j]] <- features.pool.coeffs_ == "-1" & !is.na(features.pool.coeffs_)
+            neg.ind_ = neg.ind[[j]]
             nb.selected.features.neg_ = nb.selected.features.neg[[j]]
             selected.features.neg[[j]] <- features.pool_[neg.ind_][1:min(sum(neg.ind_), nb.selected.features.neg_)]
-
-            # Positive selection
+            # positive
             pos.ind[[j]] <- features.pool.coeffs_ == "1" & !is.na(features.pool.coeffs_)
+            pos.ind_ = pos.ind[[j]]
             selected.features.pos[[j]] <- features.pool_[pos.ind_][1:min(sum(pos.ind_), nb.selected.features.neg_)]
-
-            selected.features[[j]] <- c(selected.features.neg[[j]], selected.features.pos[[j]])
-          } else {
+            selected.features.neg_ = selected.features.neg[[j]]
+            selected.features.pos_ = selected.features.pos[[j]]
+            selected.features[[j]] <- c(selected.features.neg_, selected.features.pos_)
+          }else
+          {
             nb.selected.features[[j]] <- min(nrow(clf$feature.cor[[j]]), clf$params$maxNbOfModels)
+            # get the pool of features
             features.pool[[j]] <- rownames(clf$feature.cor[[j]])[order(clf$feature.cor[[j]]$p)]
-            selected.features[[j]] <- features.pool_[1:nb.selected.features[[j]]
-            ]
+            # select the best features here no need to compute all
+            selected.features[[j]] <- features.pool_[1:nb.selected.features[[j]]]
           }
-
           selected.features_ = selected.features[[j]]
-          ind.features[[j]] <- which(rownames(X) %in% selected.features_)
-          if(clf$params$verbose) {
-            print("... ... generating only best single feature models")
-          }
-        } else {
-          if(clf$params$verbose) {
-            print("... ... generating all single feature models")
-          }
+          # get the index in the rownames
+          ind.features[[j]]    <- which(rownames(X) %in% selected.features_)
+          if(clf$params$verbose) print(paste("... ... generating only best single feature models"))
+        }else
+        {
+          if(clf$params$verbose) print(paste("... ... generating all single feature models"))
           stop("terBeam_fit: clf$feature.cor is missing")
-          ind.features[[j]] <- seq_len(nrow(X))
+          ind.features[[j]]    <- seq_len(nrow(X))
         }
 
-        pop <- generateAllSingleFeatureModel_mc(X, y, clf, ind.sub = ind.features, approch = approch)
+        pop               <- generateAllSingleFeatureModel_mc(X, y, clf, ind.sub = ind.features, approch = approch)
+
       }
-    } else {
-      # Get the features to keep for the next k
-      nbCombinaisons <- choose(n = 1:length(features.to.keep), k = k)
 
-      # For ratio language, force to have the same number of negative and positive features selected
-      if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc") {
-        for(j in 1:(length(feature.cor))) {
+    } else
+    {
+      ### Get the features to keep for next k
+      nbCombinaisons    <- choose(n = c(1:length(features.to.keep)), k = k)
+
+
+      # for the ration language, force to have the same number of negative and positive features selected
+      if((clf$params$language == "ratio" | clf$params$language == "ter" | clf$params$language == "terinter") & clf$params$objective == "auc")
+      {
+        for(j in 1:(length(feature.cor))){
+          # select the best features here no need to compute all
           nb.selected.features[[j]] <- max(which(nbCombinaisons < clf$params$maxNbOfModels))
-          nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]] / 2)
+          nb.selected.features.neg[[j]] <- nb.selected.features.pos[[j]] <- round(nb.selected.features[[j]]/2)
+          # get the pool of features
           features.pool[[j]] <- intersect(as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)], features.to.keep_)
-
           coeffss = clf$coeffss_[[j]]
           features.pool_ = features.pool[[j]]
+          #features.pool_ = unlist(features.pool_)
           features.pool.coeffs[[j]] <- coeffss[features.pool_]
-
-          # Negative selection
+          # negative
           features.pool.coeffs_ = features.pool.coeffs[[j]]
           nb.selected.features.neg_ = nb.selected.features.neg[[j]]
           neg.ind[[j]] <- features.pool.coeffs_ == "-1" & !is.na(features.pool.coeffs_)
+          neg.ind_ = neg.ind[[j]]
           selected.features.neg[[j]] <- features.pool_[neg.ind_][1:min(sum(neg.ind_), nb.selected.features.neg_)]
+          # positive
 
-          # Positive selection
           pos.ind[[j]] <- features.pool.coeffs_ == "1" & !is.na(features.pool.coeffs_)
+          pos.ind_ =  pos.ind[[j]]
+          selected.features.neg_ = selected.features.neg[[j]]
           selected.features.pos[[j]] <- features.pool_[pos.ind_][1:min(sum(pos.ind_), nb.selected.features.neg_)]
-          l_features.to.keep[[j]] <- selected.features[[j]] <- c(selected.features.neg[[j]], selected.features.pos[[j]])
+          selected.features.pos_ = selected.features.pos[[j]]
+          l_features.to.keep[[j]] <- selected.features[[j]] <- c(selected.features.neg_, selected.features.pos_)
         }
-      } else {
-        for(j in 1:(length(feature.cor))) {
+      }else
+      {
+        for(j in 1:(length(feature.cor))){
           nb.selected.features[[j]] <- max(which(nbCombinaisons < clf$params$maxNbOfModels))
+          # get the pool of features
           features.pool[[j]] <- intersect(as.character(rownames(clf$feature.cor[[j]]))[order(clf$feature.cor[[j]]$p)], features.to.keep)
+
+          # select the best features here no need to compute all
           features.pool_ = features.pool[[j]]
           features.to.keep <- selected.features <- features.pool_[1:min(nb.selected.features[[j]], length(features.pool[[j]]))]
         }
       }
 
-      # For k > 1 we generate every possible combinations of features of size k
+
+      # # nbCombinaisons contains the maximum number of models that would be generated for a given number of features
+      # features.to.keep  <- features.to.keep[1:max(which(nbCombinaisons < clf$params$maxNbOfModels))]
+
+      ### For k > 1 we generate every possible combinations of features of size k
       list_ind.features.to.keep <- list()
-      for(j in 1:length(l_features.to.keep)) {
+      for(j in 1:(length(l_features.to.keep))){
         list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[1]])
       }
-      if(length(list_ind.features.to.keep) >= k) {
-        pop <- generateAllCombinations_mc(X = X, y = y, clf = clf,
-                                          ind.features.to.keep = list_ind.features.to.keep,
-                                          sparsity = k,
-                                          allFeatures = allFeatures, approch = approch)
-      } else {
+      if(length(list_ind.features.to.keep) >= k)
+      {
+        pop               <- generateAllCombinations_mc(X = X, y = y, clf = clf,
+                                                        ind.features.to.keep = list_ind.features.to.keep,
+                                                        sparsity = k,
+                                                        allFeatures = allFeatures,approch=approch)
+      }else
+      {
         break
       }
+
     }
 
     # Evaluate the population
-    pop <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop,
-                                 eval.all = TRUE,
-                                 force.re.evaluation = TRUE,
-                                 estim.feat.importance = FALSE,
-                                 mode = "train",
-                                 approch = approch,
-                                 aggregation_ = aggregation_,
-                                 delete.null.models = TRUE)
+
+    pop                 <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop,
+                                                 eval.all = TRUE,
+                                                 force.re.evaluation = TRUE,
+                                                 estim.feat.importance = FALSE,
+                                                 mode = "train",
+                                                 approch = approch,
+                                                 aggregation_ = aggregation_,
+                                                 delete.null.models = TRUE)
 
     # Sort the population according to the clf$params$evalToFit attribute
-    pop <- sortPopulation(pop, evalToOrder = "fit_")
+    pop                 <- sortPopulation(pop, evalToOrder = "fit_")
 
-    # Check if the population is empty
-    if(is.null(pop)) {
+
+    # it may happen that the population is empty, in this case we break and return
+    if(is.null(pop))
+    {
       next
     }
 
     # Sample the best and veryBest population
-    best <- pop[1:min(clf$params$nbBest, length(pop))]
-    veryBest <- pop[1:min(clf$params$nbVeryBest, length(pop))]
+    best                <- pop[1:min(clf$params$nbBest,length(pop))]
+    veryBest            <- pop[1:min(clf$params$nbVeryBest,length(pop))]
+    # features.to.keep
+    ### Evaluate the apperance of every features in the best and veryBest models
+    featuresApperance   <- countEachFeatureApperance_mc(clf, allFeatures, pop, best, veryBest,approch=approch)
+    features.to.keep    <- getFeatures2Keep_mc(clf, featuresApperance,approch=approch)
+    listf <- list()
+    listf <- features.to.keep[[1]]
+    features.to.keep <- list()
+    features.to.keep <-  listf
 
-    # Features appearance evaluation
-    featuresApperance <- countEachFeatureApperance_mc(clf, allFeatures, pop, best, veryBest, approch = approch)
-    features.to.keep <- getFeatures2Keep_mc(clf, featuresApperance, approch = approch)
-
-    if(clf$params$verbose) {
-      if(isModel(pop[[1]])) {
+    if(clf$params$verbose)
+    {
+      if(isModel(pop[[1]]))
+      {
         try(printModel_mc(mod = pop[[1]], method = clf$params$print_ind_method, score = "fit_"), silent = TRUE)
       }
     }
 
-    # Keep only the very best
+    #EP: keep only the verybest
+    #fullPop[(length(fullPop) +1):(length(fullPop) + length(pop))] <- pop
     minsize <- min(length(pop), clf$params$nbVeryBest)
-    fullPop[(length(fullPop) + 1):(length(fullPop) + minsize)] <- pop[1:minsize]
+    fullPop[(length(fullPop) +1):(length(fullPop) + minsize)] <- pop[1:minsize]
 
-    # Save population in a file
-    if(!(clf$params$popSaveFile == "NULL")) {
-      savePopulation(fullPop, paste("resultsForSparsity", k, clf$params$popSaveFile, sep = "_"))
+    # save populatio in a file
+    if(!(clf$params$popSaveFile=="NULL"))
+    {
+      savePopulation(fullPop, paste("resulstsForSparsity", k, clf$params$popSaveFile, sep = "_"))
     }
 
-    # Stopping condition
-    if((length(features.to.keep) < k + 1) & (k != 1)) {
+    # stopping testing
+    if((length(features.to.keep) < k + 1) & (k != 1)) # If we exhausted all the combinations
+    {
       break
-    }
-  } # End loop sparsity
+    } # end if stopping test
 
-  if(clf$params$verbose) {
-    print("... ... models are created")
-  }
+  } # end loop sparsity
 
-  return.perc <- clf$params$final.pop.perc
-  if(return.perc > 100) {
+  if(clf$params$verbose) print(paste("... ... models are created"))
+
+  return.perc       <- clf$params$final.pop.perc
+  if(return.perc > 100)
+  {
     return.perc = 100 # upper bound
-    warning("terBeam_fit: clf$params$final.pop.perc cannot be greater than 100")
+    warning("terBeam_fit: clf$params$final.pop.perc can not be greater than 100")
   }
 
-  fullPop <- unique(fullPop) # Keep only unique models
+  #fullPop           <- sortPopulation(fullPop, evalToOrder = "fit_")
+  fullPop           <- unique(fullPop) # keep only unique models
 
-  if(return.perc == 100) {
-    # Transform the population into a model collection
-    res.mod.coll <- listOfModels2ModelCollection(pop = fullPop)
-  } else { # if smaller percentage
-    nBest <- round(return.perc * clf$params$nbVeryBest / 100)
-    res.mod.coll <- listOfModels2ModelCollection(pop = fullPop, nBest = nBest)
+  if(return.perc == 100)
+  {
+    # transform the population onto a model collection
+    res.mod.coll    <- listOfModels2ModelCollection(pop = fullPop)
+  } else # if smaller percentage
+  {
+    #if(clf$params$final.pop.perc>100)
+    nBest           <- round(return.perc * clf$params$nbVeryBest / 100)
+    res.mod.coll    <- listOfModels2ModelCollection(pop = fullPop, nBest = nBest)
   }
 
-  if(clf$params$verbose) {
-    print("... ... models are converted into a model collection")
-  }
-
+  if(clf$params$verbose) print(paste("... ... models are coverted onto a model collection"))
   return(res.mod.coll)
 }
-

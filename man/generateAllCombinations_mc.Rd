@@ -11,7 +11,7 @@ generateAllCombinations_mc(
   ind.features.to.keep,
   sparsity,
   allFeatures,
-  approch = approch
+  approch = "ovo"
 )
 }
 \description{
