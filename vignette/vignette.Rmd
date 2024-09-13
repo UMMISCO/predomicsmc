@@ -193,6 +193,23 @@ grid.arrange(grobs = c(plots1, plots2), ncol = 2)
 ```
 
 
+
+```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+grid.arrange(grobs = plots1, ncol = 2)
+```
+
+
+```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+grid.arrange(grobs = plots2, ncol = 2)
+```
+
+
+
+
+
+
+
+
 ## Regenerate the clf object
 
 ```{r warning=FALSE}
@@ -271,6 +288,8 @@ ggplot(roc_df, aes(x = FPR, y = TPR, color = Dataset)) +
 ```
 
 
+
+
 ## Family of Best Models (FBM)
 
 ```{r}
@@ -343,10 +362,11 @@ fa <- makeFeatureAnnot_mc(pop = fbm,
                        y = y, 
                        clf = clf,
                        approch = "ova")
+g <- list()
 dim(fa[[1]]$pop.noz)
 for (i in 1:length(fa)) {
 
-  g <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[i]]$pop.noz)
+  g[[i]] <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[i]]$pop.noz)
   
   print(g)
 }
@@ -356,7 +376,22 @@ for (i in 1:length(fa)) {
 ```
 
 
+```{r fig.height=10, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g, ncol = 2)  # Ici, ncol spécifie 2 colonnes
+```
 
+
+
+
+```{r fig.height=7, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g2, ncol = 2)  # Ici, ncol spécifie 2 colonnes
+```
+
+
+
+```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE }
+gridExtra::grid.arrange(grobs = g3, ncol = 2)  # Ici, ncol spécifie 2 colonnes
+```
 
 
 
