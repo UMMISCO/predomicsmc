@@ -154,7 +154,7 @@ res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,a
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 #load("Unique_Predomics_aggregation_ova.rda")
 #load("Unique_Predomics_aggregation_ovo.rda")
-#load("Unique_votingAggregation.rda")
+load("Unique_votingAggregation.rda")
 #load("Unique_maximizationAggregation.rda")
 #load("Unique_rankingAggregation.rda")
 #load("Unique_weightedAggregation.rda")
@@ -164,7 +164,7 @@ res_clf <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,a
 #load("Multi_weightedAggregation.rda")
 #load("Multi_votingAggregation.rda")
 #load("Multi_Predomics_aggregation_ovo.rda")
-#load("res_clf.rda")
+load("res_clf.rda")
 
 ```
 
@@ -179,7 +179,7 @@ res_clf.dig <- digestmc(obj = res_clf, penalty = 0.75/100, plot = TRUE)
 ```
 ## Visualizing the best model
 
-```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r fig.height=12, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE}
 # get the best model
 best.model <- res_clf.dig$best$model
 printy_mc(best.model)
@@ -188,25 +188,9 @@ plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = T
 plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
 
 # Extract the plots from each list and pass them to `grid.arrange
-grid.arrange(grobs = c(plots1, plots2), ncol = 2)
+grid.arrange(grobs = c(plots1, plots2), ncol = 4)
 
 ```
-
-
-
-```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
-grid.arrange(grobs = plots1, ncol = 2)
-```
-
-
-```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
-grid.arrange(grobs = plots2, ncol = 2)
-```
-
-
-
-
-
 
 
 
@@ -376,82 +360,82 @@ for (i in 1:length(fa)) {
 ```
 
 
-```{r fig.height=10, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
-gridExtra::grid.arrange(grobs = g, ncol = 2)  # Ici, ncol spécifie 2 colonnes
+```{r fig.height=10, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g, ncol = 4)  # Ici, ncol spécifie 2 colonnes
 ```
 
 
 
 
-```{r fig.height=7, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
-gridExtra::grid.arrange(grobs = g2, ncol = 2)  # Ici, ncol spécifie 2 colonnes
+```{r fig.height=10, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g2, ncol = 4)  # Ici, ncol spécifie 2 colonnes
 ```
 
 
 
-```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE }
-gridExtra::grid.arrange(grobs = g3, ncol = 2)  # Ici, ncol spécifie 2 colonnes
+```{r fig.height=10, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE }
+gridExtra::grid.arrange(grobs = g3, ncol = 4)  # Ici, ncol spécifie 2 colonnes
 ```
 
 
 
 
 
-# Use of specific variables for each of our sub-models
+# Use one versus one
 ## Digesting the results
 
 ```{r digesting results, fig.height=8, fig.width=6, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig_multi <- digestmc(obj = Multi_Predomics_Aggregation_ova , penalty = 0.75/100, plot = TRUE)
+res_clf.dig_ovo <- digestmc(obj = Unique_votingAggregation , penalty = 0.75/100, plot = TRUE)
 ```
 
 
 ## Visualizing the best model
-```{r fig.height=12, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r fig.height=12, fig.width=20, message=FALSE, warning=FALSE, paged.print=FALSE}
 # get the best model
-best.model_multi <- res_clf.dig_multi$best$model
-printy_mc(best.model_multi)
+best.model_ovo <- res_clf.dig_ovo$best$model
+printy_mc(best.model_ovo)
 
-plots11 <- plotModel_mc(best.model_multi, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
-plots22 <- plotModel_mc(best.model_multi, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
+plots11 <- plotModel_mc(best.model_ovo, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ovo")
+plots22 <- plotModel_mc(best.model_ovo, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
 
 # Extract the plots from each list and pass them to `grid.arrange
-grid.arrange(grobs = c(plots11, plots22), ncol = 2)
+grid.arrange(grobs = c(plots11, plots22), ncol = 6)
 ```
 
 ## Regenerate the clf object
 ```{r warning=FALSE}
-clf <- regenerate_clf(clf, X, y, approch = "ova")
+clf <- regenerate_clf(clf, X, y, approch = "ovo")
 ```
 
 ## Testing the model in another dataset
 
 ```{r}
-  best.model.test_multi <- evaluateModel_mc(
-    mod = best.model_multi,
+  best.model.test_ovo <- evaluateModel_mc(
+    mod = best.model_ovo,
     X = X.test,
     y = y.test,
     clf = clf,
     eval.all = TRUE,
     force.re.evaluation = TRUE,
-    approch = "ova",
-    aggregation_ = "Predomics_aggregation_ova",
+    approch = "ovo",
+    aggregation_ = "votingAggregation",
     mode = "test"
   )
-printy_mc(best.model.test_multi)
+printy_mc(best.model.test_ovo)
 ```
 
 ## Visualizing model performance AUC
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(pROC)
 library(ggplot2)
-tmp <- plotAUC_mc(best.model_multi$score_, y, percent = TRUE, approch = "ova"); rm(tmp)
+tmp <- plotAUC_mc(best.model_ovo$score_, y, percent = TRUE, approch = "ovo"); rm(tmp)
 # Create ROC objects for the training set
-roc_objects_train <- lapply(best.model_multi$score_, function(score) {
+roc_objects_train <- lapply(best.model_ovo$score_, function(score) {
   roc(response = y, predictor = score)
 })
 
 # Create ROC objects for the test set
-roc_objects_test <- lapply(best.model.test_multi$score_, function(score) {
+roc_objects_test <- lapply(best.model.test_ovo$score_, function(score) {
   roc(response = y.test, predictor = score)
 })
 
@@ -494,7 +478,7 @@ ggplot(roc_df, aes(x = FPR, y = TPR, color = Dataset)) +
 ## Family of Best Models (FBM)
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(Multi_Predomics_Aggregation_ova$classifier$models)
+pop <- modelCollectionToPopulation(Unique_votingAggregation$classifier$models)
 printy_mc(pop)
 
 # Convert the population to a data frame
@@ -556,22 +540,44 @@ grid.arrange(g.before[[1]], g.after[[1]], ncol = 2)
 
 ## Analyzing the FBM 
 
-```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r fig.height=12, fig.width=20, message=FALSE, warning=FALSE, paged.print=FALSE}
+g <- list()
 fa <- makeFeatureAnnot_mc(pop = fbm, 
                        X = X, 
                        y = y, 
                        clf = clf,
-                       approch = "ova")
+                       approch = "ovo")
 dim(fa[[1]]$pop.noz)
 for (i in 1:length(fa)) {
 
-  g <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[i]]$pop.noz)
+  g[[i]] <- plotFeatureModelCoeffs(feat.model.coeffs = fa[[i]]$pop.noz)
   
-  print(g)
+  #print(g)
 }
-(g2 <- plotAbundanceByClass_mc(features = fa, X = X, y = y, approch = "ova"))
-(g3 <- plotPrevalence_mc(features = fa, X = X, y = y , approch = "ova"))
+
 ```
+
+
+
+```{r fig.height=12, fig.width=20, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g, ncol = 6)  # Ici, ncol spécifie 6 colonnes
+
+```
+
+```{r fig.height=12, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE}
+(g2 <- plotAbundanceByClass_mc(features = fa, X = X, y = y, approch = "ovo"))
+(g3 <- plotPrevalence_mc(features = fa, X = X, y = y , approch = "ovo"))
+```
+
+```{r fig.height=12, fig.width=20, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g2, ncol = 6)  # Ici, ncol spécifie 6 colonnes
+```
+
+
+```{r fig.height=12, fig.width=20, message=FALSE, warning=FALSE, paged.print=FALSE}
+gridExtra::grid.arrange(grobs = g3, ncol = 6)  # Ici, ncol spécifie 6 colonnes
+```
+
 
 
 #ANNEX
