@@ -95,7 +95,7 @@ dim(X.test)
 #Classifying using the terbeam algorithm
 
 ```{r setting the classifier}
-clf <- terBeam_mc(sparsity = c(2,3,4), 
+clf <- terBeam_mc(sparsity = c(7), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -272,8 +272,6 @@ ggplot(roc_df, aes(x = FPR, y = TPR, color = Dataset)) +
 ```
 
 
-
-
 ## Family of Best Models (FBM)
 
 ```{r}
@@ -338,6 +336,34 @@ for(j in 1:length(fbm.df)) {
 grid.arrange(g.before[[1]], g.after[[1]], ncol = 2)
 
 ```
+
+```{r}
+
+
+  best.model.testt <- evaluateModel_mc(
+    mod = fbm[[8]],
+    X = X.test,
+    y = y.test,
+    clf = clf,
+    eval.all = TRUE,
+    force.re.evaluation = TRUE,
+    approch = "ova",
+    aggregation_ = "Predomics_aggregation_ova",
+    mode = "test"
+  )
+printy_mc(best.model.testt)
+```
+
+
+
+
+
+
+
+
+
+
+
 ## Analyzing the FBM 
 
 ```{r fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}

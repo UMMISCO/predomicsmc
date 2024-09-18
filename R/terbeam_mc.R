@@ -364,7 +364,7 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
       for(j in 1:(length(l_features.to.keep))){
         list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[1]])
       }
-      if(length(list_ind.features.to.keep) >= k)
+      if(length(list_ind.features.to.keep[[1]]) >= k)
       {
         pop               <- generateAllCombinations_mc(X = X, y = y, clf = clf,
                                                         ind.features.to.keep = list_ind.features.to.keep,
