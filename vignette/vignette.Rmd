@@ -164,7 +164,7 @@ load("Multi_Predomics_aggregation_ova.rda")
 #load("Multi_weightedAggregation.rda")
 #load("Multi_votingAggregation.rda")
 #load("Multi_Predomics_aggregation_ovo.rda")
-load("res_clf.rda")
+#load("res_clf.rda")
 
 ```
 
