@@ -3776,15 +3776,15 @@ populationToDataFrame_mc <- function(
   list_pop <- list()
   list_df <- list()
 
-  # Boucle pour chaque sous-modèle dans la première population (on assume qu'ils ont tous la même structure)
+  # Loop for each sub-model in the first population
   for (j in 1:length(pop[[1]]$names_)) {
-    list_mod <- list()  # Initialiser la liste des sous-modèles pour chaque population
+    list_mod <- list()
 
-    # Boucle pour chaque modèle dans la population
+    # Loop for each model in the population
     for (i in 1:length(pop)) {
-      list_mod[[i]] <- list()  # Initialiser une liste pour chaque sous-modèle
+      list_mod[[i]] <- list()
 
-      # Assigner les éléments de 'mod' aux sous-modèles
+      # Assigning ‘mod’ elements to sub-models
       list_mod[[i]]$learner <- pop[[i]]$learner
       list_mod[[i]]$language <- pop[[i]]$language
       list_mod[[i]]$objective <- pop[[i]]$objective
@@ -3811,13 +3811,13 @@ populationToDataFrame_mc <- function(
       list_mod[[i]]$mda_ <- pop[[i]]$mda_[[j]]
     }
 
-    # Ajouter la liste des sous-modèles à la liste des populations
+    # Add the list of sub-models to the list of populations
     list_pop[[j]] <- list_mod
   }
 
-  # Transformer chaque sous-liste en dataframe
+  # Transform each sub-list into a dataframe
   for (i in 1:length(list_pop)) {
-    # Appel de populationToDataFrame sur chaque sous-modèle
+    # Call populationToDataFrame on each sub-model
     list_df[[i]] <- populationToDataFrame(pop = list_pop[[i]],  attributes = attributes)
   }
 

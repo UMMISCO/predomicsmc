@@ -486,50 +486,53 @@ plotModel_mc <- function(mod, X, y,
                          main = "",
                          slim = FALSE,
                          importance = FALSE,
-                         res_clf = NULL,approch = "ova")
-{
-  # Création de la liste vide pour stocker les sous-modèles
+                         res_clf = NULL, approch = "ova") {
+
+
   list_mod <- list()
   plot_sub_model <- list()
 
-  # Boucle pour remplir la liste de sous-modèles
-  for (i in 1:length(mod$names_)) {
-    # Initialiser une liste pour chaque sous-modèle
-    list_mod[[i]] <- list()
+  # Retrieve the mod elements to create the main title
+  alg = mod$learner
+  lang = mod$language
+  k = mod$eval.sparsity
 
-    # Assigner les éléments de 'mod' aux sous-modèles
-    list_mod[[i]]$learner <- mod$learner
-    list_mod[[i]]$language <- mod$language
-    list_mod[[i]]$objective <- mod$objective
-    list_mod[[i]]$indices_ <- mod$indices_[[i]]
-    list_mod[[i]]$names_ <- mod$names_[[i]]
-    list_mod[[i]]$coeffs_ <- mod$coeffs_[[i]]
-    list_mod[[i]]$fit_ <- mod$fit_
-    list_mod[[i]]$unpenalized_fit_ <-mod$unpenalized_fit_
-    list_mod[[i]]$auc_ <- mod$auc_
-    list_mod[[i]]$accuracy_ <- mod$accuracy_
-    list_mod[[i]]$cor_ <- mod$cor_
-    list_mod[[i]]$aic_ <- mod$aic_
-    list_mod[[i]]$intercept_ <- mod$list_intercept_[[i]]
-    list_mod[[i]]$eval.sparsity <- mod$eval.sparsity
-    list_mod[[i]]$precision_ <- mod$precision_
-    list_mod[[i]]$recall_ <- mod$recall_
-    list_mod[[i]]$f1_ <- mod$f1_
-    list_mod[[i]]$sign_ <- mod$sign_[[i]]
-    list_mod[[i]]$rsq_ <- mod$rsq_[[i]]
-    list_mod[[i]]$ser_ <- mod$ser_[[i]]
-    list_mod[[i]]$score_ <- mod$score_[[i]]
-    list_mod[[i]]$mda.cv_ <- mod$mda.cv_[[i]]
-    list_mod[[i]]$prev.cv_ <- mod$prev.cv_[[i]]
-    list_mod[[i]]$mda_ <- mod$mda_[[i]]
+  # Loop to fill the list of sub-models
+  for (i in 1:length(mod$names_)) {
+    list_mod[[i]] <- list(
+      learner = mod$learner,
+      language = mod$language,
+      objective = mod$objective,
+      indices_ = mod$indices_[[i]],
+      names_ = mod$names_[[i]],
+      coeffs_ = mod$coeffs_[[i]],
+      fit_ = mod$fit_,
+      unpenalized_fit_ = mod$unpenalized_fit_,
+      auc_ = mod$auc_,
+      accuracy_ = mod$accuracy_,
+      cor_ = mod$cor_,
+      aic_ = mod$aic_,
+      intercept_ = mod$list_intercept_[[i]],
+      eval.sparsity = mod$eval.sparsity,
+      precision_ = mod$precision_,
+      recall_ = mod$recall_,
+      f1_ = mod$f1_,
+      sign_ = mod$sign_[[i]],
+      rsq_ = mod$rsq_[[i]],
+      ser_ = mod$ser_[[i]],
+      score_ = mod$score_[[i]],
+      mda.cv_ = mod$mda.cv_[[i]],
+      prev.cv_ = mod$prev.cv_[[i]],
+      mda_ = mod$mda_[[i]]
+    )
   }
 
   nClasse <- unique(y)
-  list_y <- list()   # List for different combinations of y
-  list_X <- list()   # List for different combinations of X
+  list_y <- list()
+  list_X <- list()
 
   if (approch == "ovo") {
-    k <- 1
+    f <- 1
     for (i in 1:(length(nClasse) - 1)) {
       for (j in (i + 1):length(nClasse)) {
         class_i <- nClasse[i]
@@ -537,9 +540,9 @@ plotModel_mc <- function(mod, X, y,
         indices <- which(y == class_i | y == class_j)
         y_pair <- y[indices]
         X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
+        list_y[[f]] <- as.vector(y_pair)
+        list_X[[f]] <- X_pair
+        f <- f + 1
       }
     }
   } else {
@@ -551,10 +554,23 @@ plotModel_mc <- function(mod, X, y,
     }
   }
 
-  for (i in 1:length(list_y)){
-    plot_sub_model[[i]] <- plotModel(mod = list_mod[[i]], X = list_X[[i]], y=list_y[[i]],
+  # Loop to generate sub-models with custom titles
+  for (i in 1:length(list_y)) {
+    # Determine the main title with alg, lang, and k
+    combination_title <- paste("alg =", alg, "\nlang =", lang, "\nk =", k)
+
+    # Addition of a specific title for each sub-model
+    if (approch == "ovo") {
+      combination_title <- paste(combination_title, "\n", paste(nClasse[i], "vs", nClasse[j]))
+    } else {
+      combination_title <- paste(combination_title, "\n", paste(nClasse[i], "vs All"))
+    }
+
+    plot_sub_model[[i]] <- plotModel(mod = list_mod[[i]], X = list_X[[i]], y = list_y[[i]],
                                      sort.features = sort.features,
-                                     feature.name = feature.name, importance = importance)
+                                     feature.name = feature.name,
+                                     importance = importance,
+                                     main = combination_title)
   }
 
   return(plot_sub_model)
@@ -571,73 +587,67 @@ plotModel_mc <- function(mod, X, y,
 #' @param percent: color for the graph
 #' @return a list of roc objects
 #' @export
-plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
-  nClasse <- unique(y)
-  list_y <- list()
-  list_plo <- list()
-  list_scores <- list()
+plotAUC_mc <- function(scores, y, approch = "ovo", main = "", ci = TRUE, percent = TRUE) {
 
-  list_scores <- scores
+  classes <- unique(y)
+  list_y <- list()
+  list_scores <- list()
+  plot_list <- list()
+
+  # Convert approch to lower case for verification
+  approch <- tolower(approch)
 
   if (approch == "ovo") {
+    combinations <- combn(classes, 2, simplify = FALSE)
     k <- 1
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
+    for (comb in combinations) {
+      class_i <- comb[1]
+      class_j <- comb[2]
+      indices <- which(y == class_i | y == class_j)
+      y_pair <- y[indices]
 
-        # Select the indices of classes i and j
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        # Fill with random values if necessary
-        if (length(y_pair) < length(scores[[k]])) {
-          missing_len <- length(scores[[k]]) - length(y_pair)
-
-          # Add random values from y and X
-          y_random <- sample(y_pair, missing_len, replace = TRUE)
-          # Combine existing data with random values
-          y_pair <- c(y_pair, y_random)
-        }
-
-        # Store results in lists
-        list_y[[k]] <- as.vector(y_pair)
-
-        k <- k + 1
+      if (length(y_pair) < length(scores[[k]])) {
+        missing_len <- length(scores[[k]]) - length(y_pair)
+        y_random <- sample(y_pair, missing_len, replace = TRUE)
+        y_pair <- c(y_pair, y_random)
       }
+
+      list_y[[k]] <- as.vector(y_pair)
+      list_scores[[k]] <- scores[[k]]
+      k <- k + 1
     }
-
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-
-      # Create a new variable y_temp with "class_i" vs "All"
+  } else if (approch == "ova") {
+    for (i in seq_along(classes)) {
+      class_i <- classes[i]
       y_temp <- ifelse(y == class_i, as.character(class_i), "All")
 
-      # Fill with random values if necessary
       if (length(y_temp) < length(scores[[i]])) {
         missing_len <- length(scores[[i]]) - length(y_temp)
-
-        # Add random values from y and X
         y_random <- sample(y_temp, missing_len, replace = TRUE)
-
-
-        # Combine existing data with random values
         y_temp <- c(y_temp, y_random)
-
       }
 
-      # Store in lists
       list_y[[i]] <- as.vector(y_temp)
-
+      list_scores[[i]] <- scores[[i]]
     }
+  } else {
+    stop("Invalid approach: choose 'ova' or 'ovo'")
   }
 
-  # Loop to generate plots for each class combination
-  for (i in 1:length(list_y)) {
-    list_plo[[i]] <- plotAUC(score = list_scores[[i]], y = list_y[[i]], percent = TRUE)
+  # Loop to generate graphs for each combination of classes
+  for (i in seq_along(list_y)) {
+    class_label <- if (approch == "ovo") {
+      paste(classes[i], "vs", classes[i + 1])
+    } else {
+      paste(classes[i], "vs ALL")
+    }
+
+    plot_list[[class_label]] <- plotAUC(score = list_scores[[i]], y = list_y[[i]],
+                                        main = paste(main, class_label),
+                                        ci = ci, percent = percent)
   }
 
-  return(list_plo)
+  return(plot_list)
 }
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class
@@ -655,56 +665,68 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
 #' @param col.bg: colors for the point fill (-1:deepskyblue1, 1:firebrick1)
 #' @return a ggplot object
 #' @export
-plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE,
+plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
                                     main = "", plot = TRUE,
                                     col.pt = c("deepskyblue4", "firebrick4"),
-                                    col.bg = c("deepskyblue1", "firebrick1"), approch = "ovo")
-{
-  nClasse <- unique(y)  # Récupère les classes uniques
-  list_y <- list()   # Liste pour les différentes combinaisons de y
-  list_X <- list()   # Liste pour les différentes combinaisons de X
-  list_plot <- list()  # Liste pour stocker les graphiques
+                                    col.bg = c("deepskyblue1", "firebrick1")) {
 
-  # Si l'approche est one-vs-one (ovo)
-  if (approch == "ovo") {
+
+  nClasse <- unique(y)
+  list_y <- list()
+  list_X <- list()
+  plot_list <- list()
+
+   # Determine class combinations based on the chosen approach
+  if (approch == "OVO") {
     k <- 1
     for (i in 1:(length(nClasse) - 1)) {
       for (j in (i + 1):length(nClasse)) {
         class_i <- nClasse[i]
         class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)  # Sélection des indices pour les deux classes
-        y_pair <- y[indices]  # Récupère les labels pour les deux classes
-        X_pair <- X[, indices]  # Récupère les données correspondantes
-        list_y[[k]] <- as.vector(y_pair)  # Ajoute le vecteur y dans la liste
-        list_X[[k]] <- X_pair  # Ajoute les données X dans la liste
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        X_pair <- X[, indices, drop = FALSE]
+        list_y[[k]] <- as.vector(y_pair)
+        list_X[[k]] <- X_pair
         k <- k + 1
       }
     }
-  } else {  # Pour les autres approches (e.g. one-vs-all)
+  } else if (approch == "OVA") {
     for (i in 1:length(nClasse)) {
       class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")  # Crée un vecteur one-vs-all
-      list_y[[i]] <- as.vector(y_temp)  # Ajoute ce vecteur à la liste
-      list_X[[i]] <- X  # Ajoute toutes les données X (elles ne changent pas pour one-vs-all)
+      y_temp <- ifelse(y == class_i, as.character(class_i), "ALL")
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
     }
+  } else {
+    stop("Invalid approach: choose 'OVA' or 'OVO'")
   }
 
-  # Générer les graphiques
-  for (i in 1:length(list_y)) {
-    list_plot[[i]] <- plotAbundanceByClass(
+  # Generate the graphs for each combination.
+  for (i in seq_along(list_y)) {
+    class_label <- if (approch == "OVA") {
+      paste(nClasse[i], "vs ALL")
+    } else {
+
+      class_pair <- combn(nClasse, 2, simplify = TRUE)[, i]
+      paste(class_pair[1], "vs", class_pair[2])
+    }
+
+    plot_list[[class_label]] <- plotAbundanceByClass(
       features = rownames(features[[i]]$pop.noz),
       X = list_X[[i]],
       y = list_y[[i]],
-      topdown = topdown,  # Transmet l'argument topdown
-      main = main,  # Transmet l'argument main
-      plot = plot,  # Transmet l'argument plot
-      col.pt = col.pt,  # Transmet les couleurs pour les points
-      col.bg = col.bg   # Transmet les couleurs pour le fond
+      main = paste(main, class_label),
+      plot = plot,
+      col.pt = col.pt,
+      col.bg = col.bg
     )
   }
-
-  return(list_plot)  # Retourne la liste des graphiques
+  return(plot_list)
 }
+
+
+
 
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class
@@ -722,55 +744,132 @@ plotAbundanceByClass_mc <- function(features, X, y, topdown = TRUE,
 #' @param zero.value: the value that specifies what is zero. This can be a different than 0 in log transformed data for instance (default = 0)
 #' @return a ggplot object
 #' @export
-plotPrevalence_mc <- function(features, X, y, topdown = TRUE, main = "", plot = TRUE,
-                           col.pt = c("deepskyblue4", "firebrick4"),
-                           col.bg = c("deepskyblue1", "firebrick1"),
-                           zero.value = 0, approch="ovo")
-{
-  nClasse <- unique(y)  # Récupère les classes uniques
-  list_y <- list()   # Liste pour les différentes combinaisons de y
-  list_X <- list()   # Liste pour les différentes combinaisons de X
-  list_plot <- list()  # Liste pour stocker les graphiques
+plotPrevalence_mc <- function(features, X, y, approch = "OVA", topdown = TRUE,
+                              main = "", plot = TRUE,
+                              col.pt = c("deepskyblue4", "firebrick4"),
+                              col.bg = c("deepskyblue1", "firebrick1")) {
 
-  # Si l'approche est one-vs-one (ovo)
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)  # Sélection des indices pour les deux classes
-        y_pair <- y[indices]  # Récupère les labels pour les deux classes
-        X_pair <- X[, indices]  # Récupère les données correspondantes
-        list_y[[k]] <- as.vector(y_pair)  # Ajoute le vecteur y dans la liste
-        list_X[[k]] <- X_pair  # Ajoute les données X dans la liste
-        k <- k + 1
-      }
-    }
-  } else {  # Pour les autres approches (e.g. one-vs-all)
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")  # Crée un vecteur one-vs-all
-      list_y[[i]] <- as.vector(y_temp)  # Ajoute ce vecteur à la liste
-      list_X[[i]] <- X  # Ajoute toutes les données X (elles ne changent pas pour one-vs-all)
+  classes <- unique(y)
+  list_y <- list()
+  list_X <- list()
+  plot_list <- list()
+
+  # Determine class combinations based on the chosen approach
+  combinations <- if (approch == "OVA") {
+    paste0(classes, "_vs_ALL")
+  } else if (approch == "OVO") {
+    combn(classes, 2, function(x) paste0(x[1], "_vs_", x[2]), simplify = TRUE)
+  } else {
+    stop("Invalid approach: choose 'OVA' or 'OVO'")
+  }
+
+  # Fill the lists list_y and list_X.
+  for (i in seq_along(combinations)) {
+    combination <- combinations[i]
+
+    if (approch == "OVA") {
+      class_i <- gsub("_vs_ALL", "", combination)
+      indices <- which(y == class_i | y != class_i)
+
+      # Create the vector y for OVA
+      list_y[[i]] <- ifelse(y[indices] == class_i, 1, 0)
+      list_X[[i]] <- X[, indices, drop = FALSE]
+    } else {
+      class_i <- strsplit(combination, "_vs_")[[1]][1]
+      class_j <- strsplit(combination, "_vs_")[[1]][2]
+      indices <- which(y == class_i | y == class_j)
+
+      # Store the y data for OVO.
+      list_y[[i]] <- y[indices]
+      list_X[[i]] <- X[, indices, drop = FALSE]
     }
   }
 
-  # Générer les graphiques
-  for (i in 1:length(list_y)) {
-    list_plot[[i]] <- plotPrevalence(
+  # Generate the graphs.
+  for (i in seq_along(combinations)) {
+    plot_list[[combinations[i]]] <- plotPrevalence(
       features = rownames(features[[i]]$pop.noz),
       X = list_X[[i]],
       y = list_y[[i]],
-      topdown = topdown,  # Transmet l'argument topdown
-      main = main,  # Transmet l'argument main
-      plot = plot,  # Transmet l'argument plot
-      col.pt = col.pt,  # Transmet les couleurs pour les points
-      col.bg = col.bg,  # Transmet les couleurs pour le fond
-      zero.value = 0
+      topdown = topdown,
+      main = paste(main, combinations[i]),
+      plot = plot,
+      col.pt = col.pt,
+      col.bg = col.bg
     )
   }
 
-  return(list_plot)  # Retourne la liste des graphiques
+  return(plot_list)
+}
+
+
+#' Plots the prevalence of a list of features in the whole dataset and per each class
+#'
+#' @description Plots the coefficients of subset of features in the models where they are found
+#' @importFrom reshape2 melt
+#' @param feat.model.coeffs: feature vs. model coeffient table
+#' @param topdown: showing features from top-down or the other way around (default:TRUE)
+#' @param col: colors to be used for the coeffients (default: -1 = deepskyblue1, 0 = white, 1 = firebrick1)
+#' @param vertical.label: wether the x-axis labels should be vertical or not (default:TRUE)
+#' @return a list ggplot object
+#' @export
+plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "OVA", topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"), vertical.label = TRUE) {
+
+  # Determine the class combinations based on the selected approach
+  classes = unique(y)
+  if (approch == "OVA") {
+    combinations <- paste0(classes, "_vs_ALL")
+  } else if (approch == "OVO") {
+    combinations <- combn(classes, 2, function(x) paste0(x[1], "_vs_", x[2]))
+  } else {
+    stop("Invalid approach: choose 'OVA' or 'OVO'")
+  }
+
+  # Initialize a list to store the plots
+  plot_list <- list()
+
+  # Loop over each combination to create a plot
+  for (i in seq_along(combinations)) {
+    combination <- combinations[i]
+    data <- feat.model.coeffs[[i]]$pop.noz  # Retrieve the coefficients for the i-th combination
+
+    # Prepare the data for visualization
+    if (topdown) {
+      data <- t(data[nrow(data):1, ])
+    } else {
+      data <- t(data)
+    }
+
+    # Convert the data to long format for ggplot
+    data.m <- reshape2::melt(data)
+    colnames(data.m) <- c("models", "feature", "value")
+
+    # Define colors based on the values (-1, 0, 1)
+    col.n <- c("-1", "0", "1")
+    tab.v <- table(data.m$value)
+    if (length(tab.v) < 3) {
+      col <- col[col.n %in% names(tab.v)]
+    }
+
+    # Create the plot for this combination
+    p <- ggplot(data.m, aes(models, feature)) +
+      geom_tile(aes(fill = value), colour = "darkgray") +
+      theme_bw() +
+      scale_fill_gradientn(colours = col) +
+      ggtitle(paste(combination))  # Add the combination as the title
+
+    # Adjust vertical or horizontal labels
+    if (vertical.label) {
+      p <- p + theme(legend.position = "none", axis.text = element_text(size = 9), axis.text.x = element_text(angle = 90, hjust = 1))
+    } else {
+      p <- p + theme(legend.position = "none", axis.text = element_text(size = 9))
+    }
+
+    # Add this plot to the list
+    plot_list[[combination]] <- p
+  }
+
+  # Return the list of plots
+  return(plot_list)
 }
 

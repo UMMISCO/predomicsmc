@@ -8,12 +8,11 @@ plotAbundanceByClass_mc(
   features,
   X,
   y,
-  topdown = TRUE,
+  approch = "OVA",
   main = "",
   plot = TRUE,
   col.pt = c("deepskyblue4", "firebrick4"),
-  col.bg = c("deepskyblue1", "firebrick1"),
-  approch = "ovo"
+  col.bg = c("deepskyblue1", "firebrick1")
 )
 }
 \arguments{

@@ -8,13 +8,12 @@ plotPrevalence_mc(
   features,
   X,
   y,
+  approch = "OVA",
   topdown = TRUE,
   main = "",
   plot = TRUE,
   col.pt = c("deepskyblue4", "firebrick4"),
-  col.bg = c("deepskyblue1", "firebrick1"),
-  zero.value = 0,
-  approch = "ovo"
+  col.bg = c("deepskyblue1", "firebrick1")
 )
 }
 \arguments{

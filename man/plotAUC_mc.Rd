@@ -4,7 +4,7 @@
 \alias{plotAUC_mc}
 \title{Analyze the results from a list of classifiers}
 \usage{
-plotAUC_mc(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo")
+plotAUC_mc(scores, y, approch = "ovo", main = "", ci = TRUE, percent = TRUE)
 }
 \arguments{
 \item{scores:}{a list where each element is a vector of scores from a given models}
