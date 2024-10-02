@@ -152,8 +152,6 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
   return(res)
 }
 
-
-
 #' Prints a population of model objects as text.
 #'
 #' @description Prints a population of model objects as text
@@ -670,13 +668,12 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
                                     col.pt = c("deepskyblue4", "firebrick4"),
                                     col.bg = c("deepskyblue1", "firebrick1")) {
 
-
   nClasse <- unique(y)
   list_y <- list()
   list_X <- list()
   plot_list <- list()
 
-   # Determine class combinations based on the chosen approach
+  # Determine class combinations based on the chosen approach
   if (approch == "OVO") {
     k <- 1
     for (i in 1:(length(nClasse) - 1)) {
@@ -686,7 +683,9 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
         indices <- which(y == class_i | y == class_j)
         y_pair <- y[indices]
         X_pair <- X[, indices, drop = FALSE]
-        list_y[[k]] <- as.vector(y_pair)
+
+        # Convert y to 1 for class_i and -1 for class_j
+        list_y[[k]] <- ifelse(y_pair == class_i, 1, -1)
         list_X[[k]] <- X_pair
         k <- k + 1
       }
@@ -694,9 +693,11 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
   } else if (approch == "OVA") {
     for (i in 1:length(nClasse)) {
       class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "ALL")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
+      indices <- which(y == class_i | y != class_i)
+
+      # Convert y to 1 for the selected class and -1 for others
+      list_y[[i]] <- ifelse(y[indices] == class_i, 1, -1)
+      list_X[[i]] <- X[, indices, drop = FALSE]
     }
   } else {
     stop("Invalid approach: choose 'OVA' or 'OVO'")
@@ -707,7 +708,6 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
     class_label <- if (approch == "OVA") {
       paste(nClasse[i], "vs ALL")
     } else {
-
       class_pair <- combn(nClasse, 2, simplify = TRUE)[, i]
       paste(class_pair[1], "vs", class_pair[2])
     }
@@ -722,12 +722,9 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
       col.bg = col.bg
     )
   }
+
   return(plot_list)
 }
-
-
-
-
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class
 #'
@@ -772,35 +769,59 @@ plotPrevalence_mc <- function(features, X, y, approch = "OVA", topdown = TRUE,
       indices <- which(y == class_i | y != class_i)
 
       # Create the vector y for OVA
-      list_y[[i]] <- ifelse(y[indices] == class_i, 1, 0)
+      list_y[[i]] <- ifelse(y[indices] == class_i, 1, -1)
       list_X[[i]] <- X[, indices, drop = FALSE]
-    } else {
+
+    } else {  # OVO approach
       class_i <- strsplit(combination, "_vs_")[[1]][1]
       class_j <- strsplit(combination, "_vs_")[[1]][2]
       indices <- which(y == class_i | y == class_j)
 
-      # Store the y data for OVO.
-      list_y[[i]] <- y[indices]
+      # Set y to 1 for class_i and -1 for class_j
+      list_y[[i]] <- ifelse(y[indices] == class_i, 1, -1)
       list_X[[i]] <- X[, indices, drop = FALSE]
     }
   }
 
-  # Generate the graphs.
+  # Generate the graphs with legends.
   for (i in seq_along(combinations)) {
-    plot_list[[combinations[i]]] <- plotPrevalence(
+    class_combination <- combinations[i]
+    class_1 <- if (approch == "OVA") gsub("_vs_ALL", "", class_combination) else strsplit(class_combination, "_vs_")[[1]][1]
+    class_minus1 <- if (approch == "OVA") "ALL" else strsplit(class_combination, "_vs_")[[1]][2]
+
+    # Plot with the legend
+    p <- plotPrevalence(
       features = rownames(features[[i]]$pop.noz),
       X = list_X[[i]],
       y = list_y[[i]],
       topdown = topdown,
-      main = paste(main, combinations[i]),
+      main = paste(main, class_combination),
       plot = plot,
       col.pt = col.pt,
       col.bg = col.bg
     )
+
+    # Add legend annotation at the bottom of the plot
+    legend_text <- paste0(class_1, ": Red | ", class_minus1, ": Blue")  # Use class names instead of firebrick4 and deepskyblue4
+
+    # Adjust the plot with the legend text at the bottom
+    p <- p + annotate(
+      "text", x = Inf, y = -Inf, label = legend_text,
+      vjust = -1, hjust = 1, size = 4, color = "black"
+    ) +
+      theme(
+        plot.margin = unit(c(1, 1, 2, 1), "cm"),  # Extra margin at the bottom for legend
+        plot.caption = element_text(hjust = 0.5)  # Center the caption
+      ) +
+      labs(caption = legend_text)  # Use caption to add the legend text
+
+    plot_list[[class_combination]] <- p
   }
 
   return(plot_list)
 }
+
+
 
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class

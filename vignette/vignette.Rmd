@@ -158,7 +158,7 @@ load("Unique_votingAggregation.rda")
 load("Unique_maximizationAggregation.rda")
 load("Unique_rankingAggregation.rda")
 load("Unique_weightedAggregation.rda")
-load("Multi_Predomics_aggregation_ova.rda")
+#load("Multi_Predomics_aggregation_ova.rda")
 #load("Multi_maximizationAggregation.rda")
 #load("Multi_rankingAggregation.rda")
 #load("Multi_weightedAggregation.rda")
@@ -474,16 +474,15 @@ gridExtra::grid.arrange(grobs = plot_distribution, ncol = 4)
 
 ```{r fig.height=10, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE}
 plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "OVA")
-# Pour afficher tous les graphiques dans une grille
 gridExtra::grid.arrange(grobs = plots_abundance, ncol = 4)
 ```
 
 
 ```{r fig.height=10, fig.width=16, message=FALSE, warning=FALSE, paged.print=FALSE}
 plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "OVA")
-# Pour afficher tous les graphiques dans une grille
 gridExtra::grid.arrange(grobs = plots_prevalence, ncol = 4)
 ```
+
 
 
 # Use one versus one
@@ -638,11 +637,6 @@ print(g.after)  # Display the plot
 
 ```
 
-
-
-
-
-
 ## Analyzing the FBM 
 
 ```{r fig.height=12, fig.width=20, message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -673,7 +667,6 @@ gridExtra::grid.arrange(grobs = g2, ncol = 3)
 (g3 <- plotPrevalence_mc(features = fa, X = X, y = y , approch = "OVO"))
 gridExtra::grid.arrange(grobs = g3, ncol = 3)  # Ici, ncol spécifie 6 colonnes
 ```
-
 
 
 # Etat de l'art
@@ -1050,6 +1043,9 @@ print(paste("Cross-Validation Accuracy Standard Deviation:", round(sd_accuracy, 
 
 
 ```
+
+
+
 
 
 
