@@ -586,63 +586,101 @@ plotModel_mc <- function(mod, X, y,
 #' @return a list of roc objects
 #' @export
 plotAUC_mc <- function(scores, y, approch = "ovo", main = "", ci = TRUE, percent = TRUE) {
-
+  # Identifier les classes uniques
   classes <- unique(y)
   list_y <- list()
   list_scores <- list()
   plot_list <- list()
 
-  # Convert approch to lower case for verification
-  approch <- tolower(approch)
-
+  # One-vs-One (OVO) approach
   if (approch == "ovo") {
-    combinations <- combn(classes, 2, simplify = FALSE)
+    combinations <- combn(classes, 2, simplify = FALSE)  # Créer toutes les combinaisons de classes
     k <- 1
     for (comb in combinations) {
       class_i <- comb[1]
       class_j <- comb[2]
+
+      # Filtrer les échantillons des deux classes
       indices <- which(y == class_i | y == class_j)
       y_pair <- y[indices]
+      score_pair <- scores[[k]]
 
-      if (length(y_pair) < length(scores[[k]])) {
-        missing_len <- length(scores[[k]]) - length(y_pair)
+      # Ajuster les tailles si nécessaire
+      if (length(y_pair) < length(score_pair)) {
+        missing_len <- length(score_pair) - length(y_pair)
         y_random <- sample(y_pair, missing_len, replace = TRUE)
         y_pair <- c(y_pair, y_random)
+      } else if (length(score_pair) < length(y_pair)) {
+        missing_len <- length(y_pair) - length(score_pair)
+        score_random <- sample(score_pair, missing_len, replace = TRUE)
+        score_pair <- c(score_pair, score_random)
       }
 
+      # Vérification des types avant d'ajouter à la liste
+      if (!is.numeric(score_pair) || !is.character(y_pair)) {
+        stop("Scores must be numeric and labels must be character.")
+      }
+
+      # Sauvegarder les paires ajustées
       list_y[[k]] <- as.vector(y_pair)
-      list_scores[[k]] <- scores[[k]]
+      list_scores[[k]] <- score_pair
       k <- k + 1
     }
+
+    # One-vs-All (OVA) approach
   } else if (approch == "ova") {
     for (i in seq_along(classes)) {
       class_i <- classes[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
 
-      if (length(y_temp) < length(scores[[i]])) {
-        missing_len <- length(scores[[i]]) - length(y_temp)
+      # Créer les étiquettes binaires (classe vs All)
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+      score_temp <- scores[[i]]
+
+      # Ajuster les tailles si nécessaire
+      if (length(y_temp) < length(score_temp)) {
+        missing_len <- length(score_temp) - length(y_temp)
         y_random <- sample(y_temp, missing_len, replace = TRUE)
         y_temp <- c(y_temp, y_random)
+      } else if (length(score_temp) < length(y_temp)) {
+        missing_len <- length(y_temp) - length(score_temp)
+        score_random <- sample(score_temp, missing_len, replace = TRUE)
+        score_temp <- c(score_temp, score_random)
       }
 
+      # Vérification des types avant d'ajouter à la liste
+      if (!is.numeric(score_temp) || !is.character(y_temp)) {
+        stop("Scores must be numeric and labels must be character.")
+      }
+
+      # Sauvegarder les paires ajustées
       list_y[[i]] <- as.vector(y_temp)
-      list_scores[[i]] <- scores[[i]]
+      list_scores[[i]] <- score_temp
     }
   } else {
     stop("Invalid approach: choose 'ova' or 'ovo'")
   }
 
-  # Loop to generate graphs for each combination of classes
+  # Boucle pour générer des graphes pour chaque classe ou combinaison de classes
   for (i in seq_along(list_y)) {
     class_label <- if (approch == "ovo") {
-      paste(classes[i], "vs", classes[i + 1])
+      comb <- combinations[[i]]
+      paste(comb[1], "vs", comb[2])  # Ajustement pour étiqueter correctement chaque comparaison
     } else {
       paste(classes[i], "vs ALL")
     }
 
-    plot_list[[class_label]] <- plotAUC(score = list_scores[[i]], y = list_y[[i]],
-                                        main = paste(main, class_label),
-                                        ci = ci, percent = percent)
+    # Appel de la fonction plotAUC pour chaque sous-modèle
+    tryCatch({
+      plot_list[[class_label]] <- plotAUC(
+        score = list_scores[[i]],
+        y = list_y[[i]],
+        main = paste(main, class_label),
+        ci = ci,
+        percent = percent
+      )
+    }, error = function(e) {
+      message("Error plotting: ", e$message)
+    })
   }
 
   return(plot_list)
@@ -703,7 +741,7 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
     stop("Invalid approach: choose 'OVA' or 'OVO'")
   }
 
-  # Generate the graphs for each combination.
+  # Generate the graphs for each combination with legends.
   for (i in seq_along(list_y)) {
     class_label <- if (approch == "OVA") {
       paste(nClasse[i], "vs ALL")
@@ -712,7 +750,8 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
       paste(class_pair[1], "vs", class_pair[2])
     }
 
-    plot_list[[class_label]] <- plotAbundanceByClass(
+    # Plot with the legend
+    p <- plotAbundanceByClass(
       features = rownames(features[[i]]$pop.noz),
       X = list_X[[i]],
       y = list_y[[i]],
@@ -721,9 +760,36 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "OVA",
       col.pt = col.pt,
       col.bg = col.bg
     )
+
+    # Add legend annotation at the bottom of the plot
+    legend_text <- if (approch == "OVA") {
+      paste0(nClasse[i], ": Red | ALL: Blue")
+    } else {
+      class_pair <- strsplit(class_label, " vs ")[[1]]
+      paste0(class_pair[1], ": Red | ", class_pair[2], ": Blue")
+    }
+
+    # Adjust the plot with the legend text at the bottom
+    p <- p + annotate(
+      "text", x = Inf, y = -Inf, label = legend_text,
+      vjust = -1, hjust = 1, size = 4, color = "black"
+    ) +
+      theme(
+        plot.margin = unit(c(1, 1, 2, 1), "cm"),  # Extra margin at the bottom for the legend
+        plot.caption = element_text(hjust = 0.5)  # Center the caption
+      ) +
+      labs(caption = legend_text)  # Use caption to add the legend text
+
+    plot_list[[class_label]] <- p
   }
 
-  return(plot_list)
+  # Use the number of combinations to set ncol for horizontal layout
+  ncol <- length(plot_list)  # Set ncol to the number of plots to display them in one row
+
+  # Create the arranged grid of plots
+  arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ncol)
+
+  return(arranged_plot)
 }
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class
@@ -818,7 +884,13 @@ plotPrevalence_mc <- function(features, X, y, approch = "OVA", topdown = TRUE,
     plot_list[[class_combination]] <- p
   }
 
-  return(plot_list)
+  # Use the number of combinations to set ncol for horizontal layout
+  ncol <- length(plot_list)  # Set ncol to the number of plots to display them in one row
+
+  # Create the arranged grid of plots
+  arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ncol)
+
+  return(arranged_plot)
 }
 
 
@@ -834,14 +906,16 @@ plotPrevalence_mc <- function(features, X, y, approch = "OVA", topdown = TRUE,
 #' @param vertical.label: wether the x-axis labels should be vertical or not (default:TRUE)
 #' @return a list ggplot object
 #' @export
-plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "OVA", topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"), vertical.label = TRUE) {
+plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "OVA",
+                                      topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"),
+                                      vertical.label = TRUE) {
 
   # Determine the class combinations based on the selected approach
   classes = unique(y)
   if (approch == "OVA") {
     combinations <- paste0(classes, "_vs_ALL")
   } else if (approch == "OVO") {
-    combinations <- combn(classes, 2, function(x) paste0(x[1], "_vs_", x[2]))
+    combinations <- combn(classes, 2, function(x) paste0(x[1], "_vs_", x[2]), simplify = TRUE)
   } else {
     stop("Invalid approach: choose 'OVA' or 'OVO'")
   }
@@ -886,11 +960,32 @@ plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "OVA", top
       p <- p + theme(legend.position = "none", axis.text = element_text(size = 9))
     }
 
+    # Define the legend text for the combination
+    legend_text <- if (approch == "OVA") {
+      paste0(classes[i], ": Red | ALL: Blue")
+    } else {
+      class_pair <- strsplit(combination, "_vs_")[[1]]
+      paste0(class_pair[1], ": Red | ", class_pair[2], ": Blue")
+    }
+
+    # Add the legend as a caption at the bottom of the plot
+    p <- p + theme(
+      plot.margin = unit(c(1, 1, 2, 1), "cm"),  # Extra margin at the bottom for the legend
+      plot.caption = element_text(hjust = 0.5)  # Center the caption
+    ) +
+      labs(caption = legend_text)  # Use caption to add the legend text
+
     # Add this plot to the list
     plot_list[[combination]] <- p
   }
 
-  # Return the list of plots
-  return(plot_list)
+  # Use the number of combinations to set ncol for horizontal layout
+  ncol <- length(plot_list)  # Set ncol to the number of plots to display them in one row
+
+  # Create the arranged grid of plots
+  arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ncol)
+
+  # Return the arranged plot
+  return(arranged_plot)
 }
 
