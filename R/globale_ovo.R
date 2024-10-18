@@ -3737,10 +3737,18 @@ regenerate_clf <- function(clf, X, y, approch) {
 
   max.nb.features <- nrow(X)
 
-  for (i in 1:(length(list_X))) {
-    Xi <- list_X[[i]][rownames(clf$feature.cor[[i]])[1:max.nb.features],]
-    mino <- min(Xi, na.rm=TRUE)
-    maxo <- max(Xi, na.rm=TRUE)
+  for (i in 1:length(list_X)) {
+    Xi <- list_X[[i]][rownames(clf$feature.cor[[i]])[1:max.nb.features], ]
+
+    # Check if Xi is non-empty and does not contain only NAs
+    if (length(Xi) > 0 && !all(is.na(Xi))) {
+      mino <- min(Xi, na.rm = TRUE)
+      maxo <- max(Xi, na.rm = TRUE)
+    } else {
+      mino <- NA  # Assign NA if the condition is met
+      maxo <- NA  # Assign NA if the condition is met
+    }
+
     list_XX[[i]] <- Xi
     list_min[[i]] <- mino
     list_max[[i]] <- maxo
@@ -3758,6 +3766,7 @@ regenerate_clf <- function(clf, X, y, approch) {
 
   return(clf)
 }
+
 
 # Create a function that transforms a population of model objects onto a dataframe to be plotted
 #' populationToDataFrame
