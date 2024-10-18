@@ -159,15 +159,14 @@ load("Unique_maximizationAggregation.rda")
 load("Unique_rankingAggregation.rda")
 load("Unique_weightedAggregation.rda")
 load("res_clf.rda")
-load("sota_ml.rda")
-load("Final_combined_results_with_terbeam.rda")
+load("analysis_table.rda")
 ```
 
 ## Visualization of the generalization performance of predomics and SOTA models.
 
 ```{r warning=FALSE}
 # Select only the relevant columns for generalization
-combined_generalization <- Final_combined_results_with_terbeam %>%
+combined_generalization <- analysis_table %>%
   select(Methods, Accuracy.generalization, Precision.generalization, Recall.generalization, F1.generalization)
 
 # Convert the columns to numeric, handling potential conversions
@@ -222,11 +221,11 @@ cat("The plot has been saved under the name 'generalization_metrics_boxplots.pdf
 ```{r warning=FALSE}
 
 # Select only the relevant columns for generalization
-combined_generalization <- Final_combined_results_with_terbeam %>%
+combined_generalization <- analysis_table %>%
   select(Methods, Accuracy.generalization, Precision.generalization, Recall.generalization, F1.generalization)
 
 # Select only the relevant columns for empirical data
-combined_empirique <- Final_combined_results_with_terbeam %>%
+combined_empirique <- analysis_table %>%
   select(Methods, Accuracy.empirique, Precision.empirique, Recall.empirique, F1.empirique)
 
 # Convert the columns to numeric, handling potential conversions
@@ -534,9 +533,18 @@ alldf <- rbind(df1, df2, df3, df4, df5,df6)
 
 
 
+```{r}
+# Assigner le DataFrame combiné à une nouvelle variable si nécessaire
+#analysis_table <- combined_df
+
+# Sauvegarder le DataFrame en tant que fichier RDA
+#save(analysis_table, file = "analysis_table.rda")
 
 
 
+
+
+```
 
 
 
