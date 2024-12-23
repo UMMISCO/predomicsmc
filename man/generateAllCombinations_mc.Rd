@@ -2,7 +2,7 @@
 % Please edit documentation in R/terbeam.lib_mc.R
 \name{generateAllCombinations_mc}
 \alias{generateAllCombinations_mc}
-\title{generateAllCombinations}
+\title{generateAllCombinations_mc}
 \usage{
 generateAllCombinations_mc(
   X,
@@ -14,6 +14,27 @@ generateAllCombinations_mc(
   approch = "ovo"
 )
 }
+\arguments{
+\item{X}{A matrix of features, where columns represent samples.}
+
+\item{y}{A vector of labels for the samples.}
+
+\item{clf}{A classifier object containing its parameters and coefficients.}
+
+\item{ind.features.to.keep}{A list of feature indices to be considered for combinations.}
+
+\item{sparsity}{The number of features to include in each combination.}
+
+\item{allFeatures}{A logical flag indicating whether all features should be included.}
+
+\item{approch}{The approach to use for multiclass classification (default: "ovo").}
+}
+\value{
+A list of models generated from all possible combinations of features.
+}
 \description{
-Generate every possible combination of a list of features and evaluate them
+This function generates all possible combinations of features based on a specified sparsity level
+}
+\details{
+Generate All Combinations of Features for Multiclass Classification
 }

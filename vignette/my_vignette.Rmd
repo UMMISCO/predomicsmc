@@ -1,0 +1,553 @@
+---
+title: "my_vignette"
+author: "Fabien"
+date: "2024-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The mcpredomics package is a supervised learning method for interpretable
+# multiclass classification of metagenomic data. This method is derived 
+# from one of the genetic algorithm-based heuristics in the predomics package.
+# More details: https://github.com/predomics/predomicspkg
+
+# Installation Instructions
+
+## Step 1: Install dependencies
+install.packages(c("doSNOW", "foreach", "snow", "doRNG", "gtools",
+                   "glmnet", "pROC", "viridis", "kernlab", "randomForest"))
+
+# Ensure BiocManager is installed
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+
+# Install BioQC (a Bioconductor package)
+BiocManager::install("BioQC")
+
+# Optionally install additional packages
+install.packages(c("testthat", "roxygen2", "predomics", "mcpredomics"))
+
+
+
+#Introduction
+
+The mcpredomics package is designed to streamline the development, evaluation, and visualization of machine learning models in a multiclass context. It provides a comprehensive suite of functions to assist users in every stage of the modeling process, from visualizing model characteristics to assessing their performance and managing associated populations. This documentation serves as a guide to introduce the package’s functionality and provide users with the tools they need for effective implementation.
+
+## Visualization Functions
+
+The package includes a variety of general-purpose visualization functions to explore models, their performance metrics, and the underlying populations. These functions allow users to gain valuable insights into their data and models with ease.
+The implemented functions include:
+printy_mc
+printModel_mc
+printPopulation_mc
+printModelCollection_mc
+printExperiment_mc
+printClassifier_mc
+plotAUC_mc
+plotPrevalence_mc
+plotAbundanceByClass_mc
+mergeMeltImportanceCV_mc
+plotFeatureModelCoeffs_mc
+makeFeatureAnnot_mc
+plotModel_mc
+To learn more about the functionality of each visualization tool, use the ?? command followed by the function name. For example, ??printy_mc provides detailed information about the printy_mc function.
+
+##Binary Sub-Model Evaluation
+
+To support the evaluation of binary sub-models, we have implemented several global functions that provide insights into accuracy, AUC, regression metrics, feature importance, and more. These tools are crucial for assessing the quality and relevance of individual sub-models within the multiclass framework.
+The following functions are available:
+getSign_mc
+evaluateAccuracy_mc
+evaluateAUC_mc
+evaluateAdditionnalMetrics_mc
+evaluateModelRegression_mc
+evaluateFit_mc
+evaluateModel_mc
+evaluatePopulation_mc
+listOfSparseVecToListOfModels_mc
+evaluateFeatureImportanceInPopulation_mc
+For a detailed description of any of these functions, you can use the ?? command. For instance, ??evaluateAccuracy_mc provides a comprehensive overview of the evaluateAccuracy_mc function.
+
+##Multiclass Predictions and Aggregation Methods
+
+The package supports multiclass modeling using one-versus-all (OVA) and one-versus-one (OVO) approaches. Additionally, it provides multiple methods for aggregating predictions from these approaches, as well as tools for evaluating the aggregated models.
+The available functions are:
+Prediction: predictModel_ova, predictModel_ovo
+Aggregation: voting, Predomics_aggregation_ovo, weighted, Predomics_aggregation_ova, maximization, ranking
+Evaluation: evaluateModel_aggregation, evaluateModels_aggregation
+Each function serves a unique role, whether it involves generating predictions, combining results, or assessing model performance. For more details, use the ?? command, such as ??predictModel_ova for the predictModel_ova function.
+
+##Multiclass Algorithm Implementations
+
+We have extended the terBeam and terga1 algorithms to handle multiclass problems, introducing a set of specialized functions for model generation, feature combination management, and evolution optimization. These tools are designed to create scalable and efficient multiclass models.
+The implemented functions include:
+terBeam_mc, terBeam_fit_mc
+generateAllSingleFeatureModel_mc, generateAllCombinations_mc
+countEachFeatureApperance_mc, getFeatures2Keep_mc
+terga1_mc, terga1_mc_fit
+evolve_mc
+You can explore the purpose and functionality of each function using the ?? command. For example, ??terBeam_fit_mc will provide a detailed explanation of the terBeam_fit_mc function.
+
+##Core Functionalities
+
+To ensure flexibility and efficiency in training, testing, and validating multiclass models, we have implemented the following core functions:
+fit_mc: Fits models to the provided dataset.
+runClassifier_mc: Executes the classifier to generate predictions.
+runCrossval_mc: Runs cross-validation to evaluate model performance.
+These foundational functions make it easier to integrate multiclass workflows into your projects. For detailed information on any of these functions, use the ?? command, such as ??runClassifier_mc for the runClassifier_mc function.
+
+
+```{r warning=FALSE}
+library(mcpredomics)
+library(predomics)
+library(ggplot2)
+library(gridExtra)
+library(pROC)
+library(reshape2)
+library(randomForest)
+library(caret)
+library(gtools)
+library(ggpubr)
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(e1071)
+library(glmnet)
+
+```
+
+
+
+```{r}
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
+set.seed(123)
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+
+# Filter null values
+X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
+
+set.seed(42)
+y = as.vector(yvec)
+X = X_general
+
+# Determine the number of samples per class
+nombre_echantillons_par_classe <- min(table(y))
+
+# Function to balance classes and maintain order
+equilibrer_classes <- function(y, X, nombre_echantillons_par_classe, seed = 123) {
+  classes <- unique(y)
+  indices_equilibres <- integer(0)
+  
+  for (classe in classes) {
+    indices_classe <- which(y == classe)
+    set.seed(seed)
+    indices_equilibres <- c(indices_equilibres, sample(indices_classe, nombre_echantillons_par_classe))
+  }
+
+  # Sort balanced indices to maintain original order
+  indices_equilibres <- sort(indices_equilibres)
+  return(list(y = y[indices_equilibres], X = X[, indices_equilibres]))
+}
+
+# Get balanced data
+donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
+y_equilibre <- donnees_equilibrees$y
+X_equilibre <- donnees_equilibrees$X
+
+# Check distribution after balancing
+set.seed(42)
+indices_division <- createDataPartition(y_equilibre, p = 0.8, list = FALSE)
+
+# Split balanced data into 80% for training and 20% for testing
+y <- as.vector(y_equilibre[indices_division])
+y.test <- as.vector(y_equilibre[-indices_division])
+X <- X_equilibre[, indices_division, drop = FALSE]
+X.test <- X_equilibre[, -indices_division, drop = FALSE]
+
+table(y)
+table(y.test)
+dim(X)
+dim(X.test)
+```
+```{r}
+clf <- terBeam_mc(sparsity = c(7,8,9), 
+                                   max.nb.features = 1000,
+                                   seed = 1,
+                                   nCores = 1,
+                                   evalToFit = "accuracy_",
+                                   objective = "auc",
+                                   experiment.id = "terBeam_mc",
+                                   experiment.save = "nothing")
+  
+                      
+  printy(clf)  
+```
+
+
+
+
+
+```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
+runit = TRUE
+if(runit)
+{
+res_clf_predomics_ova <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ova", nfolds= 10, constrained = FALSE); 
+save(res_clf_predomics_ova , clf, file ="res_clf_predomics_ova.rda", compression_level = 9)
+}
+
+# ... Database X is not a matrix! Converting ...
+# ... Classification mode, computing factor(y) for speedup and robustness
+# ... Loading feature correlation for speedup
+# ... Correlation file loaded
+# ... Storing data in the classifier object for speedup
+# ... Computing ternary coefficients for speedup
+# ... One seed found, setting by default
+# ... Running the classifier terga2 with a single CPU
+# ... Second and faster version of terga fitting based on Genetic Algorithm heuristics ...
+# ... Cross validation mode
+# ... Starting cross validation not in parallel
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ....................................................................................................
+# ... Learning process is finished succesfuly
+# ... Thank you for using Predomics. Don't forget to digest the results now.
+# 
+# [1] "experiment" "predomics" 
+
+```
+
+
+
+
+## Exploring the results
+
+```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+
+  load("terbeam_predomics_aggregation_ova_constrained.rda")
+
+```
+
+
+
+### Digesting the results 
+
+```{r digesting results, fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+res_clf.dig <- digestmc(obj = terbeam_predomics_aggregation_ova_constrained, penalty = 0.75/100, plot = TRUE)
+```
+
+
+### Regenerate object Clf 
+
+```{r}
+clf <- regenerate_clf(clf, X, y, approch = "ova")
+
+```
+
+### Visualizing the best model
+
+The best-learned model can be visualized simply by printing it along with a summary of information on performance and model size. Furthermore, we can further explore the model by visualizing it using the barcode plot ?plotModel_mc. Finally, the importance of each feature can also be displayed using the same function, as illustrated in the figure below.
+
+```{r best model, fig.width=7, warning=FALSE}
+# get the best model
+best.model = res_clf.dig$best$model
+# Visualize the model information (if needed)
+printy_mc(best.model)
+
+# Generate the plots
+plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
+plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
+
+# Open a PDF device to save the grid of plots
+pdf("model_visualization_plots.pdf", width = 12, height = 8)  # Adjust width and height as needed
+
+# Extract the plots from each list and pass them to `grid.arrange`
+grid.arrange(grobs = c(plots1, plots2), ncol = 4)
+
+# Close the PDF device
+dev.off()
+
+# Confirmation of the save process
+cat("The plots have been saved under the name 'model_visualization_plots.pdf'.\n")
+
+```
+### Visualizing model performance AUC
+
+```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+tmp <- plotAUC_mc(scores = best.model$score_, y = y, percent = TRUE, approch = "ova"); rm(tmp)
+
+
+```
+
+### Family of Best Models (FBM)
+
+A family of best models is defined as the set of models returned by the predomics algorithm, whose accuracy is within a given window of the best model's accuracy. This window is defined by computing a significance threshold assuming that accuracy follows a binomial distribution (p<0.05). 
+
+```{r}
+# Convert the model collection into a population of models scrambled by model size
+pop <- modelCollectionToPopulation(terbeam_predomics_aggregation_ova_constrained$classifier$models)
+printy_mc(pop)
+# Function to create boxplot for a given data frame
+create_boxplot <- function(data, title) {
+  # Melt the dataframe for ggplot
+  data.melt <- melt(data, id.vars = c("accuracy_", "eval.sparsity"))
+  
+  # Create ggplot
+  plot <- ggplot(data = data.melt, aes(y = accuracy_, x = eval.sparsity)) +
+    geom_boxplot(notch = FALSE, outlier.shape = NA, position = position_dodge(width = 0.9), alpha = 0.3) +
+    geom_point(aes(color = eval.sparsity), position = position_jitterdodge(dodge.width = 0.9), size = 1, alpha = 0.5) +
+    ylim(c(0, 1)) +
+    xlab("Model Parsimony") +
+    ggtitle(title) +
+    theme_bw() +
+    theme(legend.position = "bottom", legend.direction = "horizontal") +
+    guides(colour = "none")
+  
+  return(plot)
+}
+
+# Convert the population to a data frame
+pop.df <- populationToDataFrame_mc(pop)
+
+# Plotting for the original population (single figure)
+pop.dff <- as.data.frame(pop.df[[1]])  # Convert the first submodel to a data frame
+g.before <- create_boxplot(pop.dff, title = "Original Population")
+#print(g.before)  # Display the plot
+
+# Select the best population models
+fbm <- selectBestPopulation(pop)
+#printy_mc(fbm)
+
+# Convert the best population models to a data frame
+fbm.df <- populationToDataFrame_mc(fbm)
+
+# Plotting for the selected best models (single figure)
+fbm.dff <- as.data.frame(fbm.df[[1]])  # Convert the first submodel to a data frame
+g.after <- create_boxplot(fbm.dff, title = "FBM")
+print(g.after)  # Display the plot
+
+```
+
+###Analyzing the FBM
+
+The analysis of the family of best models (FBM) can be very insightful for discovering the most important variables in the prediction process. Let's start by examining the usage of variables in the FBM models. For this, we run the ?makeFeatureAnnot_mc function to obtain the feature distribution in the model matrix, which is a list of pop.noz elements. The models in the FBM are ranked by accuracy, and this order will be preserved in the coefficient dataframe. There are 20 features found in the FBM models. The figure below shows that some of these features are very prevalent in the FBM, making them likely important. The abundance and prevalence distribution of these features can be explored with ?plotAbundanceByClass_mc and ?plotPrevalence_mc, respectively. Gray stars on the right side of the graphics indicate significant differences between the prediction groups.
+
+```{r  warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=14, fig.width=16}
+fa <- makeFeatureAnnot_mc(pop = fbm, 
+                       X = X, 
+                       y = y, 
+                       clf = clf,
+                       approch = "ova")
+plot_distribution <- plotFeatureModelCoeffs_mc(feat.model.coeffs = fa, y, approch = "ova")
+plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "ova")
+plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ova")
+```
+
+### Feature importance
+
+Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
+
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=15}
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_constrained),
+                                        filter.cv.prev = 0,
+                                        min.kfold.nb = FALSE,
+                                        learner.grep.pattern = "*",
+                                        #nb.top.features = 50,
+                                        feature.selection = fa,
+                                        scaled.importance = TRUE,
+                                        make.plot = TRUE,
+                                        cv.prevalence = FALSE)
+
+
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_constrained),
+                                        filter.cv.prev = 0,
+                                        min.kfold.nb = FALSE,
+                                        learner.grep.pattern = "*",
+                                        nb.top.features = 148,
+                                        #feature.selection = rownames(fa$pop.noz),
+                                        scaled.importance = TRUE,
+                                        make.plot = TRUE,
+                                        cv.prevalence = FALSE)
+```
+
+
+
+
+#############################################################################################################################
+############################################################################################################################
+## ANNEXES
+### Analysys results predomics and sota
+
+
+The data in the **analysis_table_final1** dataframe comes from various experiments conducted using **Predomics** and state-of-the-art methods. For the **Predomics** approach, two heuristics were used: **Terga1** and **Terbeam**. For each heuristic, 12 experiments were conducted, each involving 6 aggregation methods and 2 variable selection methods. The variables were selected in two ways: (i) a constrained selection, where the same variables are used for all models, and (ii) a model-specific selection, called "unconstrained".
+
+Regarding the aggregation methods, two new approaches were developed: **Predomics_Aggrégation_ova**, adapted to the "one versus all" approach, and **Predomics_Aggrégation_ovo**, adapted to the "one versus one" approach. In parallel, we explored four state-of-the-art methods for each approach ("one versus all" and "one versus one"): **Maximization** and **Ranking** for the "one versus all" approach, and **Voting** and **Weighted** for the "one versus one" approach.
+
+In addition to the **Predomics** heuristics, we also evaluated seven state-of-the-art methods: **Random Forest**, **SVM**, **Logistic Regression**, **KNN**, **Artificial Neural Networks**, **Gradient Boosting**, and **Decision Tree**.
+
+All experiments were conducted using 10-fold cross-validation. The **analysis_table_final1** dataframe contains several columns, including **Fold**, which identifies the folds used, as well as columns for different performance metrics: **Accuracy.empirique**, **Accuracy.generalization**, **Precision.empirique**, **Precision.generalization**, **Recall.empirique**, **Recall.generalization**, **F1.empirique**, **F1.generalization**, and **Methods**, the latter indicating the method used for each evaluation.
+
+To construct this dataframe, the results from the different experiments were merged into a single structure using the **bind_rows()** function, making it easier to analyze and compare the results obtained with the various approaches and methods used.
+
+```{r warning=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Charger les bibliothèques nécessaires
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)  # Pour str_starts
+
+# Imputer les valeurs manquantes avec la moyenne
+analysis_table_final <- analysis_table_final %>% 
+  mutate(across(everything(), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Convertir en format long
+df <- analysis_table_final %>% 
+  pivot_longer(
+    cols = -c(Fold, Methods),
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>% 
+  mutate(
+    Partition = recode(Partition,
+                       'empirique' = 'train',
+                       'generalization' = 'test'
+    ),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Predomics Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Predomics Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Predomics Terga1 constrained",
+      TRUE ~ "SOTA"  # Pour toutes les autres méthodes
+    )
+  )
+
+# Agréger les données pour le résumé
+df_summary <- df %>% 
+  group_by(Methods, Partition, Metric) %>% 
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  left_join(df %>% select(Methods, Group) %>% distinct(), by = "Methods")  # Assurez-vous que Group est présent
+
+# Vérifiez les groupes présents (optionnel pour le débogage)
+#print(unique(df_summary$Group))
+
+# Tracez le graphique
+df_summary %>% 
+  ggplot(aes(x = Methods, y = mean_value, color = Partition)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +  # Taille des points
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value),
+                position = position_dodge(width = 0.5), width = 0.2) +
+  facet_grid(Metric ~ Group, scales = "free") +  # Facettage par Metric et Group
+  ylab("Value") +
+  xlab("Methods") +  # Réglage des labels
+  theme_bw() +
+  scale_colour_manual(values = c("seagreen", "firebrick3")) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+
+```{r}
+# Charger les bibliothèques nécessaires
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)  # Pour str_starts
+
+# Imputer les valeurs manquantes avec la moyenne
+analysis_table_final <- analysis_table_final %>% 
+  mutate(across(everything(), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Convertir en format long
+df <- analysis_table_final %>% 
+  pivot_longer(
+    cols = -c(Fold, Methods),
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>% 
+  mutate(
+    Partition = recode(Partition,
+                       'empirique' = 'train',
+                       'generalization' = 'test'
+    ),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Predomics Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Predomics Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Predomics Terga1 constrained",
+      TRUE ~ "SOTA"  # Pour toutes les autres méthodes
+    )
+  )
+
+# Agréger les données pour le résumé
+df_summary <- df %>% 
+  group_by(Methods, Partition, Metric) %>% 
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  left_join(df %>% select(Methods, Group) %>% distinct(), by = "Methods")  # Assurez-vous que Group est présent
+
+# Définir le fichier PDF de sortie
+output_pdf <- "analysis_plot.pdf"  # Nom du fichier PDF
+pdf(file = output_pdf, width = 12, height = 8)  # Dimensions du graphique
+
+# Générer le graphique
+df_summary %>% 
+  ggplot(aes(x = Methods, y = mean_value, color = Partition)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +  # Taille des points
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value),
+                position = position_dodge(width = 0.5), width = 0.2) +
+  facet_grid(Metric ~ Group, scales = "free") +  # Facettage par Metric et Group
+  ylab("Value") +
+  xlab("Methods") +  # Réglage des labels
+  theme_bw() +
+  scale_colour_manual(values = c("seagreen", "firebrick3")) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "bottom"
+  )
+
+# Fermer le fichier PDF
+dev.off()
+
+# Message de confirmation
+cat("Le fichier PDF a été généré : ", output_pdf, "\n")
+
+```
+
+
+
+

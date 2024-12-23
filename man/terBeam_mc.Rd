@@ -2,7 +2,7 @@
 % Please edit documentation in R/terbeam_mc.R
 \name{terBeam_mc}
 \alias{terBeam_mc}
-\title{terbeam_ova}
+\title{terbeam_mc}
 \usage{
 terBeam_mc(
   sparsity = 1:5,

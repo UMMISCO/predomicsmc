@@ -19,41 +19,37 @@ library(glmnet)
 
 # Charger les données
 chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
-experiences <- system.file("vignette", "res_clf.rda", package = "mcpredomics")
+experiences <- system.file("vignette", "terga1_voting_unconstrained.rda", package = "mcpredomics")
 load(chemin_du_dataset)
 load(experiences)
 
 # Créer le modèle
-clf <- terBeam_mc(
-  sparsity = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
-  max.nb.features = 1000,
-  seed = 1,
-  nCores = 1,
-  evalToFit = "accuracy_",
-  objective = "auc",
-  experiment.id = "terBeam_mc",
-  experiment.save = "nothing"
+clf <- terga1_mc(nCores = 1,
+                 seed = 1,
+                 plot = TRUE
 )
+printy(clf) # print the object for more information
+isClf(clf)  # test whether the object is a classifier
+class(clf)
 
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
 set.seed(123)
 yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-indices_tries <- order(yvec)
-yvec_trie <- yvec[indices_tries]
-X_general  <- mc.input$X[,indices_tries]
-# Create an index vector for data partitioning
 
-X_general <- X_general[rowSums(X_general)!=0,]; dim(X_general) # filter out variables with only zero values
-X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE); dim(X_general)
+# Filter null values
+X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
 
 set.seed(42)
-y = as.vector(yvec_trie)
+y = as.vector(yvec)
 X = X_general
 
-# Number of desired samples in each class
+# Determine the number of samples per class
 nombre_echantillons_par_classe <- min(table(y))
 
-# Function to balance the classes
-equilibrer_classes <- function(y, X, nombre_echantillons_par_classe,seed =123) {
+# Function to balance classes and maintain order
+equilibrer_classes <- function(y, X, nombre_echantillons_par_classe, seed = 123) {
   classes <- unique(y)
   indices_equilibres <- integer(0)
 
@@ -63,41 +59,42 @@ equilibrer_classes <- function(y, X, nombre_echantillons_par_classe,seed =123) {
     indices_equilibres <- c(indices_equilibres, sample(indices_classe, nombre_echantillons_par_classe))
   }
 
+  # Sort balanced indices to maintain original order
+  indices_equilibres <- sort(indices_equilibres)
   return(list(y = y[indices_equilibres], X = X[, indices_equilibres]))
 }
 
+# Get balanced data
 donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
 y_equilibre <- donnees_equilibrees$y
 X_equilibre <- donnees_equilibrees$X
 
-# Verify the distribution after balancing
-
+# Check distribution after balancing
 set.seed(42)
 indices_division <- createDataPartition(y_equilibre, p = 0.8, list = FALSE)
 
-# Split yvec_trie into 80% train and 20% test
+# Split balanced data into 80% for training and 20% for testing
 y <- as.vector(y_equilibre[indices_division])
 y.test <- as.vector(y_equilibre[-indices_division])
-X <- X_equilibre[,indices_division]
-X.test <- X_equilibre[,-indices_division]
-
+X <- X_equilibre[, indices_division, drop = FALSE]
+X.test <- X_equilibre[, -indices_division, drop = FALSE]
 
 # Approche
-approch = "ova"
+approch = "ovo"
 
 # Exécutez la fonction qui génère les coefficients
 coeffss <- getSign_mc(X = X, y = y, clf = clf, parallel.local = FALSE, approch = approch)
 
 # Vérifiez la longueur de coeffss et de res_clf
 test_that('function getSign_mc', {
-  expect_length(coeffss, 4)
-  expect_length(coeffss[[1]], 3389)
-  expect_length(res_clf, 2)
+  expect_length(coeffss, 6)
+  expect_length(coeffss[[1]], 3385)
+  expect_length(terga1_voting_unconstrained, 2)
 })
 
-pop <- modelCollectionToPopulation(res_clf$classifier$models)
+pop <- modelCollectionToPopulation(terga1_voting_unconstrained$classifier$models)
 fbm <- selectBestPopulation(pop)
-clf <- regenerate_clf(clf, X, y, approch = "ova")
+clf <- regenerate_clf(clf, X, y, approch = "ovo")
 # Vérifiez la longueur de coeffss et de res_clf
 test_that('function regenerate_clf ', {
   expect_length(clf, 5)
@@ -112,16 +109,18 @@ test_that("evaluateModel_mc returns correct metrics", {
     clf = clf,
     eval.all = TRUE,
     force.re.evaluation = TRUE,
-    aggregation_ = "Predomics_aggregation_ova",
+    aggregation_ = "voting",
     mode = "test",
-    approch = "ova"
+    approch = "ovo"
   )
 
   # Vérification que chaque métrique est correcte avec tolérance
-  expect_length(best.model.test, 28)
-  expect_equal(best.model.test$accuracy_, 0.5530303, tolerance = 1e-4) # Ajuster la tolérance si nécessaire
-  expect_equal(best.model.test$precision_, 0.5827553, tolerance = 1e-4)
-  expect_equal(best.model.test$recall_, 0.5530303, tolerance = 1e-4)
-  expect_equal(best.model.test$f1_, 0.5675038, tolerance = 1e-4)
+  expect_length(best.model.test, 31)
+  expect_equal(best.model.test$accuracy_, 0.6364, tolerance = 1e-4) # Ajuster la tolérance si nécessaire
+  expect_equal(best.model.test$precision_, 0.6569, tolerance = 1e-4)
+  expect_equal(best.model.test$recall_, 0.6364, tolerance = 1e-4)
+  expect_equal(best.model.test$f1_, 0.6465, tolerance = 1e-4)
+
 })
+
 
