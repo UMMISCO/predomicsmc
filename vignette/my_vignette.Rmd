@@ -179,7 +179,7 @@ dim(X)
 dim(X.test)
 ```
 ```{r}
-clf <- terBeam_mc(sparsity = c(7,8,9), 
+clf <- terBeam_mc(sparsity = c(2,3,4,5,6,7,8,9,10), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
