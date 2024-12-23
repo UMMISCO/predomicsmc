@@ -24,26 +24,32 @@
 #' @import doRNG
 #' @description This function runs a learning experiment based on the classifier
 #' object and the given dataset.
-#' @param X: Dataset to classify
-#' @param y: Variable to predict
-#' @param clf: The classifier object object containing the settings of the classifier
-#' @param cross.validate: Whether or not the classification should be run in
-#' cross-validation mode (default:TRUE)
-#' @param lfolds: The folds to be used for the cross-validation
-#' @param nfolds: The number of folds to use in the cross-validation. If lfolds
-#' are not specified this option allows to set them up (default:10)
-#' @param parallelize.folds: Switch setting the parallelization mode based on
-#' cross-validation folds and nothing else in the algorithm (default:TRUE).
+#' @param X Dataset to classify
+#' @param y Variable to predict
+#' @param clf The classifier object containing the settings of the classifier
+#' @param cross.validate Whether or not the classification should be run in
+#' cross-validation mode (default: TRUE)
+#' @param lfolds The folds to be used for the cross-validation
+#' @param nfolds The number of folds to use in the cross-validation. If lfolds
+#' are not specified this option allows to set them up (default: 10)
+#' @param parallelize.folds Switch setting the parallelization mode based on
+#' cross-validation folds and nothing else in the algorithm (default: TRUE).
 #' This is much more efficient.
-#' @param compute.importance: The importance of variables in the learning process
+#' @param compute.importance The importance of variables in the learning process
 #' during cross-validation can be computed. This is based on data perturbation
 #' similar to the mean decrease accuracy in the random forest algorithm. Moreover,
-#' this gives feature prevalence in models during CV (default:TRUE)
-#' @param return.all: Should all results from the cross-validation steps be
+#' this gives feature prevalence in models during CV (default: TRUE)
+#' @param return.all Should all results from the cross-validation steps be
 #' returned. This is usually needed when testing stability of the models
-#' (default:FALSE)
-#' @param log.file: The output file for parallel logs (default:'parallel.log')
-#' @param path: The path where to save temporary data
+#' (default: FALSE)
+#' @param log.file The output file for parallel logs (default: 'parallel.log')
+#' @param approch The classification approach to use, such as "ova" (one-vs-all)
+#' or "ovo" (one-vs-one) (default: "ova")
+#' @param aggregation_ The aggregation method used for combining results from
+#' binary models in multi-class classification (default: "Predomics_aggregation_ova")
+#' @param constrained Logical flag indicating whether the classification should
+#' be constrained (default: FALSE)
+#' @param path The path where to save temporary data
 #' @return An experiment object containing the classifier along with the
 #' classification results as a sub-element
 #' @export
@@ -52,13 +58,14 @@ fit_mc <- function(X,
                    clf,
                    cross.validate = FALSE,
                    lfolds = NULL,
-                   nfolds = 4,
+                   nfolds = 10,
                    parallelize.folds = TRUE,
                    compute.importance = TRUE,
                    return.all = FALSE,
                    log.file = "parallel.log",
-                   approch ="ova",
-                   aggregation_ = "Predomics_aggregation_ova",
+                   approch ="ovo",
+                   aggregation_ = "voting",
+                   constrained = FALSE,
                    path = NULL)
 {
   # test the classifier object
@@ -68,6 +75,9 @@ fit_mc <- function(X,
   }
 
   clf$params$compute.importance <- compute.importance
+  resul = sort_data(y, X)
+  y <- resul$y
+  X <- resul$X
 
   if(!is.matrix(X))
   {
@@ -416,7 +426,7 @@ fit_mc <- function(X,
   {
     cat("... No cross validation mode\n")
     res.clf               <- list()
-    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch, aggregation_ = aggregation_)
+    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch, aggregation_ = aggregation_, constrained = constrained)
 
   } else
   {
@@ -424,7 +434,7 @@ fit_mc <- function(X,
     res.clf               <- list()
     res.clf$classifier    <- list()
     res.clf$lfolds        <- lfolds
-    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch, aggregation_ = aggregation_)
+    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch, aggregation_ = aggregation_, constrained = constrained)
     # store the whole dataset results in the right place
     res.clf$classifier    <- res.clf$crossVal$whole
     # unweight the crossVal object that played the role of the transporter
@@ -559,7 +569,7 @@ fit_mc <- function(X,
   return(res.clf)
 }
 #' Runs the learning on a dataset
-#' @title runClassifier_ovo
+#' @title runClassifier_mc
 #' @export
 #' @import doSNOW
 #' @import snow
@@ -570,7 +580,7 @@ fit_mc <- function(X,
 #' @param x_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @param y_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @return the classifier along with the classification results as a sub-element
-runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo", aggregation_ = "votingAggregation")
+runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo", aggregation_ = "voting", constrained = FALSE)
 {
 
   if(clf$params$verbose) cat("... Entering runClassifier\n")
@@ -616,7 +626,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terga1_mc=
            {
              if(clf$params$verbose) cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
-             res <- terga1_ovo_fit(X, y, clf,approch = approch , aggregation_ = aggregation_)
+             res <- terga1_mc_fit(X, y, clf,approch = approch , aggregation_ = aggregation_,constrained = constrained )
            },
          terga2=
            {
@@ -632,7 +642,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terBeam_mc=
            {
              if(clf$params$verbose) cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
-             res <- terBeam_fit_mc(X, y, clf,approch = approch, aggregation_ = aggregation_)
+             res <- terBeam_fit_mc(X, y, clf,approch = approch, aggregation_ = aggregation_, constrained = constrained)
            },
 
          metal=
@@ -719,7 +729,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
 }
 
 #' Compute the cross-validation emprirical and generalization scores
-#' @title runCrossval_ovo
+#' @title runCrossval_mc
 #' @description Compute the cross-validation emprirical and generalization scores.
 #' @param X: the data matrix with variables in the rows and observations in the columns
 #' @param y: the response vector
@@ -728,7 +738,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
 #' @param return.all: return all results from the crossvalidation for feature stability testing
 #' @return a list containing empirical, generalisation scores for each fold as well as a matrix with the mean values.
 #' @export
-runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE, aggregation_ = "votingAggregation")
+runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE, aggregation_ = "voting", constrained = FALSE)
 {
 
   # test the classifier object
@@ -784,6 +794,10 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   res.crossval$nfold                          <- list()
   res.crossval$k                              <- list()
   res.crossval$scores                         <- list()
+  res.crossval$mods_train                     <- list()
+  res.crossval$mods_test                      <- list()
+  res.crossval$expe_cv                       <- list()
+
   res.crossval$scores$empirical.auc           <- as.data.frame(matrix(nrow=max(clf$params$sparsity), ncol=(nfolds-1)))
   rownames(res.crossval$scores$empirical.auc) <- c(paste("k",c(1:max(clf$params$sparsity)), sep="_"))
   colnames(res.crossval$scores$empirical.auc) <- paste("fold",1:(nfolds-1),sep="_") #-1 since the whole won't be taken into account
@@ -864,12 +878,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
             cat("=> DBG: before runclassifier\n")
 
-            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constrained = constrained)
           }else
           {
             try(
               {
-                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_)
+                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constrained = constrained)
               }, silent = TRUE
             )
           }
@@ -935,12 +949,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
       if(clf$params$debug)
       {
-        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_)
+        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constrained = constrained )
       }else
       {
         res.all[[i]]                    <- try(
           {
-            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch, aggregation_ = aggregation_)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch, aggregation_ = aggregation_, constrained = constrained)
           }, silent = FALSE
         ) # end try
       } # end else debug
@@ -955,6 +969,18 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   res.crossval$whole <- res.all[[1]]
   # omit it from the empirical results as they will be extracted separately and
   res.all <- res.all[-1]
+  list_mods <- list()
+  for (i in seq_along(res.all)) {
+    too = modelCollectionToPopulation(res.all[[1]]$models)
+    list_mods[[i]] <- listOfModels2ModelCollection(too)
+
+  }
+  for (i in seq_along(list_mods)) {
+    res.all[[i]]$models = list_mods[[i]]
+
+  }
+
+  res.crossval$expe_cv <- res.all
   # also clean the lfolds object
   lfolds  <- lfolds[-1]
   # results for FEATURE IMPORTANCE
@@ -982,6 +1008,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
     y_test = y[lfolds[[i]]]
 
     res_train <- res.all[[i]]
+
 
     if(is.list(res_train)) # if result object exist
     {
@@ -1031,7 +1058,8 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
         mod               <- updateObjectIndex_mc(obj = mod, features = rownames(X))
         mod.train         <- mod # since this is the same as computed above
         mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test', aggregation_ = aggregation_)
-
+        res.crossval$mods_train[[k_sparse.name]]  <- mod.train
+        res.crossval$mods_test[[k_sparse.name]]   <- mod.test
         if(!is.null(mod.train) & !is.null(mod.test))
         {
           # Empirical fitting score
@@ -1070,6 +1098,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
           # Regression
           res.crossval$k$cor[k_sparse.name,"empirical"]                 <- mod.train$cor_
           res.crossval$k$cor[k_sparse.name,"generalization"]            <- mod.test$cor_
+
 
         } # if training and testing results exist
       } # end of k_sparse loop

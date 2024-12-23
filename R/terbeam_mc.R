@@ -19,7 +19,7 @@
 
 #' terbeam: ternary beam searching algorithm
 #'
-#' @title terbeam_ova
+#' @title terbeam_mc
 #' @description one versus one terbeam is a model search algorithm on a beam search approach.
 #' @param sparsity: number of features in a given model. This is a vector with multiple lengths.
 #' @param maxNbOfModels: number of models to be explored for a given k_sparsity. This is equivalent to a population size in terga.
@@ -144,7 +144,18 @@ terBeam_mc <- function(sparsity = 1:5, max.nb.features = 1000,
 }
 
 
-terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggregation")
+#' @title terBeam_fit_mc
+#' @description This function performs a multi-class model fitting based on ternary or binary languages,
+#' and supports different objectives such as correlation and accuracy. It handles feature selection,
+#' model generation, and evaluation for specified sparsity levels.
+#' @param X A matrix of input features.
+#' @param y A vector of target labels.
+#' @param clf A classifier object containing parameters, coefficients, and feature correlations.
+#' @param approch A string specifying the approach ("ovo" or other supported approaches).
+#' @param aggregation_ A string specifying the aggregation method (e.g., "votingAggregation").
+#' @param constrained Logical indicating whether to constrain feature selection.
+#' @return A list containing generated models, selected features, and evaluation results.
+terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggregation", constrained = FALSE)
 {
   # Setting the language environment
   switch(clf$params$language,
@@ -220,9 +231,6 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
   # Print the experiment configuration
   if(clf$params$verbose) printClassifier(obj = clf)
   # Rprof("Profiling_terbeam", line.profiling = TRUE)
-
-  # Rprof(NULL)
-  # summaryRprof("Profiling_terbeam", lines = "show")
   # store all the features to keep
   features.to.keep <- allFeatures <- rownames(X)
   features.to.keep_ <- allFeatures <- rownames(X)
@@ -250,8 +258,6 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
   list_veryBest <- list()
   list_pop <- list()
   kl = 0
-  #features.to.keep <- list()
-  # for each sparsity
   for(k in clf$params$sparsity)
   {
     if(k == 1)
@@ -360,10 +366,26 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
       # features.to.keep  <- features.to.keep[1:max(which(nbCombinaisons < clf$params$maxNbOfModels))]
 
       ### For k > 1 we generate every possible combinations of features of size k
+      # # nbCombinaisons contains the maximum number of models that would be generated for a given number of features
+      # features.to.keep  <- features.to.keep[1:max(which(nbCombinaisons < clf$params$maxNbOfModels))]
+
+      ### For k > 1 we generate every possible combinations of features of size k
+      # Initialize the list
       list_ind.features.to.keep <- list()
-      for(j in 1:(length(l_features.to.keep))){
-        list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[1]])
+      constrained <- as.logical(constrained)
+      # Check the value of 'constrained'
+      for (j in 1:length(l_features.to.keep)) {
+        # If 'constrained' is FALSE, use the elements specific to each 'j'
+        if (constrained == FALSE) {
+          list_ind.features.to.keep[[j]] <- which(allFeatures %in% l_features.to.keep[[j]])
+        } else if (constrained == TRUE) {
+          # If 'constrained' is TRUE
+          list_ind.features.to.keep[[j]] <- which(allFeatures %in%  l_features.to.keep[[1]])
+        } else {
+          stop("Error: 'constrained' must be either TRUE or FALSE.")
+        }
       }
+
       if(length(list_ind.features.to.keep[[1]]) >= k)
       {
         pop               <- generateAllCombinations_mc(X = X, y = y, clf = clf,
@@ -463,3 +485,17 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
   if(clf$params$verbose) print(paste("... ... models are coverted onto a model collection"))
   return(res.mod.coll)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

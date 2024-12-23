@@ -19,8 +19,8 @@
 
 #' terga1: Model search algorithm based on genetic algorithms (GA)
 #'
-#' @title terga1_ovo
-#' @description terga1_ovo is a model one versus all search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
+#' @title terga1_mc
+#' @description terga1_mc is a model multi class search algorithm based on genetic algorithms (GA). A “genome” or “individual” in this context is a combination of features that will be associated together to compute a score that will be the prediction model. Depending on the type of fitting function that is maximized the fatures are weighed by specific coefficients. In short the algorithm is based on different operations such as crossing, mutating and evolving different “individuals” and evaluating their fitness to the “environment” which is represented by the variable to be predicted.
 #' @param sparsity: number of features in a given model. This is a vector with multiple lengths.
 #' @param size_pop: the number of individuals in a population to be evolved.
 #' @param size_world: this is the number of features in the dataset.
@@ -165,7 +165,28 @@ terga1_mc <- function(sparsity = c(1:10),
 
 
 # Launch the fit classifier routine
-terga1_ovo_fit <- function(X, y, clf, approch="ovo") {
+
+#' @title terga1_mc_fit
+#' @description #' This function fits a classifier using a genetic algorithm-based approach.
+#' It evolves populations of models and selects the best models according to a specified evaluation metric.
+#' The classifier can be adapted to different types of language (binary, ternary, etc.),
+#' and the function ensures that the evaluation metric matches the classifier's requirements.
+#' @param X A data frame or matrix containing the features of the dataset.
+#'          Each row corresponds to a sample, and each column corresponds to a feature.
+#' @param y A vector containing the labels or target values. It must have the same length as the number of rows in `X`.
+#' @param clf A classifier object that contains the model to be fitted. It must have a parameter list (`params`)
+#'            that includes the classifier's configuration (e.g., language, objective, evaluation metric).
+#' @param approch A character string indicating the approach to use for model evaluation.
+#'                Default is "ova" (one-vs-all), but other options may be available depending on the classifier.
+#' @param aggregation_ A character string specifying the aggregation method to be used. Default is "Predomics_aggregation_ova".
+#' @param constrained A logical value indicating whether the classifier should be constrained in some way during fitting.
+#'                    Default is FALSE.
+#'
+#' @return A fitted classifier model based on the genetic algorithm approach. The result can be used for predictions
+#'         and further analysis.
+
+#'
+terga1_mc_fit <- function(X, y, clf, approch="ova", aggregation_ = "Predomics_aggregation_ova", constrained = FALSE) {
 
   # Setting the language environment
   switch(clf$params$language,
@@ -294,35 +315,75 @@ terga1_ovo_fit <- function(X, y, clf, approch="ovo") {
       {
         pop <- listOfModelsToListOfSparseVec(list.models = pop)
       }
-
       # then we evolve
       pop_last      <- evolve_mc(X, y, clf, pop, seed = clf$params$current_seed,approch = approch)
-      list_indices <- list() # list of indices
+      # Initialiser la liste des indices
+      list_indices <- list()
 
-      # through the indices
-      for (i in 1:length(pop_last[[1]])) {
-        # Initialize the list of indices for each iteration
-        list_indices[[i]] <- list()
+      # Convert 'constrained' to logical type if it's not already
+      constrained <- as.logical(constrained)
 
-        # Iterate through the different lists in list_evolved_pop.
-        for (j in 1:length(pop_last)) {
-          if (i <= length(pop_last[[j]])) {
-            list_indices[[i]][[j]] <- pop_last[[j]][[i]]
-          } else {
-            list_indices[[i]][[j]] <- list_indices[[i - 1]][[j]]
+      if (constrained == FALSE) {
+        # Loop through the indices of the first list in 'pop_last'
+        for (i in 1:length(pop_last[[1]])) {
+          # Initialize the list of indices for each iteration
+          list_indices[[i]] <- list()
+
+          # Loop through the different lists in 'pop_last'
+          for (j in 1:length(pop_last)) {
+            if (i <= length(pop_last[[j]])) {
+              # Add the corresponding element from 'pop_last' to 'list_indices'
+              list_indices[[i]][[j]] <- pop_last[[j]][[i]]
+            } else {
+              # Reuse the previous element if the index exceeds the length of the sublist
+              list_indices[[i]][[j]] <- list_indices[[i - 1]][[j]]
+            }
           }
         }
+        # Update 'pop_last' with the new list of indices
+        pop_last <- list_indices
+
+      } else if (constrained == TRUE) {
+        # Case where 'constrained' is TRUE
+        for (i in 1:length(pop_last[[1]])) {
+          # Initialize the list of indices for each iteration
+          list_indices[[i]] <- list()
+
+          # Loop through the different lists in 'pop_last'
+          for (j in 1:length(pop_last)) {
+            if (i <= length(pop_last[[j]])) {
+              # Add the corresponding element from 'pop_last' to 'list_indices'
+              list_indices[[i]][[j]] <- pop_last[[j]][[i]]
+            } else {
+              # Reuse the previous element if the index exceeds the length of the sublist
+              list_indices[[i]][[j]] <- list_indices[[i - 1]][[j]]
+            }
+          }
+        }
+
+        # Initialize the output list 'new_list'
+        new_list <- list()
+
+        # Fill 'new_list' with the first element of each sublist in 'list_indices'
+        for (jj in seq_along(list_indices)) {
+          # Get the first element of the sublist from 'list_indices'
+          first_element <- list_indices[[jj]][[1]]
+
+          # Create a sublist in 'new_list' with this first element repeated
+          new_list[[jj]] <- rep(list(first_element), length(list_indices[[jj]]))
+        }
+
+        # Update 'pop_last' with the new list
+        pop_last <- new_list
       }
+
     }
-    pop_last = list_indices
+
     # evaluate the fitting function for all the models of the populaion
     # transform to a population of model objects
-    #pop_last.mod <- list()
     pop_last.mod <- listOfSparseVecToListOfModels_mc(X, y , clf = clf, v = pop_last,approch = approch)
     # evaluate the population
-    pop.last.eval <- evaluatePopulation_mc(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE, approch=approch)
-    ### pop_overall <- evaluatePopulation_overall(pop = pop.last.eval, y=y, approch = approch)
-    #for(i in 1:length(pop.last.eva
+    pop.last.eval <- evaluatePopulation_mc(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE, approch=approch, aggregation_ = aggregation_)
     # get the evaluation vector
     evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
     # get the evaluation
@@ -347,9 +408,8 @@ terga1_ovo_fit <- function(X, y, clf, approch="ovo") {
     # transform the indexes into models
     if(!isPopulation(obj = pop_ordered_mod))
     {
-      pop_ordered_mod <- evaluatePopulation_mc(X, y, clf, pop_ordered_mod, force.re.evaluation = TRUE, approch = approch, eval.all = TRUE)
+      pop_ordered_mod <- evaluatePopulation_mc(X, y, clf, pop_ordered_mod, force.re.evaluation = TRUE, approch = approch, aggregation_ = aggregation_,eval.all = TRUE)
     }
-    #for(i in 1:length(pop_ordered_mod)){
     # keep only models that are unique
     pop_ordered_mod <- unique(pop_ordered_mod)
 
