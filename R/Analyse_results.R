@@ -15,55 +15,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_maximization_constrained"  # Méthode spécifiée
+#   Methods = "_terbeam_maximization_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_maximization_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_maximization_constrained") &&
-#     !is.null(terbeam_maximization_constrained$crossVal$scores)) {
+# if (exists("terbeam_maximization_constrained_no_balance1") &&
+#     !is.null(terbeam_maximization_constrained_no_balance1$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_maximization_constrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$empirical.acc["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$empirical.acc["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$generalization.acc["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$generalization.acc["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$Precision.empirique <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$empirical.rec["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$empirical.rec["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$Precision.generalization <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$generalization.rec["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$generalization.rec["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$Recall.empirique <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$empirical.prc["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$empirical.prc["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$Recall.generalization <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$generalization.prc["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$generalization.prc["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$F1.empirique <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$empirical.f1s["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$empirical.f1s["k_4", ]
 #   )
 #
 #   terbeam_maximization_constrained_df$F1.generalization <- as.numeric(
-#     terbeam_maximization_constrained$crossVal$scores$generalization.f1s["k_4", ]
+#     terbeam_maximization_constrained_no_balance1$crossVal$scores$generalization.f1s["k_4", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_maximization_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_maximization_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_maximization_constrained_df)
-#
+# terbeam_maximization_constrained_df_no_balance = terbeam_maximization_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_maximization_constrained_df, file = "terbeam_maximization_constrained_df.rda")
+# save(terbeam_maximization_constrained_df_no_balance, file = "terbeam_maximization_constrained_df_no_balance.rda")
 #
 #
 # ## 2 Terbeam Maximization unconstrained
@@ -81,55 +81,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terbeam_maximization_unconstrained"  # Méthode spécifiée
+#   Methods = "terbeam_maximization_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_maximization_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_maximization_unconstrained") &&
-#     !is.null(terbeam_maximization_unconstrained$crossVal$scores)) {
+# if (exists("terbeam_maximization_unconstrained_no_balance") &&
+#     !is.null(terbeam_maximization_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_maximization_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$empirical.acc["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$generalization.acc["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$Precision.empirique <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$empirical.rec["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$Precision.generalization <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$generalization.rec["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$Recall.empirique <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$empirical.prc["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$Recall.generalization <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$generalization.prc["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$F1.empirique <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$empirical.f1s["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terbeam_maximization_unconstrained_df$F1.generalization <- as.numeric(
-#     terbeam_maximization_unconstrained$crossVal$scores$generalization.f1s["k_7", ]
+#     terbeam_maximization_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_maximization_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_maximization_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_maximization_unconstrained_df)
-#
+# terbeam_maximization_unconstrained_df_no_balance = terbeam_maximization_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_maximization_unconstrained_df, file = "terbeam_maximization_unconstrained_df.rda")
+# save(terbeam_maximization_unconstrained_df_no_balance, file = "terbeam_maximization_unconstrained_df_no_balance.rda")
 #
 #
 # ## 3. Terbeam ranking constrained
@@ -147,55 +147,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_ranking_constrained"  # Méthode spécifiée
+#   Methods = "_terbeam_ranking_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_ranking_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_ranking_constrained") &&
-#     !is.null(terbeam_ranking_constrained$crossVal$scores)) {
+# if (exists("terbeam_ranking_constrained_no_balance") &&
+#     !is.null(terbeam_ranking_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_ranking_constrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$empirical.acc["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$empirical.acc["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$generalization.acc["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$generalization.acc["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$Precision.empirique <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$empirical.rec["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$empirical.rec["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$Precision.generalization <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$generalization.rec["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$generalization.rec["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$Recall.empirique <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$empirical.prc["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$empirical.prc["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$Recall.generalization <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$generalization.prc["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$generalization.prc["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$F1.empirique <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$empirical.f1s["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$empirical.f1s["k_4", ]
 #   )
 #
 #   terbeam_ranking_constrained_df$F1.generalization <- as.numeric(
-#     terbeam_ranking_constrained$crossVal$scores$generalization.f1s["k_4", ]
+#     terbeam_ranking_constrained_no_balance$crossVal$scores$generalization.f1s["k_4", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_ranking_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_ranking_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_ranking_constrained_df)
-#
+# terbeam_ranking_constrained_df_no_balance = terbeam_ranking_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_ranking_constrained_df, file = "terbeam_ranking_constrained_df.rda")
+# save(terbeam_ranking_constrained_df_no_balance, file = "terbeam_ranking_constrained_df_no_balance.rda")
 #
 #
 #
@@ -214,55 +214,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terbeam_ranking_unconstrained"  # Méthode spécifiée
+#   Methods = "terbeam_ranking_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_ranking_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_ranking_unconstrained") &&
-#     !is.null(terbeam_ranking_unconstrained$crossVal$scores)) {
+# if (exists("terbeam_ranking_unconstrained_no_balance") &&
+#     !is.null(terbeam_ranking_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_ranking_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$empirical.acc["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$generalization.acc["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$Precision.empirique <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$empirical.rec["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$Precision.generalization <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$generalization.rec["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$Recall.empirique <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$empirical.prc["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$Recall.generalization <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$generalization.prc["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$F1.empirique <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$empirical.f1s["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terbeam_ranking_unconstrained_df$F1.generalization <- as.numeric(
-#     terbeam_ranking_unconstrained$crossVal$scores$generalization.f1s["k_7", ]
+#     terbeam_ranking_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_ranking_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_ranking_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_ranking_unconstrained_df)
-#
+# terbeam_ranking_unconstrained_df_no_balance = terbeam_ranking_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_ranking_unconstrained_df, file = "terbeam_ranking_unconstrained_df.rda")
+# save(terbeam_ranking_unconstrained_df_no_balance, file = "terbeam_ranking_unconstrained_df_no_balance.rda")
 #
 #
 # #### 5
@@ -280,55 +280,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_predomics_aggregation_ova_constrained"  # Méthode spécifiée
+#   Methods = "_terbeam_predomics_aggregation_ova_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_predomics_aggregation_ova_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_predomics_aggregation_ova_constrained") &&
-#     !is.null(terbeam_predomics_aggregation_ova_constrained$crossVal$scores)) {
+# if (exists("terbeam_predomics_aggregation_ova_constrained_no_balance") &&
+#     !is.null(terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_predomics_aggregation_ova_constrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$empirical.acc["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$generalization.acc["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$Precision.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$empirical.rec["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$Precision.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$generalization.rec["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$Recall.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$empirical.prc["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$Recall.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$generalization.prc["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$F1.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$empirical.f1s["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_constrained_df$F1.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_constrained$crossVal$scores$generalization.f1s["k_4", ]
+#     terbeam_predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_predomics_aggregation_ova_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_predomics_aggregation_ova_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_predomics_aggregation_ova_constrained_df)
-#
+# terbeam_predomics_aggregation_ova_constrained_df_no_balance = terbeam_predomics_aggregation_ova_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_predomics_aggregation_ova_constrained_df, file = "terbeam_predomics_aggregation_ova_constrained_df.rda")
+# save(terbeam_predomics_aggregation_ova_constrained_df_no_balance, file = "terbeam_predomics_aggregation_ova_constrained_df_no_balance.rda")
 #
 # #### 6
 #
@@ -345,55 +345,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terbeam_predomics_aggregation_ova_unconstrained"  # Méthode spécifiée
+#   Methods = "terbeam_predomics_aggregation_ova_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_predomics_aggregation_ova_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_predomics_aggregation_ova_unconstrained") &&
-#     !is.null(terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores)) {
+# if (exists("terbeam_predomics_aggregation_ova_unconstrained_no_balance") &&
+#     !is.null(terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_predomics_aggregation_ova_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$Precision.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$Precision.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$Recall.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$Recall.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$F1.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ova_unconstrained_df$F1.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terbeam_predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_predomics_aggregation_ova_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_predomics_aggregation_ova_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_predomics_aggregation_ova_unconstrained_df)
-#
+# terbeam_predomics_aggregation_ova_unconstrained_df_no_balance = terbeam_predomics_aggregation_ova_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_predomics_aggregation_ova_unconstrained_df, file = "terbeam_predomics_aggregation_ova_unconstrained_df.rda")
+# save(terbeam_predomics_aggregation_ova_unconstrained_df_no_balance, file = "terbeam_predomics_aggregation_ova_unconstrained_df_no_balance.rda")
 #
 # #### 7
 #
@@ -410,55 +410,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_predomics_aggregation_ovo_constrained"  # Méthode spécifiée
+#   Methods = "_terbeam_predomics_aggregation_ovo_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_predomics_aggregation_ovo_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_predomics_aggregation_ovo_constrained") &&
-#     !is.null(terbeam_predomics_aggregation_ovo_constrained$crossVal$scores)) {
+# if (exists("terbeam_predomics_aggregation_ovo_constrained_no_balance") &&
+#     !is.null(terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_predomics_aggregation_ovo_constrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$empirical.acc["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$generalization.acc["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$Precision.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$empirical.rec["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$Precision.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$generalization.rec["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$Recall.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$empirical.prc["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$Recall.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$generalization.prc["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$F1.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$empirical.f1s["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_constrained_df$F1.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_constrained$crossVal$scores$generalization.f1s["k_4", ]
+#     terbeam_predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_predomics_aggregation_ovo_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_predomics_aggregation_ovo_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_predomics_aggregation_ovo_constrained_df)
-#
+# terbeam_predomics_aggregation_ovo_constrained_df_no_balance = terbeam_predomics_aggregation_ovo_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_predomics_aggregation_ovo_constrained_df, file = "terbeam_predomics_aggregation_ovo_constrained_df.rda")
+# save(terbeam_predomics_aggregation_ovo_constrained_df_no_balance, file = "terbeam_predomics_aggregation_ovo_constrained_df_no_balance.rda")
 #
 # #### 8
 #
@@ -475,55 +475,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terbeam_predomics_aggregation_ovo_unconstrained"  # Méthode spécifiée
+#   Methods = "terbeam_predomics_aggregation_ovo_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_predomics_aggregation_ovo_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_predomics_aggregation_ovo_unconstrained") &&
-#     !is.null(terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores)) {
+# if (exists("terbeam_predomics_aggregation_ovo_unconstrained_no_balance") &&
+#     !is.null(terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$Precision.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$Precision.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$Recall.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$Recall.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$F1.empirique <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_predomics_aggregation_ovo_unconstrained_df$F1.generalization <- as.numeric(
-#     terbeam_predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terbeam_predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_predomics_aggregation_ovo_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_predomics_aggregation_ovo_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_predomics_aggregation_ovo_unconstrained_df)
-#
+# terbeam_predomics_aggregation_ovo_unconstrained_df_no_balance = terbeam_predomics_aggregation_ovo_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_predomics_aggregation_ovo_unconstrained_df, file = "terbeam_predomics_aggregation_ovo_unconstrained_df.rda")
+# save(terbeam_predomics_aggregation_ovo_unconstrained_df_no_balance, file = "terbeam_predomics_aggregation_ovo_unconstrained_df_no_balance.rda")
 #
 #
 # #### 9
@@ -541,55 +541,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_voting_constrained"  # Méthode spécifiée
+#   Methods = "_terbeam_voting_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_voting_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_voting_constrained") &&
-#     !is.null(terbeam_voting_constrained$crossVal$scores)) {
+# if (exists("terbeam_voting_constrained_no_balance") &&
+#     !is.null(terbeam_voting_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_voting_constrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$empirical.acc["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$generalization.acc["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$Precision.empirique <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$empirical.rec["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$Precision.generalization <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$generalization.rec["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$Recall.empirique <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$empirical.prc["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$Recall.generalization <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$generalization.prc["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$F1.empirique <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$empirical.f1s["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_voting_constrained_df$F1.generalization <- as.numeric(
-#     terbeam_voting_constrained$crossVal$scores$generalization.f1s["k_4", ]
+#     terbeam_voting_constrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_voting_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("terbeam_voting_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_voting_constrained_df)
-#
+# terbeam_voting_constrained_df_no_balance = terbeam_voting_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_voting_constrained_df, file = "terbeam_voting_constrained_df.rda")
+# save(terbeam_voting_constrained_df_no_balance, file = "terbeam_voting_constrained_df_no_balance.rda")
 #
 # #### 10
 #
@@ -606,55 +606,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terbeam_voting_unconstrained"  # Méthode spécifiée
+#   Methods = "terbeam_voting_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_voting_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_voting_unconstrained") &&
-#     !is.null(terbeam_voting_unconstrained$crossVal$scores)) {
+# if (exists("terbeam_voting_unconstrained_no_balance") &&
+#     !is.null(terbeam_voting_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_voting_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$Precision.empirique <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$Precision.generalization <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$Recall.empirique <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$Recall.generalization <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$F1.empirique <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_voting_unconstrained_df$F1.generalization <- as.numeric(
-#     terbeam_voting_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terbeam_voting_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_voting_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_voting_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_voting_unconstrained_df)
-#
+# terbeam_voting_unconstrained_df_no_balance = terbeam_voting_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_voting_unconstrained_df, file = "terbeam_voting_unconstrained_df.rda")
+# save(terbeam_voting_unconstrained_df_no_balance , file = "terbeam_voting_unconstrained_df_no_balance.rda")
 #
 # #### 11
 #
@@ -671,55 +671,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_weighted_constrained"  # Méthode spécifiée
+#   Methods = "_terbeam_weighted_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_weighted_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_weighted_constrained") &&
-#     !is.null(terbeam_weighted_constrained$crossVal$scores)) {
+# if (exists("terbeam_weighted_constrained_no_balance") &&
+#     !is.null(terbeam_weighted_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_weighted_constrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$empirical.acc["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$generalization.acc["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$Precision.empirique <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$empirical.rec["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$Precision.generalization <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$generalization.rec["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$Recall.empirique <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$empirical.prc["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$Recall.generalization <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$generalization.prc["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$F1.empirique <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$empirical.f1s["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_weighted_constrained_df$F1.generalization <- as.numeric(
-#     terbeam_weighted_constrained$crossVal$scores$generalization.f1s["k_4", ]
+#     terbeam_weighted_constrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_weighted_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_weighted_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_weighted_constrained_df)
-#
+# terbeam_weighted_constrained_df_no_balance = terbeam_weighted_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_weighted_constrained_df, file = "terbeam_weighted_constrained_df.rda")
+# save(terbeam_weighted_constrained_df_no_balance, file = "terbeam_weighted_constrained_df_no_balance.rda")
 #
 # #### 12
 #
@@ -736,55 +736,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terbeam_weighted_unconstrained"  # Méthode spécifiée
+#   Methods = "terbeam_weighted_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terbeam_weighted_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terbeam_weighted_unconstrained") &&
-#     !is.null(terbeam_weighted_unconstrained$crossVal$scores)) {
+# if (exists("terbeam_weighted_unconstrained_no_balance") &&
+#     !is.null(terbeam_weighted_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terbeam_weighted_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$Precision.empirique <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$Precision.generalization <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$Recall.empirique <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$Recall.generalization <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$F1.empirique <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terbeam_weighted_unconstrained_df$F1.generalization <- as.numeric(
-#     terbeam_weighted_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terbeam_weighted_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terbeam_weighted_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terbeam_weighted_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terbeam_weighted_unconstrained_df)
-#
+# terbeam_weighted_unconstrained_df_no_balance = terbeam_weighted_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terbeam_weighted_unconstrained_df, file = "terbeam_weighted_unconstrained_df.rda")
+# save(terbeam_weighted_unconstrained_df_no_balance, file = "terbeam_weighted_unconstrained_df_no_balance.rda")
 #
 # #### Terga 1
 #
@@ -803,55 +803,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terga1_maximization_constrained"  # Méthode spécifiée
+#   Methods = "_terga1_maximization_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_maximization_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_maximization_constrained") &&
-#     !is.null(terga1_maximization_constrained$crossVal$scores)) {
+# if (exists("terga1_maximization_constrained_no_balance") &&
+#     !is.null(terga1_maximization_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_maximization_constrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$empirical.acc["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$generalization.acc["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$Precision.empirique <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$empirical.rec["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$Precision.generalization <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$generalization.rec["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$Recall.empirique <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$empirical.prc["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$Recall.generalization <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$generalization.prc["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$F1.empirique <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$empirical.f1s["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terga1_maximization_constrained_df$F1.generalization <- as.numeric(
-#     terga1_maximization_constrained$crossVal$scores$generalization.f1s["k_10", ]
+#     terga1_maximization_constrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_maximization_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_maximization_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_maximization_constrained_df)
-#
+# terga1_maximization_constrained_df_no_balance = terga1_maximization_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_maximization_constrained_df, file = "terga1_maximization_constrained_df.rda")
+# save(terga1_maximization_constrained_df_no_balance, file = "terga1_maximization_constrained_df_no_balance.rda")
 #
 # ### 2
 #
@@ -868,55 +868,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terga1_maximization_unconstrained"  # Méthode spécifiée
+#   Methods = "terga1_maximization_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_maximization_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_maximization_unconstrained") &&
-#     !is.null(terga1_maximization_unconstrained$crossVal$scores)) {
+# if (exists("terga1_maximization_unconstrained_no_balance") &&
+#     !is.null(terga1_maximization_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_maximization_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$empirical.acc["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$generalization.acc["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$Precision.empirique <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$empirical.rec["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$Precision.generalization <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$generalization.rec["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$Recall.empirique <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$empirical.prc["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$Recall.generalization <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$generalization.prc["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$F1.empirique <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_4", ]
 #   )
 #
 #   terga1_maximization_unconstrained_df$F1.generalization <- as.numeric(
-#     terga1_maximization_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terga1_maximization_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_4", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_maximization_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_maximization_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_maximization_unconstrained_df)
-#
+# terga1_maximization_unconstrained_df_no_balance = terga1_maximization_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_maximization_unconstrained_df, file = "terga1_maximization_unconstrained_df.rda")
+# save(terga1_maximization_unconstrained_df_no_balance, file = "terga1_maximization_unconstrained_df_no_balance.rda")
 #
 # ### 3
 #
@@ -933,55 +933,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terga1_ranking_constrained"  # Méthode spécifiée
+#   Methods = "_terga1_ranking_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_ranking_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_ranking_constrained") &&
-#     !is.null(terga1_ranking_constrained$crossVal$scores)) {
+# if (exists("terga1_ranking_constrained_no_balance") &&
+#     !is.null(terga1_ranking_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_ranking_constrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$empirical.acc["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$generalization.acc["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$Precision.empirique <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$empirical.rec["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$Precision.generalization <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$generalization.rec["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$Recall.empirique <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$empirical.prc["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$Recall.generalization <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$generalization.prc["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$F1.empirique <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$empirical.f1s["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terga1_ranking_constrained_df$F1.generalization <- as.numeric(
-#     terga1_ranking_constrained$crossVal$scores$generalization.f1s["k_10", ]
+#     terga1_ranking_constrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_ranking_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_ranking_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_ranking_constrained_df)
-#
+# terga1_ranking_constrained_df_no_balance = terga1_ranking_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_ranking_constrained_df, file = "terga1_ranking_constrained_df.rda")
+# save(terga1_ranking_constrained_df_no_balance, file = "terga1_ranking_constrained_df_no_balance.rda")
 #
 # ### 4
 #
@@ -998,55 +998,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terga1_ranking_unconstrained"  # Méthode spécifiée
+#   Methods = "terga1_ranking_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_ranking_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_ranking_unconstrained") &&
-#     !is.null(terga1_ranking_unconstrained$crossVal$scores)) {
+# if (exists("terga1_ranking_unconstrained_no_balance") &&
+#     !is.null(terga1_ranking_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_ranking_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$empirical.acc["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$generalization.acc["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$Precision.empirique <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$empirical.rec["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$Precision.generalization <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$generalization.rec["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$Recall.empirique <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$empirical.prc["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$Recall.generalization <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$generalization.prc["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$F1.empirique <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_4", ]
 #   )
 #
 #   terga1_ranking_unconstrained_df$F1.generalization <- as.numeric(
-#     terga1_ranking_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terga1_ranking_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_4", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_ranking_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_ranking_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_ranking_unconstrained_df)
-#
+# terga1_ranking_unconstrained_df_no_balance = terga1_ranking_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_ranking_unconstrained_df, file = "terga1_ranking_unconstrained_df.rda")
+# save(terga1_ranking_unconstrained_df_no_balance, file = "terga1_ranking_unconstrained_df_no_balance.rda")
 #
 # ### 5
 #
@@ -1063,55 +1063,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terga1_Predomics_aggregation_ova_constrained"  # Méthode spécifiée
+#   Methods = "_terga1_Predomics_aggregation_ova_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_Predomics_aggregation_ova_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_Predomics_aggregation_ova_constrained") &&
-#     !is.null(terga1_Predomics_aggregation_ova_constrained$crossVal$scores)) {
+# if (exists("terga1_Predomics_aggregation_ova_constrained_no_balance") &&
+#     !is.null(terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_Predomics_aggregation_ova_constrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$empirical.acc["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$generalization.acc["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$Precision.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$empirical.rec["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$Precision.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$generalization.rec["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$Recall.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$empirical.prc["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$Recall.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$generalization.prc["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$F1.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$empirical.f1s["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_constrained_df$F1.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_constrained$crossVal$scores$generalization.f1s["k_10", ]
+#     terga1_Predomics_aggregation_ova_constrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_Predomics_aggregation_ova_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_Predomics_aggregation_ova_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_Predomics_aggregation_ova_constrained_df)
-#
+# terga1_Predomics_aggregation_ova_constrained_df_no_balance = terga1_Predomics_aggregation_ova_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_Predomics_aggregation_ova_constrained_df, file = "terga1_Predomics_aggregation_ova_constrained_df.rda")
+# save(terga1_Predomics_aggregation_ova_constrained_df_no_balance, file = "terga1_Predomics_aggregation_ova_constrained_df_no_balance.rda")
 #
 # ### 6
 # num_folds <- 10
@@ -1127,55 +1127,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terga1_Predomics_aggregation_ova_unconstrained"  # Méthode spécifiée
+#   Methods = "terga1_Predomics_aggregation_ova_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_Predomics_aggregation_ova_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_Predomics_aggregation_ova_unconstrained") &&
-#     !is.null(terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores)) {
+# if (exists("terga1_Predomics_aggregation_ova_unconstrained_no_balance") &&
+#     !is.null(terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_Predomics_aggregation_ova_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.acc["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.acc["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.acc["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.acc["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$Precision.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.rec["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.rec["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$Precision.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.rec["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.rec["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$Recall.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.prc["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.prc["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$Recall.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.prc["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.prc["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$F1.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$empirical.f1s["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_7", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ova_unconstrained_df$F1.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ova_unconstrained$crossVal$scores$generalization.f1s["k_9", ]
+#     terga1_Predomics_aggregation_ova_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_7", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_Predomics_aggregation_ova_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_Predomics_aggregation_ova_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_Predomics_aggregation_ova_unconstrained_df)
-#
+# terga1_Predomics_aggregation_ova_unconstrained_df_no_balance = terga1_Predomics_aggregation_ova_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_Predomics_aggregation_ova_unconstrained_df, file = "terga1_Predomics_aggregation_ova_unconstrained_df.rda")
+# save(terga1_Predomics_aggregation_ova_unconstrained_df_no_balance , file = "terga1_Predomics_aggregation_ova_unconstrained_df_no_balance.rda")
 #
 # ### 7
 #
@@ -1192,55 +1192,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terga1_Predomics_aggregation_ovo_constrained"  # Méthode spécifiée
+#   Methods = "_terga1_Predomics_aggregation_ovo_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_Predomics_aggregation_ovo_constrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_Predomics_aggregation_ovo_constrained") &&
-#     !is.null(terga1_Predomics_aggregation_ovo_constrained$crossVal$scores)) {
+# if (exists("terga1_Predomics_aggregation_ovo_constrained_no_balance") &&
+#     !is.null(terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_Predomics_aggregation_ovo_constrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$empirical.acc["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$generalization.acc["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$Precision.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$empirical.rec["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$Precision.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$generalization.rec["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$Recall.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$empirical.prc["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$Recall.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$generalization.prc["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$F1.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$empirical.f1s["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_constrained_df$F1.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_constrained$crossVal$scores$generalization.f1s["k_7", ]
+#     terga1_Predomics_aggregation_ovo_constrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_Predomics_aggregation_ovo_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_Predomics_aggregation_ovo_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_Predomics_aggregation_ovo_constrained_df)
-#
+# terga1_Predomics_aggregation_ovo_constrained_df_no_balance = terga1_Predomics_aggregation_ovo_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_Predomics_aggregation_ovo_constrained_df, file = "terga1_Predomics_aggregation_ovo_constrained_df.rda")
+# save(terga1_Predomics_aggregation_ovo_constrained_df_no_balance, file = "terga1_Predomics_aggregation_ovo_constrained_df_no_balance.rda")
 #
 # ### 8
 # num_folds <- 10
@@ -1256,55 +1256,55 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terga1_Predomics_aggregation_ovo_unconstrained"  # Méthode spécifiée
+#   Methods = "terga1_Predomics_aggregation_ovo_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_Predomics_aggregation_ovo_unconstrained' et 'crossVal'
 # # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("terga1_Predomics_aggregation_ovo_unconstrained") &&
-#     !is.null(terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores)) {
+# if (exists("terga1_Predomics_aggregation_ovo_unconstrained_no_balance") &&
+#     !is.null(terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.acc["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.acc["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$Precision.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.rec["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$Precision.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.rec["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$Recall.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.prc["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$Recall.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.prc["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$F1.empirique <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$empirical.f1s["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terga1_Predomics_aggregation_ovo_unconstrained_df$F1.generalization <- as.numeric(
-#     terga1_Predomics_aggregation_ovo_unconstrained$crossVal$scores$generalization.f1s["k_10", ]
+#     terga1_Predomics_aggregation_ovo_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_Predomics_aggregation_ovo_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_Predomics_aggregation_ovo_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_Predomics_aggregation_ovo_unconstrained_df)
-#
+# terga1_Predomics_aggregation_ovo_unconstrained_df_no_balance = terga1_Predomics_aggregation_ovo_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_Predomics_aggregation_ovo_unconstrained_df, file = "terga1_Predomics_aggregation_ovo_unconstrained_df.rda")
+# save(terga1_Predomics_aggregation_ovo_unconstrained_df_no_balance, file = "terga1_Predomics_aggregation_ovo_unconstrained_df_no_balance.rda")
 #
 # ### 9
 # num_folds <- 10
@@ -1320,54 +1320,54 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terga1_voting_constrained"  # Méthode spécifiée
+#   Methods = "_terga1_voting_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_voting_constrained' et 'crossVal'
-# if (exists("terga1_voting_constrained") &&
-#     !is.null(terga1_voting_constrained$crossVal$scores)) {
+# if (exists("terga1_voting_constrained_no_balance") &&
+#     !is.null(terga1_voting_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_voting_constrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$empirical.acc["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$empirical.acc["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$generalization.acc["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$generalization.acc["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$Precision.empirique <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$empirical.rec["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$empirical.rec["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$Precision.generalization <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$generalization.rec["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$generalization.rec["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$Recall.empirique <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$empirical.prc["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$empirical.prc["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$Recall.generalization <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$generalization.prc["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$generalization.prc["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$F1.empirique <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$empirical.f1s["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$empirical.f1s["k_9", ]
 #   )
 #
 #   terga1_voting_constrained_df$F1.generalization <- as.numeric(
-#     terga1_voting_constrained$crossVal$scores$generalization.f1s["k_7", ]
+#     terga1_voting_constrained_no_balance$crossVal$scores$generalization.f1s["k_9", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_voting_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_voting_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_voting_constrained_df)
-#
+# terga1_voting_constrained_df_no_balance = terga1_voting_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_voting_constrained_df, file = "terga1_voting_constrained_df.rda")
+# save(terga1_voting_constrained_df_no_balance, file = "terga1_voting_constrained_df_no_balance.rda")
 #
 # ### 10
 #
@@ -1384,54 +1384,54 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terga1_voting_unconstrained"  # Méthode spécifiée
+#   Methods = "terga1_voting_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_voting_unconstrained' et 'crossVal'
-# if (exists("terga1_voting_unconstrained") &&
-#     !is.null(terga1_voting_unconstrained$crossVal$scores)) {
+# if (exists("terga1_voting_unconstrained_no_balance") &&
+#     !is.null(terga1_voting_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_voting_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$empirical.acc["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$empirical.acc["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$generalization.acc["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$generalization.acc["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$Precision.empirique <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$empirical.rec["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$empirical.rec["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$Precision.generalization <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$generalization.rec["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$generalization.rec["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$Recall.empirique <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$empirical.prc["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$empirical.prc["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$Recall.generalization <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$generalization.prc["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$generalization.prc["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$F1.empirique <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$empirical.f1s["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_9", ]
 #   )
 #
 #   terga1_voting_unconstrained_df$F1.generalization <- as.numeric(
-#     terga1_voting_unconstrained$crossVal$scores$generalization.f1s["k_10", ]
+#     terga1_voting_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_9", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_voting_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_voting_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_voting_unconstrained_df)
-#
+# terga1_voting_unconstrained_df_no_balance = terga1_voting_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_voting_unconstrained_df, file = "terga1_voting_unconstrained_df.rda")
+# save(terga1_voting_unconstrained_df_no_balance, file = "terga1_voting_unconstrained_df_no_balance.rda")
 #
 # ### 11
 #
@@ -1448,54 +1448,54 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "_terga1_weighted_constrained"  # Méthode spécifiée
+#   Methods = "_terga1_weighted_constrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_weighted_constrained' et 'crossVal'
-# if (exists("terga1_weighted_constrained") &&
-#     !is.null(terga1_weighted_constrained$crossVal$scores)) {
+# if (exists("terga1_weighted_constrained_no_balance") &&
+#     !is.null(terga1_weighted_constrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_weighted_constrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$empirical.acc["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$empirical.acc["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$generalization.acc["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$generalization.acc["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$Precision.empirique <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$empirical.rec["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$empirical.rec["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$Precision.generalization <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$generalization.rec["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$generalization.rec["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$Recall.empirique <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$empirical.prc["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$empirical.prc["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$Recall.generalization <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$generalization.prc["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$generalization.prc["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$F1.empirique <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$empirical.f1s["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$empirical.f1s["k_8", ]
 #   )
 #
 #   terga1_weighted_constrained_df$F1.generalization <- as.numeric(
-#     terga1_weighted_constrained$crossVal$scores$generalization.f1s["k_7", ]
+#     terga1_weighted_constrained_no_balance$crossVal$scores$generalization.f1s["k_8", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_weighted_constrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_weighted_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_weighted_constrained_df)
-#
+# terga1_weighted_constrained_df_no_balance = terga1_weighted_constrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_weighted_constrained_df, file = "terga1_weighted_constrained_df.rda")
+# save(terga1_weighted_constrained_df_no_balance, file = "terga1_weighted_constrained_df_no_balance.rda")
 #
 # ### 12
 #
@@ -1512,59 +1512,59 @@
 #   Recall.generalization = numeric(num_folds),
 #   F1.empirique = numeric(num_folds),
 #   F1.generalization = numeric(num_folds),
-#   Methods = "terga1_weighted_unconstrained"  # Méthode spécifiée
+#   Methods = "terga1_weighted_unconstrained_no_balance"  # Méthode spécifiée
 # )
 #
 # # Vérification de la structure de 'terga1_weighted_unconstrained' et 'crossVal'
-# if (exists("terga1_weighted_unconstrained") &&
-#     !is.null(terga1_weighted_unconstrained$crossVal$scores)) {
+# if (exists("terga1_weighted_unconstrained_no_balance") &&
+#     !is.null(terga1_weighted_unconstrained_no_balance$crossVal$scores)) {
 #
 #   # Remplissage des valeurs pour chaque métrique
 #   terga1_weighted_unconstrained_df$Accuracy.empirique <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$empirical.acc["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$empirical.acc["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$Accuracy.generalization <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$generalization.acc["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$generalization.acc["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$Precision.empirique <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$empirical.rec["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$empirical.rec["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$Precision.generalization <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$generalization.rec["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$generalization.rec["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$Recall.empirique <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$empirical.prc["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$empirical.prc["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$Recall.generalization <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$generalization.prc["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$generalization.prc["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$F1.empirique <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$empirical.f1s["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$empirical.f1s["k_10", ]
 #   )
 #
 #   terga1_weighted_unconstrained_df$F1.generalization <- as.numeric(
-#     terga1_weighted_unconstrained$crossVal$scores$generalization.f1s["k_10", ]
+#     terga1_weighted_unconstrained_no_balance$crossVal$scores$generalization.f1s["k_10", ]
 #   )
 # } else {
-#   stop("L'objet 'terga1_weighted_unconstrained' ou 'crossVal$scores' n'existe pas.")
+#   stop("L'objet 'terga1_weighted_unconstrained_no_balance' ou 'crossVal$scores' n'existe pas.")
 # }
 #
 # # Vérifier les résultats
 # print(terga1_weighted_unconstrained_df)
-#
+# terga1_weighted_unconstrained_df_no_balance = terga1_weighted_unconstrained_df
 # # Sauvegarder le data frame en fichier RDA
-# save(terga1_weighted_unconstrained_df, file = "terga1_weighted_unconstrained_df.rda")
+# save(terga1_weighted_unconstrained_df_no_balance, file = "terga1_weighted_unconstrained_df_no_balance.rda")
 #
 # ##################################################################################################################
 # ## Fusion dataframe
 #
-# analysis_table_final <- bind_rows(
+# analysis_table_final2 <- bind_rows(
 #   terga1_Predomics_aggregation_ova_unconstrained_df,
 #   terga1_Predomics_aggregation_ovo_unconstrained_df,
 #   terga1_maximization_unconstrained_df,
@@ -1589,18 +1589,19 @@
 #   terbeam_ranking_constrained_df,
 #   terbeam_voting_constrained_df,
 #   terbeam_weighted_constrained_df,
-#   sota_dt_metrics_results,
-#   sota_forest_metrics_results,
-#   sota_gbm_metrics_results,
-#   sota_knn_metrics_results,
-#   sota_svm_metrics_results,
-#   sota_logreg_metrics_results,
-#   sota_ann_metrics_results
+#   sota_dt_metrics_results_no_balance,
+#   sota_forest_metrics_results_no_balance,
+#   sota_gbm_metrics_results_no_balance,
+#   sota_knn_metrics_results_no_balance,
+#   sota_svm_metrics_results_no_balance,
+#   sota_logreg_metrics_results_no_balance,
+#   sota_ann_metrics_results_no_balance
 # )
 # # Check the combined data frame
-# print(head(analysis_table_final))
+# print(head(analysis_table_final2))
+# analysis_table_final2_no_balance = analysis_table_final2
 # # Save the combined data frame to an RDA file
-# save(analysis_table_final, file = "analysis_table_final.rda")
+# save(analysis_table_final2_no_balance, file = "analysis_table_final2_no_balance.rda")
 #
 #
 #
@@ -1666,3 +1667,82 @@
 #     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
 #     legend.position = "bottom"
 #   )
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# # Charger la bibliothèque
+# library(dplyr)
+#
+# # Combiner les tableaux de données
+# analysis_table_final2 <- bind_rows(
+#   # Terga1 - Unconstrained
+#   terga1_Predomics_aggregation_ova_unconstrained_df,
+#   terga1_Predomics_aggregation_ovo_unconstrained_df,
+#   terga1_maximization_unconstrained_df,
+#   terga1_ranking_unconstrained_df,
+#   terga1_voting_unconstrained_df,
+#   terga1_weighted_unconstrained_df,
+#
+#   # Terga1 - Constrained
+#   terga1_Predomics_aggregation_ova_constrained_df,
+#   terga1_Predomics_aggregation_ovo_constrained_df,
+#   terga1_maximization_constrained_df,
+#   terga1_ranking_constrained_df,
+#   terga1_voting_constrained_df,
+#   terga1_weighted_constrained_df,
+#
+#   # Terbeam - Unconstrained
+#   terbeam_predomics_aggregation_ova_unconstrained_df,
+#   terbeam_predomics_aggregation_ovo_unconstrained_df,
+#   terbeam_maximization_unconstrained_df,
+#   terbeam_ranking_unconstrained_df,
+#   terbeam_voting_unconstrained_df,
+#   terbeam_weighted_unconstrained_df,
+#
+#   # Terbeam - Constrained
+#   terbeam_predomics_aggregation_ova_constrained_df,
+#   terbeam_predomics_aggregation_ovo_constrained_df,
+#   terbeam_maximization_constrained_df,
+#   terbeam_ranking_constrained_df,
+#   terbeam_voting_constrained_df,
+#   terbeam_weighted_constrained_df,
+#
+#   # SOTA Metrics Results - No Balance
+#   #sota_dt_metrics_results_no_balance,
+#   dt_metrics_results,
+#   sota_forest_metrics_results_no_balance,
+#   sota_gbm_metrics_results_no_balance,
+#   sota_knn_metrics_results_no_balance,
+#   sota_svm_metrics_results_no_balance,
+#   sota_logreg_metrics_results_no_balance,
+#   sota_ann_metrics_results_no_balance
+# )
+#
+# filtered_dataframe <- analysis_table_final2[analysis_table_final2$Methods == "Decision Tree", ]
+#
+# # Afficher le DataFrame filtré
+# print(filtered_dataframe)
+#
+#
+# colnames(analysis_table_final2)
