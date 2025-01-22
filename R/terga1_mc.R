@@ -453,30 +453,11 @@ evolve_mc <- function(X, y, clf, pop, seed = NULL, approch="ovo")
   listXmin <- clf$data$X.min
   listXmax <- clf$data$X.max
   listy <- clf$data$y
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   for (i in 1:length(list_X)) {
     clf$coeffs_ <- listcoeffs[[i]]
     clf$data$X <- listX[[i]]
