@@ -19,33 +19,12 @@
 #'
 getSign_mc <- function(X, y, clf = NULL, approch = "ovo", parallel.local = FALSE) {
 
-  nClasse <- unique(y)
   list_Sign <- list() # List of different combinations of Sign
   list_y <- list() #  List of different combinations of y
   list_X <- list() #  List of different combinations of X
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   for (i in 1:(length(list_y))) {
     Sign <- getSign(X = list_X[[i]], y = list_y[[i]], clf = clf, parallel.local = FALSE)
     list_Sign[[i]] <- Sign
@@ -70,7 +49,6 @@ getSign_mc <- function(X, y, clf = NULL, approch = "ovo", parallel.local = FALSE
 #' @export
 evaluateAccuracy_mc <- function(mod = NULL, X, y, clf, force.re.evaluation = FALSE, approch = "ovo", mode = "train")
 {
-  nClasse <- unique(y)
   list_mod <- list() # list of models
   listmod <- list() # list of models
   list_y <- list() # list of y
@@ -85,30 +63,11 @@ evaluateAccuracy_mc <- function(mod = NULL, X, y, clf, force.re.evaluation = FAL
   listXmin <- clf$data$X.min
   listXmax <- clf$data$X.max
   listy <- clf$data$y
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   list_mod <- mod
   for(i in 1:(length(list_y))){
     clf$coeffs_ <- listcoeffs[[i]]
@@ -137,34 +96,15 @@ evaluateAccuracy_mc <- function(mod = NULL, X, y, clf, force.re.evaluation = FAL
 #' @importFrom pROC roc
 evaluateAUC_mc <- function(score, y,approch = "ovo", sign = '>')
 {
-  nClasse <- unique(y)
   list_y <- list() # list of y
   list_X <- list() # list of X
   sign = sign
   list_auc <- list()
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   # list values auc_
   for(i in 1:length(list_y)){
     au <- evaluateAUC(score, y = list_y[[i]], sign = sign)
@@ -185,7 +125,6 @@ evaluateAUC_mc <- function(score, y,approch = "ovo", sign = '>')
 #' @return a list of models whose evaluation parameters are updated
 evaluateAdditionnalMetrics_mc <- function(mod, X, y, clf, approch = "ovo", mode = "train")
 {
-  nClasse <- unique(y)
   list_mod <- list() # list of mod
   listmod <- list()
   list_y <- list() # list of y
@@ -201,30 +140,11 @@ evaluateAdditionnalMetrics_mc <- function(mod, X, y, clf, approch = "ovo", mode 
   listXmax <- clf$data$X.max
   listy <- clf$data$y
 
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   listcoeffs <- clf$coeffs_
   list_mod <- mod
   for(i in 1:(length(list_y))){
@@ -256,36 +176,17 @@ evaluateAdditionnalMetrics_mc <- function(mod, X, y, clf, approch = "ovo", mode 
 #' @export
 evaluateModelRegression_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE)
 {
-  nClasse <- unique(y)
   list_mod <- list()
   listmod <- list()
   list_y <- list()
   list_X <- list()
   listcoeffs <- list()
 
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   listcoeffs <- clf$coeffs_
   list_mod <- mod
   for(i in 1:(length(list_mod))){
@@ -312,7 +213,6 @@ evaluateModelRegression_mc <- function(mod, X, y, clf, eval.all = FALSE, force.r
 #' @return a model object with the fitting score
 evaluateFit_mc <- function(mod, X, y, clf, force.re.evaluation = FALSE,approch="ovo", mode = "train")
 {
-  nClasse <- unique(y)
   list_mod <- list() # list of mod
   listmod <- list()
   list_y <- list() # list of y
@@ -329,29 +229,11 @@ evaluateFit_mc <- function(mod, X, y, clf, force.re.evaluation = FALSE,approch="
   listXmax <- clf$data$X.max
   listy <- clf$data$y
 
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
 
   listcoeffs <- clf$coeffs_
   list_mod <- mod
@@ -672,7 +554,6 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
   }
 
   # Initialize variables and data structures
-  nClasse <- unique(y) # Unique classes in the target variable
   list_mod <- list()   # List of models
   list_y <- list()     # List of target variable subsets
   list_X <- list()     # List of feature matrix subsets
@@ -689,36 +570,17 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
   listXmin <- clf$data$X.min
   listXmax <- clf$data$X.max
   listy <- clf$data$y
-
-  # Decompose dataset using the specified approach (ovo or one-versus-all)
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
 
   # Handle test mode: prepare model structures for evaluation
   if (mode == "test") {
-    resul <- sort_data(y, X) # Sort data based on target variable
-    y <- resul$y
-    X <- resul$X
+    combi <- generate_combinations_with_factors(y, X, approch = approch)
+    list_y <- combi$list_y
+    list_X <- combi$list_X
     n_combinations <- length(mod$list_intercept_)
     list_mod <- vector("list", n_combinations)
 
@@ -973,45 +835,18 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
 #' @export
 listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all = FALSE, approch = "ovo")
 {
-  # Get unique class labels from the target variable
-  nClasse <- unique(y)
+
 
   # Initialize lists to store data for each class or pair of classes
   list_y <- list() # list of target values
   list_X <- list() # list of feature matrices
   listcoeffs <- list() # list of coefficients
 
-  # Dataset decomposition phase using the one-versus-one (OVO) or one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    # Loop over class pairs for OVO decomposition
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-
-        # Select data for the current class pair
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-
-        # Store the decomposed data
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    # One-versus-all (OVA) decomposition
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      # Create a binary target for the current class
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   # Retrieve the list of coefficients from the classifier
   listcoeffs <- clf$coeffs_
 
@@ -1085,36 +920,15 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
 evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
                                                      seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE, aggregation_ = "votingAggregation")
 {
-  nClasse <- unique(y)
   list_y <- list()
   list_X <- list()
   listcoeffs <- list()
   list_res <- list()
-
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   listcoeffs <- clf$coeffs_
   listX <- list()
   listXmin <- list()
@@ -1376,8 +1190,8 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   # Initialize empty lists for models, class pairs, predictions, and scores
   predictions_list <- list()
   scorelist <- list()
-  y = as.vector(y)
-  nClasse <- unique(y)
+  #y = as.vector(y)
+  #nClasse <- unique(y)
   list_y <- list()
 
   # Determine the number of combinations
@@ -1392,9 +1206,12 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   # Extract scores only
   score_list <- lapply(scorelist, function(x) x$score_)
 
-  # List of prediction vectors for each combination.
+  # List of prediction vectors for each combination
   predictions_list <- lapply(seq_along(score_list), function(j) {
-    class_name <- unique(y)[j]
+    # Obtenir les niveaux (levels) de y
+    class_name <- levels(as.factor(y))[j]
+
+    # Calcul des prédictions pour la classe actuelle
     sapply(score_list[[j]], function(score) {
       ifelse(score > mods[[j]]$intercept_, class_name, "ALL")
     })
@@ -1447,30 +1264,22 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   # Initialize empty lists for models, class pairs, predictions, and scores
   predictions_list <- list()
   scorelist <- list()
-  nClasse <- unique(y)
+  #nClasse <- unique(y)
   list_y <- list()
   mods <- list()
   mods <- mod
-  mods$binary_scores_mods = mods$score_
+  ##mods$binary_scores_mods = mods$score_
+
   # Calculate scores for each model and store in scorelist
   for(i in 1:length(mod)){
     scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = TRUE)
   }
+
   # Extract scores only
   score_only_list <- lapply(scorelist, function(x) x$score_)
 
   # Decompose dataset into one-versus-one combinations
-  k <- 1
-  for (i in 1:(length(nClasse)-1)) {
-    for (j in (i+1):length(nClasse)) {
-      class_i <- nClasse[i]
-      class_j <- nClasse[j]
-      indices <- which(y == class_i | y == class_j)
-      y_pair <- y[indices]
-      list_y[[k]] <- as.vector(y_pair)
-      k <- k + 1
-    }
-  }
+  list_y <- decompose_y_levels(y)
 
   # Get the number of combinations
   num_combinations <- length(mods)
@@ -1494,13 +1303,11 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
       predictions[sample_index] <- ifelse(decision_value > intercept, unique_classes[2], unique_classes[1])
     }
 
-
     # Add predictions to list
     predictions_list[[comb_index]] <- predictions
   }
 
   # Calculate distances between scores and intercepts
-  #intercept <- mod$list_intercept_mc
   scores_distance <- list()
 
   # Check if 'score_list' contains only zeros
@@ -1517,8 +1324,8 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
 
   # Normalize function
   normalize <- function(x) {
-    if (all(x == 0)) {
-      # If the vector contains only zeros, return it unchanged
+    if (length(x) == 0 || max(x) == min(x)) {
+      # If the vector has no variation, return the vector unchanged
       return(x)
     } else {
       # Otherwise, normalize the vector
@@ -1526,17 +1333,19 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
     }
   }
 
-  # Apply the normalize function to each vector in the list,
-  # checking if it contains only 0's or needs normalization.
+  # Apply the normalize function to each vector in the list
   normalized_scores <- lapply(scores_distance, normalize)
+
+  # Invert the normalized scores
   new_scores <- lapply(normalized_scores, function(x) 1 - x)
 
-  for(i in 1: length(new_scores)){
+  # Store the predictions and normalized scores
+  for(i in 1:length(new_scores)){
     mods[[i]]$scores_predictions <- new_scores[[i]]
     mods[[i]]$predictions <- predictions_list[[i]]
   }
-  mod <- list()
-  mod <- mods
+
+  mod <- mods  # Update mod with the new values
 
   # Return mod predicted class labels for each combination, the corresponding score vectors, and the distances
   return(mod)
@@ -1550,26 +1359,20 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
 #' @return The function returns the model object with aggregated predictions.
 #' @export
 voting <- function(mod) {
-  predictions_list <- list()
+  predictions_list <- lapply(mod, function(x) x$predictions)  # Extract predictions for each model
 
-  for(j in 1:length(mod)){
-    predictions_list[[j]] = mod[[j]]$predictions
-  }
-
-  num_predictions <- length(predictions_list)  # Number of prediction vectors
   num_samples <- length(predictions_list[[1]])  # Number of samples in one vector
-
   aggregated_vector <- character(num_samples)  # Initialize aggregated vector
 
   # Iterate over each sample
   for (i in 1:num_samples) {
     # Count votes for position i
     votes <- table(sapply(predictions_list, `[`, i))
-    # Aggregate prediction for position i
+    # Aggregate prediction for position i (select the most frequent class)
     aggregated_vector[i] <- names(sort(votes, decreasing = TRUE)[1])
   }
 
-  #### Aggrégations
+  # Aggregation for other model properties
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -1580,11 +1383,11 @@ voting <- function(mod) {
   model$fit_ <- lapply(mod, function(x) x$fit_)
   model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
   model$auc_ <- lapply(mod, function(x) x$auc_)
-  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
-  model$cor_<- NA
-  model$aic_<- NA
-  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
-  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))  # Mean of intercepts
   model$eval.sparsity <- mod[[1]]$eval.sparsity
   model$precision_ <- lapply(mod, function(x) x$precision_)
   model$recall_ <- lapply(mod, function(x) x$recall_)
@@ -1594,17 +1397,15 @@ voting <- function(mod) {
   model$ser_ <- lapply(mod, function(x) x$ser_)
   model$score_ <- lapply(mod, function(x) x$score_)
   model$predictions <- lapply(mod, function(x) x$predictions)
-  model$scores_predictions <-lapply(mod, function(x) x$scores_predictions)
+  model$scores_predictions <- lapply(mod, function(x) x$scores_predictions)
   model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
   model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
   model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
   model$predictions_aggre <- aggregated_vector
-  mod <- list()
-  mod <- model
-  mod$predictions_aggre <- aggregated_vector
-  mod$method <- "voting"
-  mod$approach <- "ovo"
-  return(mod)
+  model$method <- "voting"
+  model$approach <- "ovo"
+
+  return(model)
 }
 
 
@@ -1786,8 +1587,9 @@ Predomics_aggregation_ova <- function(mod, y) {
   aggregated_predictions <- character(length = length(classes_list[[1]]))
 
   # Create a character vector of the unique classes from y
-  y = as.vector(y)
-  names_class <- unique(y)
+  y = as.factor(y)
+  names_class <- levels(y)
+
   names_class <- as.character(names_class)
 
   # Iterate over each position in the aggregated predictions
@@ -1874,8 +1676,8 @@ maximization <- function(mod, y) {
   classes_list <- lapply(mod, function(x) x$predictions)
   score_list  <- lapply(mod, function(x) x$scores_predictions)
   aggregated_predictions <- character(length = length(classes_list[[1]]))
-  y = as.vector(y)
-  current_classes <- unique(y)
+  y = as.factor(y)
+  current_classes <- levels(y)
   # Iterate over each position in the aggregated predictions
   for (i in seq_along(aggregated_predictions)) {
     scores <- sapply(score_list, function(score_vector) score_vector[i])
@@ -1939,8 +1741,8 @@ ranking <- function(mod, y) {
   classes_list <- lapply(mod, function(x) x$predictions)
   score_list  <- lapply(mod, function(x) x$scores_predictions)
   aggregated_predictions <- character(length = length(classes_list[[1]]))
-  y = as.vector(y)
-  current_classes <- unique(y)
+  y = as.factor(y)
+  current_classes <- levels(y)
 
   # Iterating over each position in the aggregated predictions
   for (i in seq_along(aggregated_predictions)) {
@@ -2108,35 +1910,15 @@ regenerate_clf <- function(clf, X, y, approch) {
   list_min <- list() # List min of X
   list_max <- list() # List max of X
 
-  # Dataset decomposition phase using the one-versus-one and one-versus-all approaches
-  nClasse <- unique(y)
   feature.cor <- list()  # List of different combinations of feature.cor
   list_y <- list()       # List of different combinations of y
   list_X <- list()       # List of different combinations of X
 
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   max.nb.features <- nrow(X)
 
   for (i in 1:length(list_X)) {
@@ -2236,6 +2018,106 @@ populationToDataFrame_mc <- function(
 }
 
 
+#' Generate Class Combinations for Multiclass Classification
+#'
+#' This function generates combinations of classes and their corresponding data for binary classification approaches such as One-vs-One (OVO) and One-vs-All (OVA).
+#'
+#' @param y A numeric or character vector representing the dependent variable with multiple classes.
+#' @param X A matrix or data frame where each column corresponds to the predictors associated with the values in `y`.
+#' @param approch A character string specifying the approach to use: "ovo" for One-vs-One or "ova" for One-vs-All.
+#' @return A list containing:
+#' @export
+generate_combinations_with_factors <- function(y, X, approch) {
+  # Convert y to a factor to extract its levels
+  y_factor <- as.factor(y)
+  levels_classes <- levels(y_factor) # Extract the levels of the factor
+
+  list_y <- list()
+  list_X <- list()
+
+  # Decomposition phase
+  if (approch == "ovo") {
+    k <- 1
+    for (i in 1:(length(levels_classes) - 1)) {
+      for (j in (i + 1):length(levels_classes)) {
+        class_i <- levels_classes[i]
+        class_j <- levels_classes[j]
+
+        # Select samples for classes i and j
+        indices <- which(y_factor %in% c(class_i, class_j))
+        y_pair <- y_factor[indices]
+        X_pair <- X[, indices]
+
+        # Store the decomposed data
+        list_y[[k]] <- as.vector(y_pair)
+        list_X[[k]] <- X_pair
+        k <- k + 1
+      }
+    }
+  } else if (approch == "ova") {
+    for (i in 1:length(levels_classes)) {
+      class_i <- levels_classes[i]
+
+      # Transform labels for OVA
+      y_temp <- ifelse(y_factor == class_i, as.character(class_i), "All")
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
+    }
+  }
+
+  # Return the combinations
+  return(list(list_y = list_y, list_X = list_X))
+}
+
+
+#' Decompose Class Levels for Pairwise Combinations
+#'
+#' This function generates pairwise combinations of class levels from a dependent variable `y` and sorts the samples within each pair.
+#' @param y A numeric or character vector representing the dependent variable with multiple classes.
+#' @return A list where each element contains the sorted samples for a specific pair of class levels.
+#' @export
+decompose_y_levels <- function(y) {
+  # Convert y to a factor to extract its levels
+  y_factor <- as.factor(y)
+  levels_classes <- levels(y_factor) # Extract the unique levels
+
+  # Initialize a list to store combinations
+  list_y <- list()
+  k <- 1
+
+  for (i in 1:(length(levels_classes) - 1)) {
+    for (j in (i + 1):length(levels_classes)) {
+      class_i <- levels_classes[i]
+      class_j <- levels_classes[j]
+
+      # Select indices for classes i and j
+      indices <- which(y_factor == class_i | y_factor == class_j)
+
+      # Extract samples for the current pair
+      y_pair <- y_factor[indices]
+
+      # Sort samples for each pair
+      y_pair_sorted <- sort(as.vector(y_pair))
+
+      # Store the sorted combinations
+      list_y[[k]] <- y_pair_sorted
+      k <- k + 1
+    }
+  }
+
+  # Return the list of combinations
+  return(list_y)
+}
+
+
+
+
+#' Sort Data by Dependent Variable
+#' This function sorts a dependent variable `y` and its corresponding predictors `X` based on the ascending order of `y` values.
+#' @param y A numeric vector representing the dependent variable.
+#' @param X A matrix or data frame where each column corresponds to the predictors associated with the values in `y`.
+#' @return A list containing:
+#' @export
 sort_data <- function(y, X) {
   # Sorts the indices based on the values of y
   indices_sorted <- order(y)
@@ -2249,6 +2131,9 @@ sort_data <- function(y, X) {
   # Returns the sorted y and the sorted dimensions of X
   return(list(y = y_sorted, X = X_sorted))
 }
+
+
+
 
 
 
