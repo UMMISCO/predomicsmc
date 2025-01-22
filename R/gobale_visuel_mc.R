@@ -486,32 +486,12 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
   roc_list <- list()
   scores_list <- list()
   scores_list = scores
-  indices_sorted <- order(y)
-  # Sort y using the indices
-  y <- y[indices_sorted]
-  nClasse <- unique(y)
   list_y <- list() # List of different combinations of y
-
+  list_X <- list()
   # Dataset decomposition phase using one-versus-one and one-versus-all approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse)-1)) {
-      for (j in (i+1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        list_y[[k]] <- as.vector(y_pair)
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-    }
-  }
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
 
   # Setup plotting in a single figure
   par(mfrow = c(ceiling(sqrt(length(scores_list))), ceiling(length(scores_list) / ceiling(sqrt(length(scores_list))))))
@@ -608,44 +588,15 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "ova",
                                      col.pt = c("deepskyblue4", "firebrick4"),
                                      col.bg = c("deepskyblue1", "firebrick1")) {
 
-  # Sort data
-  resul = sort_data(y, X)
-  y <- resul$y
-  X <- resul$X
-  nClasse <- unique(y)
+
+  nnClasse <- unique(y)
+  nClasse <- sort(nnClasse)
   list_y <- list()
   list_X <- list()
   plot_list <- list()
-
-  # Determine class combinations based on the chosen approach
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices, drop = FALSE]
-
-        # Convert y to 1 for class_i and -1 for class_j
-        list_y[[k]] <- ifelse(y_pair == class_i, 1, -1)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else if (approch == "ova") {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      indices <- which(y == class_i | y != class_i)
-
-      # Convert y to 1 for the selected class and -1 for others
-      list_y[[i]] <- ifelse(y[indices] == class_i, 1, -1)
-      list_X[[i]] <- X[, indices, drop = FALSE]
-    }
-  } else {
-    stop("Invalid approach: choose 'ova' or 'ovo'")
-  }
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
 
   # Generate the graphs for each combination with legends
   for (i in seq_along(list_y)) {
@@ -719,15 +670,14 @@ plotPrevalence_mc <- function(features, X, y, approch = "ova", topdown = TRUE,
                                main = "", plot = TRUE,
                                col.pt = c("deepskyblue4", "firebrick4"),
                                col.bg = c("deepskyblue1", "firebrick1")) {
-  # Sort data
-  resul <- sort_data(y, X)
-  y <- resul$y
-  X <- resul$X
-  classes <- unique(y)
+
+  classes <- unique(sort(y))
   list_y <- list()
   list_X <- list()
   plot_list <- list()
-
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   # Determine class combinations based on the chosen approach
   combinations <- if (approch == "ova") {
     paste0(classes, "_vs_ALL")
@@ -754,8 +704,10 @@ plotPrevalence_mc <- function(features, X, y, approch = "ova", topdown = TRUE,
       indices <- which(y == class_i | y == class_j)
 
       # Set y to 1 for class_i and -1 for class_j
-      list_y[[i]] <- ifelse(y[indices] == class_i, 1, -1)
-      list_X[[i]] <- X[, indices, drop = FALSE]
+      ###list_y[[i]] <- ifelse(y[indices] == class_i, 1, -1)
+      factor_list_y <- factor(list_y[[i]])
+      list_y[[i]] <- ifelse(factor_list_y == levels(factor_list_y)[1], 1, -1)
+
     }
   }
 
@@ -819,8 +771,8 @@ plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "ova",
   # Determine the class combinations based on the selected approach
   indices_sorted <- order(y)
   # Sorts y using the indices
-  y <- y[indices_sorted]
-  classes = unique(y)
+  yy <- y[indices_sorted]
+  classes = unique(yy)
 
   if (approch == "ova") {
     combinations <- paste0(classes, "_vs_ALL")
@@ -913,11 +865,6 @@ plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "ova",
 # Function to generate feature annotations for multi-class classification
 makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo") {
 
-  # Sort data to ensure alignment between X (features) and y (labels)
-  result <- sort_data(y, X)
-  y <- result$y  # Sorted labels
-  X <- result$X  # Sorted features
-
   # Extract the unique classes present in the labels
   nClasse <- unique(y)
 
@@ -964,41 +911,9 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo") {
     populations[[i]] <- sub_population
   }
 
-  # Dataset decomposition phase using one-versus-one (OVO) or one-versus-all (OVA) approaches
-  if (approch == "ovo") { # One-versus-One approach
-    k <- 1  # Counter for paired subsets
-
-    # Create all possible pairs of classes
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-
-        # Extract data points belonging to the current pair of classes
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-
-        # Store the pair-specific data in the lists
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1  # Increment the counter
-      }
-    }
-  } else { # One-versus-All approach
-    # Create a binary classification task for each class
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-
-      # Create labels: the target class versus all others
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-
-      # Store the modified labels and the full dataset
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
-
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
   # Generate feature annotations for each subset of the data
   for (i in 1:length(list_X)) {
     # Update classifier parameters for the current subset
@@ -1051,6 +966,7 @@ plotModel_mc <- function(mod, X, y,
 
   list_mod <- list()
   plot_sub_model <- list()
+  list_ovo <- list()
 
   # Retrieve the mod elements to create the main title
   alg = mod$learner
@@ -1086,33 +1002,14 @@ plotModel_mc <- function(mod, X, y,
       mda_ = mod$mda_[[i]]
     )
   }
-
-  nClasse <- unique(y)
+  y_fact = as.factor(y)
+  nClasse <- levels(y_fact)
   list_y <- list()
   list_X <- list()
-
-  if (approch == "ovo") {
-    f <- 1
-    for (i in 1:(length(nClasse) - 1)) {
-      for (j in (i + 1):length(nClasse)) {
-        class_i <- nClasse[i]
-        class_j <- nClasse[j]
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-        list_y[[f]] <- as.vector(y_pair)
-        list_X[[f]] <- X_pair
-        f <- f + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasse)) {
-      class_i <- nClasse[i]
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
+  list_ovo = decompose_y_levels(y)
 
   # Loop to generate sub-models with custom titles
   for (i in 1:length(list_y)) {
@@ -1121,7 +1018,8 @@ plotModel_mc <- function(mod, X, y,
 
     # Addition of a specific title for each sub-model
     if (approch == "ovo") {
-      combination_title <- paste(combination_title, "\n", paste(nClasse[i], "vs", nClasse[j]))
+      combine <- unique(unlist(list_ovo[[i]]))
+      combination_title <- paste(combination_title, "\n", paste(combine[1], "vs", combine[2]))
     } else {
       combination_title <- paste(combination_title, "\n", paste(nClasse[i], "vs All"))
     }
