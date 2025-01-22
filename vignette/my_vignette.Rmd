@@ -60,25 +60,26 @@ To learn more about the functionality of each visualization tool, use the ?? com
 
 To support the evaluation of binary sub-models, we have implemented several global functions that provide insights into accuracy, AUC, regression metrics, feature importance, and more. These tools are crucial for assessing the quality and relevance of individual sub-models within the multiclass framework.
 The following functions are available:
-getSign_mc
-evaluateAccuracy_mc
-evaluateAUC_mc
-evaluateAdditionnalMetrics_mc
-evaluateModelRegression_mc
-evaluateFit_mc
-evaluateModel_mc
-evaluatePopulation_mc
-listOfSparseVecToListOfModels_mc
-evaluateFeatureImportanceInPopulation_mc
+getSign_mc,
+evaluateAccuracy_mc,
+evaluateAUC_mc,
+evaluateAdditionnalMetrics_mc,
+evaluateModelRegression_mc,
+evaluateFit_mc,
+evaluateModel_mc,
+evaluatePopulation_mc,
+listOfSparseVecToListOfModels_mc,
+evaluateFeatureImportanceInPopulation_mc,
+generate_combinations_with_factors.
 For a detailed description of any of these functions, you can use the ?? command. For instance, ??evaluateAccuracy_mc provides a comprehensive overview of the evaluateAccuracy_mc function.
 
 ##Multiclass Predictions and Aggregation Methods
 
 The package supports multiclass modeling using one-versus-all (OVA) and one-versus-one (OVO) approaches. Additionally, it provides multiple methods for aggregating predictions from these approaches, as well as tools for evaluating the aggregated models.
 The available functions are:
-Prediction: predictModel_ova, predictModel_ovo
+Prediction: predictModel_ova, predictModel_ovo,
 Aggregation: voting, Predomics_aggregation_ovo, weighted, Predomics_aggregation_ova, maximization, ranking
-Evaluation: evaluateModel_aggregation, evaluateModels_aggregation
+Evaluation: evaluateModel_aggregation, evaluateModels_aggregation.
 Each function serves a unique role, whether it involves generating predictions, combining results, or assessing model performance. For more details, use the ?? command, such as ??predictModel_ova for the predictModel_ova function.
 
 ##Multiclass Algorithm Implementations
@@ -100,6 +101,11 @@ runClassifier_mc: Executes the classifier to generate predictions.
 runCrossval_mc: Runs cross-validation to evaluate model performance.
 These foundational functions make it easier to integrate multiclass workflows into your projects. For detailed information on any of these functions, use the ?? command, such as ??runClassifier_mc for the runClassifier_mc function.
 
+
+
+
+
+###Loading libraries
 
 ```{r warning=FALSE}
 library(mcpredomics)
@@ -123,6 +129,8 @@ library(glmnet)
 
 ```
 
+
+### Balance the dataset by extracting the same number of samples for all classes.
 
 
 ```{r}
@@ -178,8 +186,43 @@ table(y.test)
 dim(X)
 dim(X.test)
 ```
+
+### Original unbalanced dataset
+
 ```{r}
-clf <- terBeam_mc(sparsity = c(2,3,4,5,6,7,8,9,10), 
+chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
+load(chemin_du_dataset)
+set.seed(123)
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+
+# Filter null values
+X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
+
+set.seed(42)
+y = as.vector(yvec)
+X = X_general
+# Check distribution after balancing
+set.seed(42)
+indices_division <- createDataPartition(y, p = 0.8, list = FALSE)
+
+# Split balanced data into 80% for training and 20% for testing
+y <- as.vector(y[indices_division])
+y.test <- as.vector(y[-indices_division])
+X <- X[, indices_division, drop = FALSE]
+X.test <- X[, -indices_division, drop = FALSE]
+
+table(y)
+table(y.test)
+dim(X)
+dim(X.test)
+```
+
+### Terbeam_mc Multiclass classifier
+
+
+```{r}
+clf <- terBeam_mc(sparsity = c(5,6,7,8,9,10), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -193,63 +236,46 @@ clf <- terBeam_mc(sparsity = c(2,3,4,5,6,7,8,9,10),
 ```
 
 
+### Terga1_mc Multiclass classifier
 
 
+```{r}
+clf <- terga1_mc(nCores = 1,
+              seed = 1,
+              plot = TRUE
+)
+printy(clf)
+```
+
+### Running experiment Terga1 Predomics Aggregation one versus all
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
 if(runit)
 {
-res_clf_predomics_ova <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ova", nfolds= 10, constrained = FALSE); 
-save(res_clf_predomics_ova , clf, file ="res_clf_predomics_ova.rda", compression_level = 9)
+terbeam_predomics_aggregation_ovo_unconstrained_no_balance <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ovo", nfolds= 10, constrained = FALSE); 
+save(terbeam_predomics_aggregation_ovo_unconstrained_no_balance , clf, file ="terbeam_predomics_aggregation_ovo_unconstrained_no_balance.rda", compression_level = 9)
 }
 
-# ... Database X is not a matrix! Converting ...
-# ... Classification mode, computing factor(y) for speedup and robustness
-# ... Loading feature correlation for speedup
-# ... Correlation file loaded
-# ... Storing data in the classifier object for speedup
-# ... Computing ternary coefficients for speedup
-# ... One seed found, setting by default
-# ... Running the classifier terga2 with a single CPU
-# ... Second and faster version of terga fitting based on Genetic Algorithm heuristics ...
-# ... Cross validation mode
-# ... Starting cross validation not in parallel
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ....................................................................................................
-# ... Learning process is finished succesfuly
-# ... Thank you for using Predomics. Don't forget to digest the results now.
-# 
-# [1] "experiment" "predomics" 
 
 ```
 
 
 
 
-## Exploring the results
+### Exploring the results
 
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 
-  load("terbeam_predomics_aggregation_ova_constrained.rda")
+  load("terga1_Predomics_aggregation_ova_unconstrained_no_balance.rda")
 
 ```
-
 
 
 ### Digesting the results 
 
 ```{r digesting results, fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig <- digestmc(obj = terbeam_predomics_aggregation_ova_constrained, penalty = 0.75/100, plot = TRUE)
+res_clf.dig <- digestmc(obj = terbeam_predomics_aggregation_ova_unconstrained_no_balance, penalty = 0.75/100, plot = TRUE)
 ```
 
 
@@ -301,7 +327,7 @@ A family of best models is defined as the set of models returned by the predomic
 
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(terbeam_predomics_aggregation_ova_constrained$classifier$models)
+pop <- modelCollectionToPopulation(terbeam_predomics_aggregation_ova_unconstrained_no_balance$classifier$models)
 printy_mc(pop)
 # Function to create boxplot for a given data frame
 create_boxplot <- function(data, title) {
@@ -364,7 +390,7 @@ plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ov
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
 ```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=15}
-  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_constrained),
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_unconstrained_no_balance),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -375,7 +401,7 @@ Finally, we can explore the feature importance using mean decrease accuracy info
                                         cv.prevalence = FALSE)
 
 
-  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_constrained),
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_unconstrained_no_balance),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -414,7 +440,7 @@ library(ggplot2)
 library(stringr)  # Pour str_starts
 
 # Imputer les valeurs manquantes avec la moyenne
-analysis_table_final <- analysis_table_final %>% 
+analysis_table_final <- analysis_table_final2 %>% 
   mutate(across(everything(), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
 
 # Convertir en format long
@@ -483,7 +509,7 @@ library(ggplot2)
 library(stringr)  # Pour str_starts
 
 # Imputer les valeurs manquantes avec la moyenne
-analysis_table_final <- analysis_table_final %>% 
+analysis_table_final <- analysis_table_final2 %>% 
   mutate(across(everything(), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
 
 # Convertir en format long
@@ -547,6 +573,162 @@ dev.off()
 cat("Le fichier PDF a été généré : ", output_pdf, "\n")
 
 ```
+
+
+
+
+
+
+
+
+```{r warning=FALSE}
+str(analysis_table_final2)
+
+# Aperçu des premières lignes
+analysis_table_final2
+
+```
+
+
+```{r}
+# Charger les bibliothèques nécessaires
+library(dplyr)
+
+# Regrouper par méthode et calculer les moyennes et écarts-types
+summary_metrics <- analysis_table_final2 %>%
+  group_by(Methods) %>%
+  summarize(
+    accuracy_empirical_mean = mean(Accuracy.empirique, na.rm = TRUE),
+    accuracy_empirical_sd = sd(Accuracy.empirique, na.rm = TRUE),
+    accuracy_generalization_mean = mean(Accuracy.generalization, na.rm = TRUE),
+    accuracy_generalization_sd = sd(Accuracy.generalization, na.rm = TRUE),
+    
+    precision_empirical_mean = mean(Precision.empirique, na.rm = TRUE),
+    precision_empirical_sd = sd(Precision.empirique, na.rm = TRUE),
+    precision_generalization_mean = mean(Precision.generalization, na.rm = TRUE),
+    precision_generalization_sd = sd(Precision.generalization, na.rm = TRUE),
+    
+    recall_empirical_mean = mean(Recall.empirique, na.rm = TRUE),
+    recall_empirical_sd = sd(Recall.empirique, na.rm = TRUE),
+    recall_generalization_mean = mean(Recall.generalization, na.rm = TRUE),
+    recall_generalization_sd = sd(Recall.generalization, na.rm = TRUE),
+    
+    f1_empirical_mean = mean(F1.empirique, na.rm = TRUE),
+    f1_empirical_sd = sd(F1.empirique, na.rm = TRUE),
+    f1_generalization_mean = mean(F1.generalization, na.rm = TRUE),
+    f1_generalization_sd = sd(F1.generalization, na.rm = TRUE)
+  )
+
+# Afficher les résultats
+print(summary_metrics)
+```
+
+
+
+```{r warning=FALSE}
+# Charger les bibliothèques nécessaires
+library(dplyr)
+library(tidyr)
+
+# Vérifier les noms de colonnes du dataframe pour identifier la structure
+colnames(df)
+
+# Liste des métriques à analyser
+metrics <- c("Accuracy.empirique", "Accuracy.generalization", 
+             "Precision.empirique", "Precision.generalization", 
+             "Recall.empirique", "Recall.generalization", 
+             "F1.empirique", "F1.generalization")
+
+# Vérification de la présence des colonnes métriques dans le dataframe
+metrics_in_data <- metrics[metrics %in% colnames(df)]
+
+# Si toutes les métriques nécessaires sont présentes, appliquer l'analyse
+if (length(metrics_in_data) > 0) {
+  
+  # Calcul des moyennes
+  method_stats_mean <- df %>%
+    group_by(Methods) %>%
+    summarise(across(all_of(metrics_in_data), ~mean(.), .names = "{.col}_mean"), .groups = 'drop')
+  
+  # Calcul des écarts-types
+  method_stats_sd <- df %>%
+    group_by(Methods) %>%
+    summarise(across(all_of(metrics_in_data), ~sd(.), .names = "{.col}_sd"), .groups = 'drop')
+  
+  # Combinaison des moyennes et écarts-types dans un seul tableau
+  method_stats <- left_join(method_stats_mean, method_stats_sd, by = "Methods")
+  
+  # Afficher les statistiques calculées pour chaque méthode et chaque métrique
+  print("Statistiques des méthodes :")
+  print(method_stats)
+  
+  # Transformation des données pour une structure plus facile à analyser
+  method_stats_long <- method_stats %>%
+    pivot_longer(cols = starts_with("Accuracy") | starts_with("Precision") |
+                   starts_with("Recall") | starts_with("F1"),
+                 names_to = c("Metric", "Statistic"),
+                 names_sep = "_") %>%
+    pivot_wider(names_from = Statistic, values_from = value)
+  
+  # Afficher les statistiques sous forme longue
+  print("Données transformées :")
+  print(method_stats_long)
+  
+  # Choisir la meilleure méthode basée sur la métrique 'Accuracy.generalization_mean'
+  if ("Accuracy.generalization_mean" %in% colnames(method_stats)) {
+    best_method <- method_stats %>%
+      arrange(desc(Accuracy.generalization_mean)) %>%
+      slice(1) %>%
+      select(Methods, Accuracy.generalization_mean)
+    
+    print(paste("La meilleure méthode est :", best_method$Methods, 
+                "avec Accuracy.generalization_mean =", best_method$Accuracy.generalization_mean))
+  } else {
+    print("La colonne 'Accuracy.generalization_mean' est manquante dans les données.")
+  }
+  
+  # Effectuer des tests ANOVA pour chaque métrique présente
+  for (metric in metrics_in_data) {
+    if (metric %in% colnames(df)) {
+      metric_data <- df %>%
+        select(Methods, all_of(metric)) %>%
+        drop_na()  # Supprimer les NA si présents
+      
+      # Appliquer l'ANOVA pour chaque métrique
+      anova_result <- aov(as.formula(paste(metric, "~ Methods")), data = metric_data)
+      
+      # Résultats de l'ANOVA
+      print(paste("Résultats de l'ANOVA pour", metric, ":"))
+      print(summary(anova_result))
+    }
+  }
+  
+} else {
+  # Si certaines colonnes sont manquantes, les afficher
+  cat("Les colonnes suivantes sont manquantes dans les données : \n")
+  print(setdiff(metrics, metrics_in_data))
+}
+
+
+```
+
+
+
+
+
+
+
+
+```{r}
+ analysis_table_final2
+```
+
+
+
+
+
+
+
 
 
 
