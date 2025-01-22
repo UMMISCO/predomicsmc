@@ -28,40 +28,12 @@
 #'
 generateAllSingleFeatureModel_mc <- function(X, y, clf, ind.sub = NULL, eval.all = FALSE, approch = "ovo") {
 
-  # Identify the unique classes in the dataset
-  nClasses <- unique(y)
-  list_y <- list()
-  list_X <- list()
 
-  # Dataset decomposition phase: OVO or OVA approaches
-  if (approch == "ovo") {
-    k <- 1
-    for (i in 1:(length(nClasses) - 1)) {
-      for (j in (i + 1):length(nClasses)) {
-        class_i <- nClasses[i]
-        class_j <- nClasses[j]
-
-        # Select samples belonging to the current class pair
-        indices <- which(y == class_i | y == class_j)
-        y_pair <- y[indices]
-        X_pair <- X[, indices]
-
-        # Store the decomposed dataset
-        list_y[[k]] <- as.vector(y_pair)
-        list_X[[k]] <- X_pair
-        k <- k + 1
-      }
-    }
-  } else {
-    for (i in 1:length(nClasses)) {
-      class_i <- nClasses[i]
-
-      # Transform labels for OVA decomposition
-      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
-      list_y[[i]] <- as.vector(y_temp)
-      list_X[[i]] <- X
-    }
-  }
+  list_y <- list() #  List of different combinations of y
+  list_X <- list() #  List of different combinations of X
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
 
   # Validate or initialize sample subsets
   if (!is.null(ind.sub[[1]])) {

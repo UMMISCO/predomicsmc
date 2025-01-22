@@ -103,8 +103,8 @@
 # print(svm_metrics_results)
 #
 # # Save the results
-# sota_svm_metrics_results <- svm_metrics_results
-# save(sota_svm_metrics_results, file = "sota_svm_metrics_results.rda")
+# sota_svm_metrics_results_no_balance <- svm_metrics_results
+# save(sota_svm_metrics_results_no_balance, file = "sota_svm_metrics_results_no_balance.rda")
 #
 #
 #
@@ -215,8 +215,8 @@
 # print(gbm_metrics_results)
 #
 # # Sauvegarder les résultats des métriques pour les modèles GBM
-# sota_gbm_metrics_results <- gbm_metrics_results
-# save(sota_gbm_metrics_results, file = "sota_gbm_metrics_results.rda")
+# sota_gbm_metrics_results_no_balance <- gbm_metrics_results
+# save(sota_gbm_metrics_results_no_balance, file = "sota_gbm_metrics_results_no_balance.rda")
 #
 #
 #
@@ -306,8 +306,8 @@
 # print(dt_metrics_results)
 #
 # # Save the results
-# dt_metrics_results = dt_metrics_results
-# save(dt_metrics_results, file = "sota_dt_metrics_results.rda")
+# sota_dt_metrics_results_no_balance = dt_metrics_results
+# save(sota_dt_metrics_results_no_balance, file = "sota_dt_metrics_results_no_balance.rda")
 #
 #
 #
@@ -394,10 +394,10 @@
 #
 # # Display the results DataFrame
 # print(forest_metrics_results)
-# sota_forest_metrics_results = forest_metrics_results
+# sota_forest_metrics_results_no_balance = forest_metrics_results
 #
 # # Save the results
-# save(sota_forest_metrics_results, file = "sota_forest_metrics_results.rda")
+# save(sota_forest_metrics_results_no_balance, file = "sota_forest_metrics_results_no_balance.rda")
 #
 #
 #
@@ -498,8 +498,161 @@
 # print(logreg_metrics_results)
 #
 # # Save the results to a file
-# sota_logreg_metrics_results <- logreg_metrics_results
-# save(sota_logreg_metrics_results, file = "sota_logreg_metrics_results.rda")
+# sota_logreg_metrics_results_no_balance <- logreg_metrics_results
+# save(sota_logreg_metrics_results_no_balance, file = "sota_logreg_metrics_results_no_balance.rda")
 #
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# # Renommer les colonnes en français dans le dataframe
+# sota_logreg_metrics_results_no_balance <- sota_logreg_metrics_results_no_balance %>%
+#   rename(
+#     Accuracy.empirique = Accuracy.empirical,
+#     Precision.empirique = Precision.empirical,
+#     Recall.empirique = Recall.empirical,
+#     F1.empirique = F1.empirical
+#   )
+#
+# # Afficher les résultats
+# print(sota_logreg_metrics_results_no_balance)
+#
+#
+#
+# # Charger les bibliothèques nécessaires
+# library(rpart)  # Pour les arbres de décision
+# library(caret)  # Pour la validation croisée et les métriques
+# library(dplyr)  # Pour la manipulation des données
+# library(tibble) # Pour la manipulation avancée des dataframes
+#
+# # S'assurer que y est un facteur
+# y <- as.factor(y)
+# X <- as.data.frame(t(X))  # S'assurer que X est un dataframe et correctement transposé si nécessaire
+# set.seed(123)
+#
+# # Initialiser un tibble pour stocker les métriques pour chaque pli
+# dt_metrics_results <- tibble(
+#   Fold = character(),
+#   Accuracy.empirique = numeric(),
+#   Accuracy.generalization = numeric(),
+#   Precision.empirique = numeric(),
+#   Precision.generalization = numeric(),
+#   Recall.empirique = numeric(),
+#   Recall.generalization = numeric(),
+#   F1.empirique = numeric(),
+#   F1.generalization = numeric(),
+#   Methods = character()
+# )
+#
+# # Boucle sur chaque pli pour la validation croisée
+# fold_idx <- 1
+#
+# for (i in 1:10) {
+#   # Définir les indices d'entraînement et de validation
+#   index_train <- createFolds(y, k = 10, list = TRUE, returnTrain = TRUE)[[i]]
+#
+#   X_train <- as.data.frame(X[index_train, ])
+#   y_train <- y[index_train]
+#   X_val <- as.data.frame(X[-index_train, ])
+#   y_val <- y[-index_train]
+#
+#   # Créer et entraîner le modèle de l'arbre de décision
+#   dt_model <- rpart(y_train ~ ., data = data.frame(y_train, X_train), method = "class")
+#
+#   # Faire des prédictions sur l'ensemble d'entraînement (empirique)
+#   y_train_pred <- predict(dt_model, X_train, type = "class")
+#
+#   # Faire des prédictions sur l'ensemble de validation (généralisation)
+#   y_val_pred <- predict(dt_model, X_val, type = "class")
+#
+#   # Vérification des longueurs des prédictions et des labels
+#   if(length(y_train_pred) != length(y_train)) {
+#     stop("Les longueurs des prédictions et des labels d'entraînement ne correspondent pas.")
+#   }
+#
+#   if(length(y_val_pred) != length(y_val)) {
+#     stop("Les longueurs des prédictions et des labels de validation ne correspondent pas.")
+#   }
+#
+#   # Convertir les prédictions et les labels en facteurs si nécessaire
+#   y_train_pred <- factor(y_train_pred, levels = levels(y_train))
+#   y_val_pred <- factor(y_val_pred, levels = levels(y_val))
+#
+#   # Calculer les métriques empiriques
+#   cm_train <- caret::confusionMatrix(y_train_pred, y_train)
+#   cm_val <- caret::confusionMatrix(y_val_pred, y_val)
+#
+#   accuracy_empirique <- cm_train$overall['Accuracy']
+#   precision_empirique <- mean(cm_train$byClass[,'Precision'], na.rm = TRUE)
+#   recall_empirique <- mean(cm_train$byClass[,'Recall'], na.rm = TRUE)
+#   f1_empirique <- mean(cm_train$byClass[,'F1'], na.rm = TRUE)
+#
+#   # Calculer les métriques de généralisation
+#   accuracy_generalization <- cm_val$overall['Accuracy']
+#   precision_generalization <- mean(cm_val$byClass[,'Precision'], na.rm = TRUE)
+#   recall_generalization <- mean(cm_val$byClass[,'Recall'], na.rm = TRUE)
+#   f1_generalization <- mean(cm_val$byClass[,'F1'], na.rm = TRUE)
+#
+#   # Stocker les résultats
+#   dt_metrics_results <- dt_metrics_results %>% add_row(
+#     Fold = paste0("Fold", fold_idx),
+#     Accuracy.empirique = accuracy_empirique,
+#     Accuracy.generalization = accuracy_generalization,
+#     Precision.empirique = precision_empirique,
+#     Precision.generalization = precision_generalization,
+#     Recall.empirique = recall_empirique,
+#     Recall.generalization = recall_generalization,
+#     F1.empirique = f1_empirique,
+#     F1.generalization = f1_generalization,
+#     Methods = "Decision Tree"
+#   )
+#
+#   fold_idx <- fold_idx + 1
+# }
+#
+# # Vérifier les résultats
+# print(dt_metrics_results)
 #
 #
