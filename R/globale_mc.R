@@ -1123,7 +1123,7 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
 
           X.shuf[feat.pool[i],] <- X.shuf[feat.pool[i],ind]
           pop.eval              <- evaluatePopulation(X = X.shuf, y = y, clf = clf, pop = pop[feat.prez.ind],
-                                                      eval.all = TRUE, force.re.evaluation = TRUE)
+                                                      eval.all = TRUE, force.re.evaluation = TRUE, mode = "test")
           # get the evaluation after perturbation
           eval.shuf             <- populationGet_X(element2get = score, toVec = TRUE, na.rm = FALSE)(pop.eval)
           # compute the delta of the evaluation before and after perturbation and store it. We call this DA (decreased accuracy)

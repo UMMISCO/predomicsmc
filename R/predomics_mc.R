@@ -63,7 +63,7 @@ fit_mc <- function(X,
                    compute.importance = TRUE,
                    return.all = FALSE,
                    log.file = "parallel.log",
-                   approch ="ovo",
+                   approch ="ova",
                    aggregation_ = "voting",
                    constrained = FALSE,
                    path = NULL)

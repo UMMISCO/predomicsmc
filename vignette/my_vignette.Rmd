@@ -33,7 +33,7 @@ install.packages(c("testthat", "roxygen2", "predomics", "mcpredomics"))
 
 
 
-#Introduction
+# Introduction
 
 The mcpredomics package is designed to streamline the development, evaluation, and visualization of machine learning models in a multiclass context. It provides a comprehensive suite of functions to assist users in every stage of the modeling process, from visualizing model characteristics to assessing their performance and managing associated populations. This documentation serves as a guide to introduce the package’s functionality and provide users with the tools they need for effective implementation.
 
@@ -56,7 +56,7 @@ makeFeatureAnnot_mc
 plotModel_mc
 To learn more about the functionality of each visualization tool, use the ?? command followed by the function name. For example, ??printy_mc provides detailed information about the printy_mc function.
 
-##Binary Sub-Model Evaluation
+## Binary Sub-Model Evaluation
 
 To support the evaluation of binary sub-models, we have implemented several global functions that provide insights into accuracy, AUC, regression metrics, feature importance, and more. These tools are crucial for assessing the quality and relevance of individual sub-models within the multiclass framework.
 The following functions are available:
@@ -73,7 +73,7 @@ evaluateFeatureImportanceInPopulation_mc,
 generate_combinations_with_factors.
 For a detailed description of any of these functions, you can use the ?? command. For instance, ??evaluateAccuracy_mc provides a comprehensive overview of the evaluateAccuracy_mc function.
 
-##Multiclass Predictions and Aggregation Methods
+## Multiclass Predictions and Aggregation Methods
 
 The package supports multiclass modeling using one-versus-all (OVA) and one-versus-one (OVO) approaches. Additionally, it provides multiple methods for aggregating predictions from these approaches, as well as tools for evaluating the aggregated models.
 The available functions are:
@@ -82,7 +82,7 @@ Aggregation: voting, Predomics_aggregation_ovo, weighted, Predomics_aggregation_
 Evaluation: evaluateModel_aggregation, evaluateModels_aggregation.
 Each function serves a unique role, whether it involves generating predictions, combining results, or assessing model performance. For more details, use the ?? command, such as ??predictModel_ova for the predictModel_ova function.
 
-##Multiclass Algorithm Implementations
+## Multiclass Algorithm Implementations
 
 We have extended the terBeam and terga1 algorithms to handle multiclass problems, introducing a set of specialized functions for model generation, feature combination management, and evolution optimization. These tools are designed to create scalable and efficient multiclass models.
 The implemented functions include:
@@ -93,7 +93,7 @@ terga1_mc, terga1_mc_fit
 evolve_mc
 You can explore the purpose and functionality of each function using the ?? command. For example, ??terBeam_fit_mc will provide a detailed explanation of the terBeam_fit_mc function.
 
-##Core Functionalities
+## Core Functionalities
 
 To ensure flexibility and efficiency in training, testing, and validating multiclass models, we have implemented the following core functions:
 fit_mc: Fits models to the provided dataset.
@@ -103,35 +103,65 @@ These foundational functions make it easier to integrate multiclass workflows in
 
 
 
+# Experimental Phase
 
-
-###Loading libraries
+## Loading libraries
 
 ```{r warning=FALSE}
+# Package multi class predomics
 library(mcpredomics)
+# Package predomics
 library(predomics)
-library(ggplot2)
-library(gridExtra)
-library(pROC)
-library(reshape2)
-library(randomForest)
-library(caret)
-library(gtools)
-library(ggpubr)
-library(dplyr)
-library(tidyr)
-library(tibble)
-library(knitr)
-library(kableExtra)
-library(DT)
-library(e1071)
-library(glmnet)
+# Visualization library for creating complex plots
+library(ggplot2) 
+# Arranges multiple ggplot objects on a single page
+library(gridExtra) 
+# ROC curve analysis and AUC calculation
+library(pROC) 
+# Reshaping and melting data frames
+library(reshape2) 
+# Implementation of the Random Forest algorithm for classification and regression
+library(randomForest) 
+# Comprehensive library for classification and regression training
+library(caret) 
+# Various R programming tools and functions, including data manipulation
+library(gtools) 
+# Adding statistical comparisons and publication-ready visualizations
+library(ggpubr) 
+# Data manipulation and transformation (part of the tidyverse)
+library(dplyr) 
+# Tidying messy data by gathering and spreading
+library(tidyr) 
+# Enhanced data frames with row names as a column (tibble format)
+library(tibble) 
+# Dynamic report generation and displaying results in tables
+library(knitr) 
+# Creating aesthetically pleasing and customizable HTML tables
+library(kableExtra) 
+# Interactive tables for data visualization and exploration
+library(DT) 
+# Functions for statistical learning, including SVM and Naive Bayes
+library(e1071) 
+# Lasso and ridge regression via generalized linear models
+library(glmnet) 
+# Reading data from files (including CSV and text files)
+library(readr) 
+# String manipulation and regular expression functions
+library(stringr) 
 
 ```
 
 
-### Balance the dataset by extracting the same number of samples for all classes.
+## Dataset
 
+We experimented with three datasets. The first one was drawn from the MetaCardis project and consists of four enterotype groups: **Bacteroidetes1**, **Bacteroidetes2**, **Prevotella**, and **Ruminococcus**. To do this, we created an initial balanced dataset by randomly extracting the same number of samples from each group. Additionally, we used the original unbalanced dataset. 
+
+Next, we experimented with two other datasets: 
+1. A three-class dataset (**Adenoma**, **Colorectal Cancer**, **Control**) from the study by **Qiang Feng et al.**
+2. A three-class dataset (**T2D**, **IGT**, and **Control**) from the study by **Fredrik H. Karlsson**.
+
+
+### Balance the dataset Metacardis.
 
 ```{r}
 chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
@@ -182,12 +212,12 @@ X <- X_equilibre[, indices_division, drop = FALSE]
 X.test <- X_equilibre[, -indices_division, drop = FALSE]
 
 table(y)
-table(y.test)
 dim(X)
-dim(X.test)
+
 ```
 
-### Original unbalanced dataset
+
+### Original unbalanced dataset Metacardis
 
 ```{r}
 chemin_du_dataset <- system.file("data", "mc.input.Rda", package = "mcpredomics")
@@ -213,16 +243,52 @@ X <- X[, indices_division, drop = FALSE]
 X.test <- X[, -indices_division, drop = FALSE]
 
 table(y)
-table(y.test)
 dim(X)
-dim(X.test)
 ```
 
-### Terbeam_mc Multiclass classifier
+Load Other Datasets
+
+```{r}
+# Load the file
+load("../data/predomics.inputs.ExperimentHubMulticlass.Rda")
+lapply(predomics.inputs, function(x){summary(colSums(x[["X"]]))})
+```
+
+
+### Dataset Colorectal cancer
 
 
 ```{r}
-clf <- terBeam_mc(sparsity = c(5,6,7,8,9,10), 
+# Extract data
+data1 <- predomics.inputs$FengQ_2015
+df <- data1$y.df
+y <- df$study_condition
+X <- data1$X
+table(y)
+dim(X)
+
+```
+### T2D
+
+```{r}
+data1 <- predomics.inputs$KarlssonFH_2013
+df <- data1$y.df
+y <- df$study_condition
+X <- data1$X
+table(y)
+dim(X)
+```
+
+
+
+## Heuristics
+
+Heuristics: We have integrated the possibility of calling multiclass functions while incorporating two heuristics from Predomics: TerGa1, based on genetic algorithms, and TerBeam, which performs beam search. This led to the development of the multiclass versions TerGa1 Multiclass and TerBeam Multiclass, applied in our package.  
+
+### terbeam_mc
+
+```{r}
+clf <- terBeam_mc(sparsity = c(2,3,4,5,6,7,8,9,10), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -236,7 +302,7 @@ clf <- terBeam_mc(sparsity = c(5,6,7,8,9,10),
 ```
 
 
-### Terga1_mc Multiclass classifier
+### Terga1_mc
 
 
 ```{r}
@@ -247,14 +313,20 @@ clf <- terga1_mc(nCores = 1,
 printy(clf)
 ```
 
-### Running experiment Terga1 Predomics Aggregation one versus all
+
+
+## Running experiment
+
+Launching the experiment using the TerBeam_MC heuristic, with the Predomics Aggregation method "One Versus All", following the One Versus All approach. This experiment is launched by setting the parameter `constrained` to `false`, meaning that each binary submodel will use its own variables for model construction.
+
+
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
 if(runit)
 {
-terbeam_predomics_aggregation_ovo_unconstrained_no_balance <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ovo", nfolds= 10, constrained = FALSE); 
-save(terbeam_predomics_aggregation_ovo_unconstrained_no_balance , clf, file ="terbeam_predomics_aggregation_ovo_unconstrained_no_balance.rda", compression_level = 9)
+res_clf_mc <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ovo", nfolds= 10, constrained = FALSE); 
+save(res_clf_mc  , clf, file ="res_clf_mc.rda", compression_level = 9)
 }
 
 
@@ -263,19 +335,12 @@ save(terbeam_predomics_aggregation_ovo_unconstrained_no_balance , clf, file ="te
 
 
 
-### Exploring the results
+## Exploring the results
 
 ```{r load results, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 
-  load("terga1_Predomics_aggregation_ova_unconstrained_no_balance.rda")
+  load("res_clf_mc.rda")
 
-```
-
-
-### Digesting the results 
-
-```{r digesting results, fig.height=10, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-res_clf.dig <- digestmc(obj = terbeam_predomics_aggregation_ova_unconstrained_no_balance, penalty = 0.75/100, plot = TRUE)
 ```
 
 
@@ -283,51 +348,17 @@ res_clf.dig <- digestmc(obj = terbeam_predomics_aggregation_ova_unconstrained_no
 
 ```{r}
 clf <- regenerate_clf(clf, X, y, approch = "ova")
-
 ```
 
-### Visualizing the best model
-
-The best-learned model can be visualized simply by printing it along with a summary of information on performance and model size. Furthermore, we can further explore the model by visualizing it using the barcode plot ?plotModel_mc. Finally, the importance of each feature can also be displayed using the same function, as illustrated in the figure below.
-
-```{r best model, fig.width=7, warning=FALSE}
-# get the best model
-best.model = res_clf.dig$best$model
-# Visualize the model information (if needed)
-printy_mc(best.model)
-
-# Generate the plots
-plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
-plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
-
-# Open a PDF device to save the grid of plots
-pdf("model_visualization_plots.pdf", width = 12, height = 8)  # Adjust width and height as needed
-
-# Extract the plots from each list and pass them to `grid.arrange`
-grid.arrange(grobs = c(plots1, plots2), ncol = 4)
-
-# Close the PDF device
-dev.off()
-
-# Confirmation of the save process
-cat("The plots have been saved under the name 'model_visualization_plots.pdf'.\n")
-
-```
-### Visualizing model performance AUC
-
-```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-tmp <- plotAUC_mc(scores = best.model$score_, y = y, percent = TRUE, approch = "ova"); rm(tmp)
-
-
-```
 
 ### Family of Best Models (FBM)
 
 A family of best models is defined as the set of models returned by the predomics algorithm, whose accuracy is within a given window of the best model's accuracy. This window is defined by computing a significance threshold assuming that accuracy follows a binomial distribution (p<0.05). 
 
+
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(terbeam_predomics_aggregation_ova_unconstrained_no_balance$classifier$models)
+pop <- modelCollectionToPopulation(res_clf_mc$classifier$models)
 printy_mc(pop)
 # Function to create boxplot for a given data frame
 create_boxplot <- function(data, title) {
@@ -367,14 +398,14 @@ fbm.df <- populationToDataFrame_mc(fbm)
 fbm.dff <- as.data.frame(fbm.df[[1]])  # Convert the first submodel to a data frame
 g.after <- create_boxplot(fbm.dff, title = "FBM")
 print(g.after)  # Display the plot
-
 ```
 
 ###Analyzing the FBM
 
 The analysis of the family of best models (FBM) can be very insightful for discovering the most important variables in the prediction process. Let's start by examining the usage of variables in the FBM models. For this, we run the ?makeFeatureAnnot_mc function to obtain the feature distribution in the model matrix, which is a list of pop.noz elements. The models in the FBM are ranked by accuracy, and this order will be preserved in the coefficient dataframe. There are 20 features found in the FBM models. The figure below shows that some of these features are very prevalent in the FBM, making them likely important. The abundance and prevalence distribution of these features can be explored with ?plotAbundanceByClass_mc and ?plotPrevalence_mc, respectively. Gray stars on the right side of the graphics indicate significant differences between the prediction groups.
 
-```{r  warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=14, fig.width=16}
+
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=13, fig.width=15}
 fa <- makeFeatureAnnot_mc(pop = fbm, 
                        X = X, 
                        y = y, 
@@ -385,12 +416,13 @@ plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "ova")
 plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ova")
 ```
 
+
 ### Feature importance
 
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=15}
-  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_unconstrained_no_balance),
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=35, fig.width=70}
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_mc),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -401,7 +433,7 @@ Finally, we can explore the feature importance using mean decrease accuracy info
                                         cv.prevalence = FALSE)
 
 
-  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_predomics_aggregation_ova_unconstrained_no_balance),
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_mc),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -414,9 +446,74 @@ Finally, we can explore the feature importance using mean decrease accuracy info
 
 
 
+### Visualizing the best model
 
-#############################################################################################################################
+The best-learned model can be visualized simply by printing it along with a summary of information on performance and model size. Furthermore, we can further explore the model by visualizing it using the barcode plot ?plotModel_mc. Finally, the importance of each feature can also be displayed using the same function, as illustrated in the figure below.
+
+```{r best model, fig.width=12, warning=FALSE}
+# get the best model
+best.model = fbm[[1]]
+# Visualize the model information (if needed)
+printy_mc(best.model)
+
+# Generate the plots
+plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
+plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
+
+# Open a PDF device to save the grid of plots
+pdf("model_visualization_plots2.pdf", width = 30, height = 25)  # Adjust width and height as needed
+
+# Extract the plots from each list and pass them to `grid.arrange`
+grid.arrange(grobs = c(plots1, plots2), ncol = 1)
+
+# Close the PDF device
+dev.off()
+
+# Confirmation of the save process
+cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\n")
+
+```
+### Visualizing model performance AUC
+
+```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+tmp <- plotAUC_mc(scores = best.model$score_, y = y, percent = TRUE, approch = "ova"); rm(tmp)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+##########################################################################################################
 ############################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## ANNEXES
 ### Analysys results predomics and sota
 
@@ -440,7 +537,7 @@ library(ggplot2)
 library(stringr)  # Pour str_starts
 
 # Imputer les valeurs manquantes avec la moyenne
-analysis_table_final <- analysis_table_final2 %>% 
+analysis_table_final <- analysis_table_final2_no_balance %>% 
   mutate(across(everything(), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
 
 # Convertir en format long
@@ -547,8 +644,8 @@ df_summary <- df %>%
   left_join(df %>% select(Methods, Group) %>% distinct(), by = "Methods")  # Assurez-vous que Group est présent
 
 # Définir le fichier PDF de sortie
-output_pdf <- "analysis_plot.pdf"  # Nom du fichier PDF
-pdf(file = output_pdf, width = 12, height = 8)  # Dimensions du graphique
+output_pdf <- "analysis_plot2.pdf"  # Nom du fichier PDF
+pdf(file = output_pdf, width = 12, height = 10)  # Dimensions du graphique
 
 # Générer le graphique
 df_summary %>% 
@@ -718,10 +815,643 @@ if (length(metrics_in_data) > 0) {
 
 
 
+```{r warning=FALSE, fig.height=14, fig.width=13, message=FALSE, warning=FALSE, paged.print=FALSE}
+# Chargement des librairies nécessaires
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+
+# Fusionner les quatre dataframes en ajoutant une colonne pour différencier les datasets
+analysis_table_no_balance <- analysis_table_final_complet_no_balance %>%
+  mutate(Dataset = "MetaCardis enterotype non-balanced")
+
+analysis_table_balance <- analysis_table_final_complet_balance %>%
+  mutate(Dataset = "MetaCardis enterotype balanced")
+
+analysis_table_no_balance_2 <- analysis_table_final_complet_no_balance_2 %>%
+  mutate(Dataset = "CRC, Adenoma and Control")
+
+analysis_table_no_balance_3 <- analysis_table_final_complet_no_balance_3 %>%
+  mutate(Dataset = "T2D,IGT and Control ")
+
+# Combiner les quatre tables
+df_combined <- bind_rows(analysis_table_no_balance, 
+                         analysis_table_balance, 
+                         analysis_table_no_balance_2, 
+                         analysis_table_no_balance_3)
+
+# Imputation des valeurs manquantes pour les colonnes numériques
+df_combined <- df_combined %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Renommer "Features" en "k"
+df_combined <- df_combined %>%
+  rename(k = Features)
+
+# Convertir en format long
+df_long <- df_combined %>%
+  pivot_longer(
+    cols = c("Accuracy.empirique", "Accuracy.generalization"),  # Se limiter aux colonnes de précision
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Partition = recode(Partition, 'empirique' = 'train', 'generalization' = 'test'),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Predomics Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Predomics Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Predomics Terga1 constrained",
+      TRUE ~ "SOTA"
+    ),
+    Subgroup = case_when(
+      str_starts(Methods, "terbeam") ~ "Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Terga1 constrained",
+      TRUE ~ "SOTA"
+    )
+  )
+
+# Regrouper "Predomics Terbeam unconstrained" et "Predomics Terga1 unconstrained"
+df_long$Group <- recode(df_long$Group,
+                        "Predomics Terbeam unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terga1 unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terbeam constrained" = "Predomics Terbeam & Terga1 constrained", 
+                        "Predomics Terga1 constrained" = "Predomics Terbeam & Terga1 constrained")
+
+# Filtrer pour ne garder que la partition "test" et la métrique "Accuracy.generalization"
+df_accuracy <- df_long %>% 
+  filter(Metric == "Accuracy" & Partition == "test")
+
+# Agréger les données pour le résumé
+df_summary <- df_accuracy %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Supprimer les lignes avec des valeurs manquantes ou vides dans `Metric` ou `Group`
+df_summary <- df_summary %>%
+  filter(!is.na(Metric) & !is.na(Group) & Metric != "" & Group != "")
+
+# Suppression des préfixes "terbeam", "_terbeam", "terga1", "_terga1" dans l'affichage des méthodes
+df_summary <- df_summary %>%
+  mutate(Methods = str_remove(Methods, "^_?terbeam_?|^_?terga1_?"))
+
+# Vérification des résultats
+print(unique(df_summary$Group))
+
+# Définir une palette de couleurs personnalisée
+custom_colors <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = "green", 
+  "Predomics Terbeam & Terga1 constrained" = "blue", 
+  "SOTA" = "red", 
+  "Terbeam unconstrained" = "darkgreen", 
+  "Terga1 unconstrained" = "darkblue", 
+  "Terbeam constrained" = "lightgreen", 
+  "Terga1 constrained" = "lightblue"
+)
+
+# Définir une palette de formes personnalisée
+custom_shapes <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = 16, 
+  "Predomics Terbeam & Terga1 constrained" = 4,   
+  "SOTA" = 19,  
+  "Terbeam unconstrained" = 17,  
+  "Terga1 unconstrained" = 18,  
+  "Terbeam constrained" = 15,  
+  "Terga1 constrained" = 8
+)
+
+# Tracez le graphique avec faceting pour "Accuracy.generalization" uniquement
+df_summary %>%
+  ggplot(aes(x = Methods, y = mean_value, color = Subgroup, shape = Subgroup)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value), 
+                position = position_dodge(width = 0.5), width = 0.2) +
+  facet_grid(Dataset ~ Group, scales = "free") +  # Faceting par Dataset et Group
+  ylab("Accuracy") +  # Changez "Value" en "Accuracy" pour plus de clarté
+  xlab("Methods") + 
+  theme_bw() + 
+  scale_colour_manual(values = custom_colors) +  # Appliquer les couleurs personnalisées
+  scale_shape_manual(values = custom_shapes) +   # Appliquer les formes personnalisées
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+
+
+
 
 ```{r}
- analysis_table_final2
+# Chargement des librairies nécessaires
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+
+# Fusionner les quatre dataframes en ajoutant une colonne pour différencier les datasets
+analysis_table_no_balance <- analysis_table_final_complet_no_balance %>%
+  mutate(Dataset = "Enterotype_nobalanced")
+
+analysis_table_balance <- analysis_table_final_complet_balance %>%
+  mutate(Dataset = "Enterotype_balanced")
+
+analysis_table_no_balance_2 <- analysis_table_final_complet_no_balance_2 %>%
+  mutate(Dataset = "CRC")
+
+analysis_table_no_balance_3 <- analysis_table_final_complet_no_balance_3 %>%
+  mutate(Dataset = "T2D ")
+
+# Combiner les quatre tables
+df_combined <- bind_rows(analysis_table_no_balance, 
+                         analysis_table_balance, 
+                         analysis_table_no_balance_2, 
+                         analysis_table_no_balance_3)
+
+# Imputation des valeurs manquantes pour les colonnes numériques
+df_combined <- df_combined %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Renommer "Features" en "k"
+df_combined <- df_combined %>%
+  rename(k = Features)
+
+# Convertir en format long
+df_long <- df_combined %>%
+  pivot_longer(
+    cols = c("Accuracy.empirique", "Accuracy.generalization"),  # Se limiter aux colonnes de précision
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Partition = recode(Partition, 'empirique' = 'train', 'generalization' = 'test'),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Predomics Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Predomics Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Predomics Terga1 constrained",
+      TRUE ~ "SOTA"
+    ),
+    Subgroup = case_when(
+      str_starts(Methods, "terbeam") ~ "Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Terga1 constrained",
+      TRUE ~ "SOTA"
+    )
+  )
+
+# Regrouper "Predomics Terbeam unconstrained" et "Predomics Terga1 unconstrained"
+df_long$Group <- recode(df_long$Group,
+                        "Predomics Terbeam unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terga1 unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terbeam constrained" = "Predomics Terbeam & Terga1 constrained", 
+                        "Predomics Terga1 constrained" = "Predomics Terbeam & Terga1 constrained")
+
+# Filtrer pour ne garder que la partition "test" et la métrique "Accuracy.generalization"
+df_accuracy <- df_long %>% 
+  filter(Metric == "Accuracy" & Partition == "test")
+
+# Agréger les données pour le résumé
+df_summary <- df_accuracy %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Supprimer les lignes avec des valeurs manquantes ou vides dans Metric ou Group
+df_summary <- df_summary %>%
+  filter(!is.na(Metric) & !is.na(Group) & Metric != "" & Group != "")
+
+# Suppression des préfixes "terbeam", "_terbeam", "terga1", "_terga1" et des suffixes "_no_balance", "_balance" dans l'affichage des méthodes
+df_summary <- df_summary %>%
+  mutate(Methods = str_remove_all(Methods,"^(terbeam_|_terbeam_|terga1_|_terga1_)|(_no_balance|_balance)$"))
+
+
+# Vérification des résultats
+print(unique(df_summary$Group))
+
+# Définir une palette de couleurs personnalisée
+custom_colors <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = "green", 
+  "Predomics Terbeam & Terga1 constrained" = "blue", 
+  "SOTA" = "red", 
+  "Terbeam unconstrained" = "darkgreen", 
+  "Terga1 unconstrained" = "darkblue", 
+  "Terbeam constrained" = "lightgreen", 
+  "Terga1 constrained" = "lightblue"
+)
+
+# Définir une palette de formes personnalisée
+custom_shapes <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = 16, 
+  "Predomics Terbeam & Terga1 constrained" = 4,   
+  "SOTA" = 19,  
+  "Terbeam unconstrained" = 17,   
+  "Terga1 unconstrained" = 18,   
+  "Terbeam constrained" = 15,   
+  "Terga1 constrained" = 8
+)
+
+# Créer et enregistrer le graphique en format PDF avec disposition paysage
+pdf("accuracy_plot.pdf", width = 11, height = 10)  # Format paysage A4
+
+df_summary %>%
+  ggplot(aes(x = Methods, y = mean_value, color = Subgroup, shape = Subgroup)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value), 
+                position = position_dodge(width = 0.5), width = 0.2) +
+  facet_grid(Dataset ~ Group, scales = "free") +  # Faceting par Dataset et Group
+  ylab("Accuracy") +  # Changez "Value" en "Accuracy" pour plus de clarté
+  xlab("Methods") + 
+  theme_bw() + 
+  scale_colour_manual(values = custom_colors) +  # Appliquer les couleurs personnalisées
+  scale_shape_manual(values = custom_shapes) +   # Appliquer les formes personnalisées
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "bottom"
+  )
+
+# Fermer le fichier PDF
+dev.off()
+
 ```
+
+
+
+
+```{r}
+# Charger la bibliothèque nécessaire
+library(dplyr)
+library(stringr)
+
+# Fonction pour remplacer les valeurs dans la colonne Methods
+replace_methods <- function(df) {
+  df %>%
+    mutate(Methods = str_replace_all(Methods, 
+      c("_terga1_Predomics_aggregation_ovo_constrained_balance" = "_terga1_predomics_aggregation_ovo_constrained_balance",
+        "_terga1_Predomics_aggregation_ovo_unconstrained_balance" = "_terga1_predomics_aggregation_ovo_unconstrained_balance",
+        "_terga1_Predomics_aggregation_ova_constrained_balance" = "_terga1_predomics_aggregation_ova_constrained_balance",
+        "_terga1_Predomics_aggregation_ova_unconstrained_balance" = "_terga1_predomics_aggregation_ova_unconstrained_balance"))) %>%
+    # Remplacer 'P' majuscule par 'p' dans 'Predomics'
+    mutate(Methods = str_replace_all(Methods, "Predomics", "predomics"))
+}
+
+# Appliquer la fonction à chaque dataframe
+analysis_table_final_complet_no_balance <- replace_methods(analysis_table_final_complet_no_balance)
+analysis_table_final_complet_balance <- replace_methods(analysis_table_final_complet_balance)
+analysis_table_final_complet_no_balance_2 <- replace_methods(analysis_table_final_complet_no_balance_2)
+analysis_table_final_complet_no_balance_3 <- replace_methods(analysis_table_final_complet_no_balance_3)
+
+# Vérifier les valeurs uniques après modification
+unique(analysis_table_final_complet_no_balance$Methods)
+unique(analysis_table_final_complet_balance$Methods)
+unique(analysis_table_final_complet_no_balance_2$Methods)
+unique(analysis_table_final_complet_no_balance_3$Methods)
+
+
+```
+
+
+
+
+
+
+
+```{r}
+# Chargement des librairies nécessaires
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+
+# Fusionner les quatre dataframes en ajoutant une colonne pour différencier les datasets
+analysis_table_no_balance <- analysis_table_final_complet_no_balance %>%
+  mutate(Dataset = "Enterotype_nobalanced")
+
+analysis_table_balance <- analysis_table_final_complet_balance %>%
+  mutate(Dataset = "Enterotype_balanced")
+
+analysis_table_no_balance_2 <- analysis_table_final_complet_no_balance_2 %>%
+  mutate(Dataset = "CRC")
+
+analysis_table_no_balance_3 <- analysis_table_final_complet_no_balance_3 %>%
+  mutate(Dataset = "T2D ")
+
+# Combiner les quatre tables
+df_combined <- bind_rows(analysis_table_no_balance, 
+                         analysis_table_balance, 
+                         analysis_table_no_balance_2, 
+                         analysis_table_no_balance_3)
+
+# Imputation des valeurs manquantes pour les colonnes numériques
+df_combined <- df_combined %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Renommer "Features" en "k"
+df_combined <- df_combined %>%
+  rename(k = Features)
+
+# Convertir en format long
+df_long <- df_combined %>%
+  pivot_longer(
+    cols = c("Accuracy.empirique", "Accuracy.generalization"),  # Se limiter aux colonnes de précision
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Partition = recode(Partition, 'empirique' = 'train', 'generalization' = 'test'),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Predomics Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Predomics Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Predomics Terga1 constrained",
+      TRUE ~ "SOTA"
+    ),
+    Subgroup = case_when(
+      str_starts(Methods, "terbeam") ~ "Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Terga1 constrained",
+      TRUE ~ "SOTA"
+    )
+  )
+
+# Regrouper "Predomics Terbeam unconstrained" et "Predomics Terga1 unconstrained"
+df_long$Group <- recode(df_long$Group,
+                        "Predomics Terbeam unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terga1 unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terbeam constrained" = "Predomics Terbeam & Terga1 constrained", 
+                        "Predomics Terga1 constrained" = "Predomics Terbeam & Terga1 constrained")
+
+# Filtrer pour ne garder que la partition "test" et la métrique "Accuracy.generalization"
+df_accuracy <- df_long %>% 
+  filter(Metric == "Accuracy" & Partition == "test")
+
+# Agréger les données pour le résumé
+df_summary <- df_accuracy %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Supprimer les lignes avec des valeurs manquantes ou vides dans Metric ou Group
+df_summary <- df_summary %>%
+  filter(!is.na(Metric) & !is.na(Group) & Metric != "" & Group != "")
+
+# Suppression des préfixes et des suffixes dans l'affichage des méthodes
+df_summary <- df_summary %>%
+  mutate(Methods = str_remove_all(Methods, "^(terbeam_|_terbeam_|terga1_|_terga1_)|(_no_balance|_balance)$"))
+
+# Supprimer les doublons de méthodes après la suppression des préfixes et des suffixes
+df_summary <- df_summary %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(mean_value, na.rm = TRUE),
+    sd_value = mean(sd_value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Définir une palette de couleurs personnalisée
+custom_colors <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = "green", 
+  "Predomics Terbeam & Terga1 constrained" = "blue", 
+  "SOTA" = "red", 
+  "Terbeam unconstrained" = "darkgreen", 
+  "Terga1 unconstrained" = "darkblue", 
+  "Terbeam constrained" = "lightgreen", 
+  "Terga1 constrained" = "lightblue"
+)
+
+# Définir une palette de formes personnalisée
+custom_shapes <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = 16, 
+  "Predomics Terbeam & Terga1 constrained" = 4,   
+  "SOTA" = 19,   
+  "Terbeam unconstrained" = 17,   
+  "Terga1 unconstrained" = 18,   
+  "Terbeam constrained" = 15,   
+  "Terga1 constrained" = 8
+)
+
+# Créer et enregistrer le graphique en format PDF avec disposition paysage
+pdf("accuracy_plot.pdf", width = 11, height = 10)
+
+df_summary %>%
+  ggplot(aes(x = Methods, y = mean_value, color = Subgroup, shape = Subgroup)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value), 
+                position = position_dodge(width = 0.5), width = 0.2) +
+  facet_grid(Dataset ~ Group, scales = "free") +
+  ylab("Accuracy") +
+  xlab("Methods") +
+  theme_bw() +
+  scale_colour_manual(values = custom_colors) +
+  scale_shape_manual(values = custom_shapes) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "bottom"
+  )
+
+# Fermer le fichier PDF
+dev.off()
+
+```
+
+
+
+
+
+
+
+```{r}
+# Chargement des librairies nécessaires
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+
+# Fusionner les quatre dataframes en ajoutant une colonne pour différencier les datasets
+analysis_table_no_balance <- analysis_table_final_complet_no_balance %>%
+  mutate(Dataset = "Enterotype no_balanced")
+
+analysis_table_balance <- analysis_table_final_complet_balance %>%
+  mutate(Dataset = "Enterotype balanced")
+
+analysis_table_no_balance_2 <- analysis_table_final_complet_no_balance_2 %>%
+  mutate(Dataset = "CRC, Adenoma, Control")
+
+analysis_table_no_balance_3 <- analysis_table_final_complet_no_balance_3 %>%
+  mutate(Dataset = "T2D, IGT, Control ")
+
+# Combiner les quatre tables
+df_combined <- bind_rows(analysis_table_no_balance, 
+                         analysis_table_balance, 
+                         analysis_table_no_balance_2, 
+                         analysis_table_no_balance_3)
+
+# Imputation des valeurs manquantes pour les colonnes numériques
+df_combined <- df_combined %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Renommer "Features" en "k"
+df_combined <- df_combined %>%
+  rename(k = Features)
+
+# Convertir en format long
+df_long <- df_combined %>%
+  pivot_longer(
+    cols = c("Accuracy.empirique", "Accuracy.generalization"),  # Se limiter aux colonnes de précision
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Partition = recode(Partition, 'empirique' = 'train', 'generalization' = 'test'),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Predomics Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Predomics Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Predomics Terga1 constrained",
+      TRUE ~ "SOTA"
+    ),
+    Subgroup = case_when(
+      str_starts(Methods, "terbeam") ~ "Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Terga1 constrained",
+      TRUE ~ "SOTA"
+    )
+  )
+
+# Regrouper "Predomics Terbeam unconstrained" et "Predomics Terga1 unconstrained"
+df_long$Group <- recode(df_long$Group,
+                        "Predomics Terbeam unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terga1 unconstrained" = "Predomics Terbeam & Terga1 unconstrained", 
+                        "Predomics Terbeam constrained" = "Predomics Terbeam & Terga1 constrained", 
+                        "Predomics Terga1 constrained" = "Predomics Terbeam & Terga1 constrained")
+
+# Filtrer pour ne garder que la partition "test" et la métrique "Accuracy.generalization"
+df_accuracy <- df_long %>% 
+  filter(Metric == "Accuracy" & Partition == "test")
+
+# Agréger les données pour le résumé
+df_summary <- df_accuracy %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Supprimer les lignes avec des valeurs manquantes ou vides dans Metric ou Group
+df_summary <- df_summary %>%
+  filter(!is.na(Metric) & !is.na(Group) & Metric != "" & Group != "")
+
+# Suppression des préfixes et des suffixes dans l'affichage des méthodes
+df_summary <- df_summary %>%
+  mutate(Methods = str_remove_all(Methods, "^(terbeam_|_terbeam_|terga1_|_terga1_)|(_no_balance|_balance)$"))
+
+# Supprimer les doublons de méthodes après la suppression des préfixes et des suffixes
+df_summary <- df_summary %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(mean_value, na.rm = TRUE),
+    sd_value = mean(sd_value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Trouver la valeur maximale d'accuracy pour chaque dataset et group
+df_summary <- df_summary %>%
+  group_by(Dataset, Group) %>%
+  mutate(max_accuracy = max(mean_value, na.rm = TRUE)) %>%
+  ungroup()
+
+# Ajouter une colonne pour marquer les points avec l'accuracy maximale
+df_summary <- df_summary %>%
+  mutate(is_max_accuracy = ifelse(mean_value == max_accuracy, TRUE, FALSE))
+
+# Définir une palette de couleurs personnalisée
+custom_colors <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = "green", 
+  "Predomics Terbeam & Terga1 constrained" = "blue", 
+  "SOTA" = "black", 
+  "Terbeam unconstrained" = "darkgreen", 
+  "Terga1 unconstrained" = "darkblue", 
+  "Terbeam constrained" = "lightgreen", 
+  "Terga1 constrained" = "lightblue"
+)
+
+# Définir une palette de formes personnalisée
+custom_shapes <- c(
+  "Predomics Terbeam & Terga1 unconstrained" = 16, 
+  "Predomics Terbeam & Terga1 constrained" = 4,   
+  "SOTA" = 19,   
+  "Terbeam unconstrained" = 17,   
+  "Terga1 unconstrained" = 18,   
+  "Terbeam constrained" = 15,   
+  "Terga1 constrained" = 8
+)
+
+# Créer et enregistrer le graphique en format PDF avec disposition paysage
+pdf("accuracy_plot_with_stars.pdf", width = 11, height = 10)
+
+df_summary %>%
+  ggplot(aes(x = Methods, y = mean_value, color = Subgroup, shape = Subgroup)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value), 
+                position = position_dodge(width = 0.5), width = 0.2) +
+  geom_point(data = subset(df_summary, is_max_accuracy == TRUE), 
+             aes(x = Methods, y = mean_value), 
+             shape = 8, color = "red", size = 5) + # Ajout d'une étoile pour la valeur maximale
+  facet_grid(Dataset ~ Group, scales = "free") +
+  ylab("Accuracy.generalization") +
+  xlab("Methods") +
+  theme_bw() +
+  scale_colour_manual(values = custom_colors) +
+  scale_shape_manual(values = custom_shapes) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "bottom"
+  )
+
+# Fermer le fichier PDF
+dev.off()
+
+```
+
+
+
+
+
+
+
+
 
 
 
