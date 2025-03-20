@@ -288,7 +288,7 @@ Heuristics: We have integrated the possibility of calling multiclass functions w
 ### terbeam_mc
 
 ```{r}
-clf <- terBeam_mc(sparsity = c(2,3,4,5,6,7,8,9,10), 
+clf <- terBeam_mc(sparsity = c(10), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -325,8 +325,8 @@ Launching the experiment using the TerBeam_MC heuristic, with the Predomics Aggr
 runit = TRUE
 if(runit)
 {
-res_clf_mc <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "Predomics_aggregation_ovo", nfolds= 10, constrained = FALSE); 
-save(res_clf_mc  , clf, file ="res_clf_mc.rda", compression_level = 9)
+weighted_f1_auc_terbeam_constrained_2 <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "weighted_f1_auc", nfolds= 10, constrained = FALSE); 
+save(weighted_f1_auc_terbeam_constrained_2  , clf, file ="weighted_f1_auc_terbeam_constrained_2.rda", compression_level = 9)
 }
 
 
@@ -358,7 +358,7 @@ A family of best models is defined as the set of models returned by the predomic
 
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(res_clf_mc$classifier$models)
+pop <- modelCollectionToPopulation(weighted_f1_auc_terbeam_unconstrained$classifier$models)
 printy_mc(pop)
 # Function to create boxplot for a given data frame
 create_boxplot <- function(data, title) {
@@ -410,10 +410,10 @@ fa <- makeFeatureAnnot_mc(pop = fbm,
                        X = X, 
                        y = y, 
                        clf = clf,
-                       approch = "ova")
-plot_distribution <- plotFeatureModelCoeffs_mc(feat.model.coeffs = fa, y, approch = "ova")
-plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "ova")
-plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ova")
+                       approch = "ovo")
+plot_distribution <- plotFeatureModelCoeffs_mc(feat.model.coeffs = fa, y, approch = "ovo")
+plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "ovo")
+plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ovo")
 ```
 
 
@@ -421,8 +421,8 @@ plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ov
 
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=35, fig.width=70}
-  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_mc),
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=12}
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = weighted_f1_auc_terbeam_unconstrained ),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -433,7 +433,7 @@ Finally, we can explore the feature importance using mean decrease accuracy info
                                         cv.prevalence = FALSE)
 
 
-  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_mc),
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = weighted_f1_auc_terbeam_unconstrained),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",

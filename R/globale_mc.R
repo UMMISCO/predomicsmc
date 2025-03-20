@@ -1571,6 +1571,200 @@ weighted <- function(mod) {
 }
 
 
+
+
+
+
+
+#' This function performs weighted aggregation of predictions, weighted by AUC and F1 score.
+#' @title weighted_f1_auc
+#' @description Function to aggregate one-versus-one predictions using weighted voting with AUC and F1 score.
+#' @param mod: The model object containing predictions and scores.
+#' @return The function returns the model object with aggregated predictions.
+#' @export
+#'
+weighted_f1_auc <- function(mod) {
+  predictions_list <- list()
+  scores_list <- list()
+  f1_list <- lapply(mod, function(x) x$f1_)
+  auc_list <- lapply(mod, function(x) x$auc_)
+  predictions_list <- lapply(mod, function(x) x$predictions)
+  scores_list <- lapply(mod, function(x) x$scores_predictions)
+
+  num_predictions <- length(predictions_list)
+  num_samples <- length(predictions_list[[1]])
+
+  aggregated_vector <- character(num_samples)
+
+  # Iterate over each sample
+  for (i in 1:num_samples) {
+    # Extract scores for the current sample and multiply by F1 * AUC
+    weighted_scores <- sapply(seq_along(scores_list), function(j) scores_list[[j]][i] * f1_list[[j]] * auc_list[[j]])
+
+    # Extract predictions for the current sample
+    prediction_ <- sapply(predictions_list, function(prediction_vector) prediction_vector[i])
+
+    # Get unique classes in the predictions
+    classes <- unique(prediction_)
+
+    # Handle empty classes case
+    if (length(classes) == 0) {
+      warning(paste("No classes found for sample", i))
+      next
+    }
+
+    class_scores_sum <- numeric(length(classes))
+
+    # Calculate the sum of scores for each unique class
+    for (j in 1:length(classes)) {
+      class_ <- classes[j]
+      class_scores_sum[j] <- sum(weighted_scores[prediction_ == class_], na.rm = TRUE)
+    }
+
+    # Find the index of the class with the highest sum of scores
+    if (all(is.na(class_scores_sum))) {
+      warning(paste("All scores are NA for sample", i))
+      next
+    }
+
+    best_class_index <- which.max(class_scores_sum)
+
+    # Handle case where best_class_index is empty
+    if (length(best_class_index) == 0) {
+      warning(paste("No best class found for sample", i))
+      next
+    }
+
+    best_class <- classes[best_class_index]
+
+    # Assign the predicted class with the highest sum of scores to the aggregated vector
+    aggregated_vector[i] <- best_class
+  }
+
+  #### Aggregations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- auc_list
+  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_), na.rm = TRUE)
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- f1_list
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- predictions_list
+  model$scores_predictions <- scores_list
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_vector
+  mod <- list()
+  mod <- model
+  mod$predictions_aggre <- aggregated_vector
+  mod$method <- "weighted_f1_auc"
+  mod$approach <- "ovo"
+  return(mod)
+}
+
+
+
+#' This function performs weighted aggregation of predictions, weighted by Accuracy.
+#' @title weighted_accuracy
+#' @description Function to aggregate one-versus-one predictions using weighted voting with Accuracy.
+#' @param mod: The model object containing predictions and scores.
+#' @return The function returns the model object with aggregated predictions.
+#' @export
+#'
+weighted_accuracy <- function(mod) {
+  predictions_list <- list()
+  scores_list <- list()
+  accuracy_list <- lapply(mod, function(x) x$accuracy_)
+  predictions_list <- lapply(mod, function(x) x$predictions)
+  scores_list <- lapply(mod, function(x) x$scores_predictions)
+
+  num_predictions <- length(predictions_list)
+  num_samples <- length(predictions_list[[1]])
+
+  aggregated_vector <- character(num_samples)
+
+  # Iterate over each sample
+  for (i in 1:num_samples) {
+    # Extract scores for the current sample and multiply by accuracy
+    weighted_scores <- sapply(seq_along(scores_list), function(j) scores_list[[j]][i] * accuracy_list[[j]])
+    # Extract predictions for the current sample
+    prediction_ <- sapply(predictions_list, function(prediction_vector) prediction_vector[i])
+
+    # Get unique classes in the predictions
+    classes <- unique(prediction_)
+    class_scores_sum <- numeric(length(classes))
+
+    # Calculate the sum of scores for each unique class
+    for (j in 1:length(classes)) {
+      class_ <- classes[j]
+      class_scores_sum[j] <- sum(weighted_scores[prediction_ == class_])
+    }
+
+    # Find the index of the class with the highest sum of scores
+    best_class_index <- which.max(class_scores_sum)
+    best_class <- classes[best_class_index]
+
+    # Assign the predicted class with the highest sum of scores to the aggregated vector
+    aggregated_vector[i] <- best_class
+  }
+
+  #### Aggregations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_ <- accuracy_list
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- predictions_list
+  model$scores_predictions <- scores_list
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_vector
+  mod <- list()
+  mod <- model
+  mod$predictions_aggre <- aggregated_vector
+  mod$method <- "weighted_accuracy"
+  mod$approach <- "ovo"
+  return(mod)
+}
+
+
+
 #' Aggregation function of one-versus-all predictions using search and score max.
 #' @title Predomics_aggregation_ova
 #' @description  Function to aggregate one-versus-all predictions using New approach.
@@ -1727,6 +1921,75 @@ maximization <- function(mod, y) {
 }
 
 
+
+#' Aggregation function of one-versus-all predictions using maximum score, weighted by AUC and F1 score.
+#' @title maximization_accuracy
+#' @description  Function to aggregate one-versus-all predictions using maximization aggregation, weighted by AUC and F1 score.
+#' @param mod: The model object containing predictions and scores.
+#' @param y: True class.
+#' @return  The function returns the model object with aggregated predictions.
+#' @export
+maximization_accuracy <- function(mod, y) {
+  # Initialize the vector to hold the aggregated predictions with the appropriate length
+  classes_list <- lapply(mod, function(x) x$predictions)
+  score_list <- lapply(mod, function(x) x$scores_predictions)
+  accuracy_list <- lapply(mod, function(x) x$accuracy_) # Get the accuracy of each submodel
+
+  aggregated_predictions <- character(length = length(classes_list[[1]]))
+  y <- as.factor(y)
+  current_classes <- levels(y)
+
+  # Iterate over each position in the aggregated predictions
+  for (i in seq_along(aggregated_predictions)) {
+    # Multiply each score by the corresponding accuracy
+    scores <- sapply(seq_along(score_list), function(j) score_list[[j]][i] * accuracy_list[[j]])
+
+    # Find the index of the maximum score
+    max_score_index <- which.max(scores)
+
+    # Fill the aggregation vector at position i with the predicted class with the maximum score
+    aggregated_predictions[i] <- current_classes[max_score_index]
+  }
+
+  #### Aggregations
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$scores_predictions <- lapply(mod, function(x) x$scores_predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_predictions
+  mod <- list()
+  mod <- model
+  mod$method <- "maximization_accuracy"
+  mod$approach <- "ova"
+  return(mod)
+}
+
+
+
 #' Aggregation function of one-versus-all predictions using ranking score.
 #' @title ranking
 #' @description Function to aggregate one-versus-all predictions using ranking Aggregation.
@@ -1756,7 +2019,7 @@ ranking <- function(mod, y) {
     best_class_index <- which(rank_scores == 1)
     aggregated_predictions[i] <- current_classes[best_class_index]
   }
-  #### Aggrégations
+  #### Aggregations
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -1864,6 +2127,18 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_prodomics_ovo <- Predomics_aggregation_ovo(mod = mod_predict)
       mod_evaluate <- evaluateModel_aggregation(mod = mod_prodomics_ovo, y = y)
+    }  else if (aggregation_ == "weighted_f1_auc") {
+      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_weighted_f1_auc <- weighted_f1_auc(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted_f1_auc, y = y)
+    }  else if (aggregation_ == "weighted_accuracy") {
+      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_weighted_accuracy <- weighted_accuracy(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted_accuracy, y = y)
+    }else if (aggregation_ == "weighted_f1") {
+      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_weighted_f1 <- weighted_f1(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted_f1, y = y)
     }
 
   } else if (approch == "ova") {
@@ -1879,6 +2154,18 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
       mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_ranking <- ranking(mod = mod_predict, y = y)
       mod_evaluate <- evaluateModel_aggregation(mod = mod_ranking, y = y)
+    } else if (aggregation_ == "maximization_accuracy") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_maximization_accuracy <- maximization_accuracy(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_maximization_accuracy , y = y)
+    }else if (aggregation_ == "maximization_f1") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_maximization_f1 <- maximization_f1(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod =  mod_maximization_f1 , y = y)
+    } else if (aggregation_ == "maximization_f1_auc") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_maximization_f1_auc <-  maximization_f1_auc(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod =  mod_maximization_f1_auc , y = y)
     }
 
   }
