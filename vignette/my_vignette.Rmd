@@ -288,7 +288,7 @@ Heuristics: We have integrated the possibility of calling multiclass functions w
 ### terbeam_mc
 
 ```{r}
-clf <- terBeam_mc(sparsity = c(10), 
+clf <- terBeam_mc(sparsity = c(3,4,5,6,7,8,9,10), 
                                    max.nb.features = 1000,
                                    seed = 1,
                                    nCores = 1,
@@ -325,8 +325,8 @@ Launching the experiment using the TerBeam_MC heuristic, with the Predomics Aggr
 runit = TRUE
 if(runit)
 {
-weighted_f1_auc_terbeam_constrained_2 <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "weighted_f1_auc", nfolds= 10, constrained = FALSE); 
-save(weighted_f1_auc_terbeam_constrained_2  , clf, file ="weighted_f1_auc_terbeam_constrained_2.rda", compression_level = 9)
+terbeam_Majority_Voting_TD2_unconstrained_no_balance <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "voting", nfolds= 5, constrained = FALSE); 
+save(terbeam_Majority_Voting_TD2_unconstrained_no_balance, clf, file ="terbeam_Majority_Voting_TD2_unconstrained_no_balance.rda", compression_level = 9)
 }
 
 
@@ -344,6 +344,14 @@ save(weighted_f1_auc_terbeam_constrained_2  , clf, file ="weighted_f1_auc_terbea
 ```
 
 
+```{r warning=FALSE}
+res_clf.dig <- digest(obj = resclf2 , penalty = 0.75/100, plot = TRUE)
+```
+
+
+
+
+
 ### Regenerate object Clf 
 
 ```{r}
@@ -358,7 +366,7 @@ A family of best models is defined as the set of models returned by the predomic
 
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(weighted_f1_auc_terbeam_unconstrained$classifier$models)
+pop <- modelCollectionToPopulation(terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance$classifier$models)
 printy_mc(pop)
 # Function to create boxplot for a given data frame
 create_boxplot <- function(data, title) {
@@ -421,8 +429,8 @@ plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ov
 
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=12}
-  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = weighted_f1_auc_terbeam_unconstrained ),
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=13}
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance ),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -433,7 +441,7 @@ Finally, we can explore the feature importance using mean decrease accuracy info
                                         cv.prevalence = FALSE)
 
 
-  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = weighted_f1_auc_terbeam_unconstrained),
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -457,14 +465,14 @@ best.model = fbm[[1]]
 printy_mc(best.model)
 
 # Generate the plots
-plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ova")
-plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ova")
+plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ovo")
+plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
 
 # Open a PDF device to save the grid of plots
-pdf("model_visualization_plots2.pdf", width = 30, height = 25)  # Adjust width and height as needed
+pdf("model_visualization_plots2.pdf", width = 15, height = 15)  # Adjust width and height as needed
 
 # Extract the plots from each list and pass them to `grid.arrange`
-grid.arrange(grobs = c(plots1, plots2), ncol = 1)
+grid.arrange(grobs = c(plots1, plots2), ncol = 3)
 
 # Close the PDF device
 dev.off()
@@ -476,7 +484,7 @@ cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\
 ### Visualizing model performance AUC
 
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-tmp <- plotAUC_mc(scores = best.model$score_, y = y, percent = TRUE, approch = "ova"); rm(tmp)
+tmp <- plotAUC_mc(scores = best.model$score_, y = y, percent = TRUE, approch = "ovo"); rm(tmp)
 
 
 ```
@@ -1453,10 +1461,28 @@ dev.off()
 
 
 
+```{r}
+y_T2D <- y
+X_T2D <- X
+
+
+```
 
 
 
+```{r}
+# Sauvegarder la variable y dans un fichier CSV
+write.csv(y_T2D, file = "y_T2D.csv", row.names = FALSE)
 
+# Sauvegarder la variable X dans un fichier CSV
+write.csv(X_T2D, file = "X_T2D.csv", row.names = FALSE)
+
+
+```
+
+```{r}
+df_CRC <- data.frame(y = y_repeated, X)
+```
 
 
 

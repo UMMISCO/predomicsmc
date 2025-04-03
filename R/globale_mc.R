@@ -1187,19 +1187,18 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
 #' @export
 #'
 predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
-  # Initialize empty lists for models, class pairs, predictions, and scores
+  # Initialize empty lists for models, predictions, and scores
   predictions_list <- list()
   scorelist <- list()
-  #y = as.vector(y)
-  #nClasse <- unique(y)
   list_y <- list()
 
   # Determine the number of combinations
   mods <- list()
-  mods = mod
-  mods$binary_scores_mods = mods$score_
+  mods <- mod
+  mods$binary_scores_mods <- mods$score_
+
   # Calculate scores for each model and store in scorelist
-  for(i in 1:length(mods)){
+  for (i in 1:length(mods)) {
     scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = TRUE)
   }
 
@@ -1208,70 +1207,68 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
 
   # List of prediction vectors for each combination
   predictions_list <- lapply(seq_along(score_list), function(j) {
-    # Obtenir les niveaux (levels) de y
+    # Get the class name (level) of y
     class_name <- levels(as.factor(y))[j]
 
-    # Calcul des prédictions pour la classe actuelle
+    # Calculate predictions for the current class using calibrated scores
     sapply(score_list[[j]], function(score) {
       ifelse(score > mods[[j]]$intercept_, class_name, "ALL")
     })
   })
 
-  list_intercept <- list()
-  list_intercept = lapply(mods, function(x) x$intercept_)
-  # Identifier les seuils minimum et maximum
-  seuils_min <- min(unlist(list_intercept))
-  seuils_max <- max(unlist(list_intercept))
+  # Calculate distances with softmax normalization
+  distances <- lapply(seq_along(score_list), function(j) {
+    scores <- as.numeric(unlist(score_list[[j]]))
+    intercept <- mods[[j]]$intercept_
 
-  # Normalisation des scores
-  scores_normalises <- lapply(score_list, function(scores) {
-    denominateur <- seuils_max - seuils_min
-    denominateur[denominateur == 0] <- 1e-10  # Remplacer les zéros par une petite valeur
-    scores <- as.numeric(unlist(scores))  # Conversion en type numérique
-    seuils_min <- as.numeric(seuils_min)  # Conversion en type numérique
-    (scores - seuils_min) / denominateur
+    # Softmax normalization for score distances
+    softmax_scores <- exp(scores) / sum(exp(scores))
+    softmax_distances <- sqrt((softmax_scores - intercept)^2)
+    softmax_distances
   })
 
-  # Remplacer les valeurs -Inf par 0
-  scores_normalises <- lapply(scores_normalises, function(scores) {
-    scores[is.infinite(scores)] <- 0  # Remplacer les valeurs -Inf par 0
-    scores
+  # Normalization of distances using Z-score
+  scores_normalises <- lapply(distances, function(distance_vector) {
+    moyenne <- mean(distance_vector)
+    ecart_type <- sd(distance_vector)
+    z_scores <- (distance_vector - moyenne) / ecart_type
+    z_scores[is.nan(z_scores)] <- 0  # Replace NaN with 0
+    z_scores
   })
-  for(i in 1: length(scores_normalises)){
+
+  # Store normalized scores and predictions in each model
+  for (i in 1:length(scores_normalises)) {
     mods[[i]]$scores_predictions <- scores_normalises[[i]]
     mods[[i]]$predictions <- predictions_list[[i]]
   }
-  mod <- list()
-  mod <- mods
 
-  # Return predicted class labels for each combination, the corresponding score vectors, and the distances
-  return(mod)
+  # Return models with normalized scores and predictions
+  return(mods)
 }
 
 
-#' This function predicts outcomes for a one-versus-one (OvO) classification model.
+
+#' This function predicts outcomes for a one-versus-one (Ovo) classification model.
 #' @title predictModel_ovo
 #' @description This function predicts outcomes for a one-versus-one (OvO) classification model.
-#' @param y: The true class labels
-#' @param X: The feature matrix of the data to be predicted
-#' @param mod: The model object containing the OvO classification models
-#' @param clf: The clf object
+#' @param y: The true class labels.
+#' @param X: The feature matrix of the data to be predicted.
+#' @param mod: The model object containing the OvO classification models.
+#' @param clf: Object clf.
 #' @param force.re.evaluation: Boolean to force re-evaluation of the model even if it is already evaluated.
-#' @return This function returns mod with a list of one-versus-one predictions and the list of normalized scores.
+#' @return This function returns the list of one-versus-all predictions and the list of normalized scores.
 #' @export
 #'
-predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
-  # Initialize empty lists for models, class pairs, predictions, and scores
+predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
+  # Initialize empty lists for models, predictions, and scores
   predictions_list <- list()
   scorelist <- list()
-  #nClasse <- unique(y)
   list_y <- list()
   mods <- list()
   mods <- mod
-  ##mods$binary_scores_mods = mods$score_
 
   # Calculate scores for each model and store in scorelist
-  for(i in 1:length(mod)){
+  for (i in 1:length(mod)) {
     scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = TRUE)
   }
 
@@ -1310,44 +1307,57 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE ) {
   # Calculate distances between scores and intercepts
   scores_distance <- list()
 
-  # Check if 'score_list' contains only zeros
-  if (all(sapply(score_only_list, function(scores_distance) all(scores_distance == 0)))) {
-    # If 'score_list' contains only zeros, fill 'scores_distance' with zero lists of the same length
-    scores_distance <- lapply(score_only_list, function(scores_distance) rep(0, length(scores_distance)))
+  # Check if 'score_only_list' contains only zeros
+  if (all(sapply(score_only_list, function(scores) all(scores == 0)))) {
+    # Fill 'scores_distance' with zero lists of the same length
+    scores_distance <- lapply(score_only_list, function(scores) rep(0, length(scores)))
   } else {
-    # If 'score_list' contains other values, calculate the distances
-    for(i in 1:length(mods)){
-      # Calculate the absolute difference between 'score_list' and 'intercept'
-      scores_distance[[i]] = abs((score_only_list[[i]]) - mods[[i]]$intercept)
+    # Calculate the distances between scores and intercepts
+    for (i in 1:length(mods)) {
+      scores_distance[[i]] <- abs((score_only_list[[i]]) - mods[[i]]$intercept)
     }
   }
 
-  # Normalize function
+  # Normalization function (Min-Max scaling)
   normalize <- function(x) {
     if (length(x) == 0 || max(x) == min(x)) {
-      # If the vector has no variation, return the vector unchanged
-      return(x)
+      return(x)  # No variation
     } else {
-      # Otherwise, normalize the vector
-      return((x - min(x)) / (max(x) - min(x)))
+      return((x - min(x)) / (max(x) - min(x)))  # Min-max normalization
     }
   }
 
-  # Apply the normalize function to each vector in the list
+  # Apply normalization to each vector in the list
   normalized_scores <- lapply(scores_distance, normalize)
 
   # Invert the normalized scores
   new_scores <- lapply(normalized_scores, function(x) 1 - x)
 
-  # Store the predictions and normalized scores
-  for(i in 1:length(new_scores)){
-    mods[[i]]$scores_predictions <- new_scores[[i]]
+  # Z-score standardization function with absolute value
+  z_score <- function(x) {
+    if (length(x) == 0) {
+      return(x)  # Handle empty vectors
+    } else {
+      mean_x <- mean(x, na.rm = TRUE)  # Calculate mean without NA values
+      sd_x <- sd(x, na.rm = TRUE)      # Calculate standard deviation without NA values
+      if (sd_x == 0) return(rep(0, length(x)))  # Avoid division by zero
+      z <- (x - mean_x) / sd_x  # Calculate Z-score
+      return(abs(z))  # Take absolute value to avoid negative scores
+    }
+  }
+
+  # Apply Z-score standardization to the normalized scores
+  standardized_scores <- lapply(new_scores, z_score)
+
+  # Store the standardized scores and predictions in each model
+  for (i in 1:length(standardized_scores)) {
+    mods[[i]]$scores_predictions <- standardized_scores[[i]]
     mods[[i]]$predictions <- predictions_list[[i]]
   }
 
   mod <- mods  # Update mod with the new values
 
-  # Return mod predicted class labels for each combination, the corresponding score vectors, and the distances
+  # Return mod with predicted class labels, score vectors, and distances
   return(mod)
 }
 
@@ -2812,7 +2822,7 @@ mergeMeltImportanceCV_mc <- function(list.results, filter.cv.prev = 0.5, min.kfo
   # Vérifier que tous les éléments sont des objets ggplot
   if (all(sapply(plots, function(p) inherits(p, "ggplot")))) {
     # Combiner tous les plots en une seule grille
-    do.call(grid.arrange, c(plots, ncol = 4)) # Ajustez ncol selon vos besoins
+    do.call(grid.arrange, c(plots, ncol = 3)) # Ajustez ncol selon vos besoins
   } else {
     print("Certains éléments dans list_res[[i]]$g ne sont pas des objets ggplot.")
   }

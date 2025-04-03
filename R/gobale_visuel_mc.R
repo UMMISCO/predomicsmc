@@ -481,91 +481,87 @@ printy_mc <- function(obj)
 #' @export
 plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
   require(pROC)
+  library(RColorBrewer)
 
-  # Initialize an empty list to store ROC objects
+  # Initialiser une liste vide pour stocker les objets ROC
   roc_list <- list()
-  scores_list <- list()
-  scores_list = scores
-  list_y <- list() # List of different combinations of y
+  scores_list <- scores
+  list_y <- list()
   list_X <- list()
-  # Dataset decomposition phase using one-versus-one and one-versus-all approaches
+
+  # Phase de décomposition des datasets en utilisant les approches one-vs-one et one-vs-all
   combi <- generate_combinations_with_factors(y, X, approch = approch)
   list_y <- combi$list_y
   list_X <- combi$list_X
 
-  # Setup plotting in a single figure
-  par(mfrow = c(ceiling(sqrt(length(scores_list))), ceiling(length(scores_list) / ceiling(sqrt(length(scores_list))))))
+  # Palette de couleurs distinctes pour chaque courbe ROC
+  colors <- brewer.pal(length(scores_list), "Set1")
 
-  # Loop through the lists of scores and responses
+  # Liste pour stocker les informations de la légende
+  legend_info <- list()
+
+  # Tracer la première courbe ROC
+  first_plot <- TRUE
+
+  # Boucle à travers les listes de scores et de réponses
   for (i in seq_along(scores_list)) {
-    # Extract scores and responses
     score <- unlist(scores_list[[i]])
     y <- unlist(list_y[[i]])
     y <- as.factor(y)
 
-    # Verify matching lengths
+    # Vérification de la correspondance des longueurs
     if (length(score) != length(y)) {
       stop(paste("Error: The lengths of scores and responses for class", i, "do not match."))
     }
 
-    # Compute the ROC for the current class
+    # Calculer la courbe ROC pour la classe actuelle
     rocobj <- roc(response = y, predictor = score, percent = percent, ci = ci, of = "se", sp = seq(0, 100, 5))
 
-    # Obtain the label from unique values in list_y[[i]]
-    class_label <- paste(unique(list_y[[i]]), collapse = " vs ")  # Create a label like "Bact1 vs Bact2"
+    # Ajouter la courbe ROC à la liste des tracés
+    roc_list[[i]] <- rocobj
 
-    # Plot the ROC curve
-    plot(rocobj, ci.type = "shape", ci.col = "grey80", main = paste(main, "Model:", class_label), col = "blue")
-
-    # Compute optimal threshold information
-    rocobj2 <- roc(response = y, predictor = score, percent = percent, ci = TRUE, of = "auc")
-    resa <- coords(rocobj2, x = "best", input = "threshold", best.method = "youden", ret = c("threshold", "sensitivity", "specificity"))
-
-    # Extract numerical values from `resa`
-    if (is.data.frame(resa)) {  # If `resa` is a data.frame, extract the columns
-      threshold <- as.numeric(resa$threshold[1])
-      sensitivity <- as.numeric(resa$sensitivity[1])
-      specificity <- as.numeric(resa$specificity[1])
-    } else if (is.list(resa)) {  # If `resa` is a list
-      threshold <- as.numeric(resa[["threshold"]])
-      sensitivity <- as.numeric(resa[["sensitivity"]])
-      specificity <- as.numeric(resa[["specificity"]])
-    } else {
-      stop("Error: Unexpected format of the `coords()` output.")
-    }
-
-    # Retrieve the confidence interval for AUC
-    auc_ci <- ci.auc(rocobj)  # Calculate AUC confidence interval
+    # Calcul de l'intervalle de confiance pour l'AUC
+    auc_ci <- ci.auc(rocobj)
     auc_ci_text <- if (ci) {
-      paste0(signif(auc_ci[1], 3), " - ", signif(auc_ci[3], 3))
+      paste0("CI: ", signif(auc_ci[1], 3), " - ", signif(auc_ci[3], 3))
     } else {
       "N/A"
     }
 
-    # Add threshold lines to the graph
-    if (!is.na(threshold) && !is.na(sensitivity)) {
-      abline(v = threshold, col = "red", lty = 2)  # Vertical line for the threshold
-      abline(h = sensitivity, col = "red", lty = 2)  # Horizontal line for sensitivity
+    # Ajouter des informations au tableau des légendes
+    class_label <- paste(unique(list_y[[i]]), collapse = " vs ")
+    legend_info[[i]] <- data.frame(Class = class_label, AUC = signif(rocobj$auc, 3), CI = auc_ci_text)
+
+    # Tracer les courbes ROC
+    if (first_plot) {
+      plot.roc(rocobj, col = colors[i], main = main, ci.type = "shape", ci.col = "grey80", lwd = 2,
+               xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE)
+
+      first_plot <- FALSE
+    } else {
+      lines.roc(rocobj, col = colors[i], lwd = 2)
     }
-
-    # Add a legend with AUC, CI, and threshold information (formatted in 3 lines)
-    legend("bottomright", legend = c(
-      paste("AUC:", signif(rocobj$auc, 3)),
-      paste("CI:", auc_ci_text),
-      paste("Threshold:", ifelse(!is.na(threshold), signif(threshold, 3), "N/A")),
-      paste(class_label)   # Use the labels obtained from list_y[[i]]
-    ), bty = "n")  # Remove the border around the legend
-
-    # Store the ROC object for later analysis
-    roc_list[[i]] <- rocobj
   }
 
-  # Reset plot layout to default (single plot)
-  par(mfrow = c(1, 1))
+  # Convertir la légende en DataFrame et l'afficher
+  legend_df <- do.call(rbind, legend_info)
+  print(legend_df)  # Affichage dans la console
 
-  # Return the list of ROC objects
+  # Ajouter la légende au graphique
+  legend("bottomright",
+         legend = sapply(1:length(legend_info), function(i) {
+           paste(legend_info[[i]]$Class, ": AUC = ", legend_info[[i]]$AUC,
+                 " (", legend_info[[i]]$CI, ")", sep = "")
+         }),
+         col = colors,
+         lwd = 2,
+         bty = "n",
+         cex = 0.8)
+
+  # Retourner la liste des objets ROC
   return(roc_list)
 }
+
 
 
 #' Plots the prevalence of a list of features in the whole dataset and per each class
@@ -641,7 +637,7 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "ova",
   }
 
   # Use the number of combinations to set ncol for horizontal layout
-  ncol <- 2  # You can adjust this based on how many plots you want in a row
+  ncol <- 3  # You can adjust this based on how many plots you want in a row
 
   # Create the arranged grid of plots in one figure
   arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ncol)
@@ -953,84 +949,159 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo") {
 #' @param importance: the importance (mda) of the features in crossval
 #' @param res_clf: the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.
 #' @export
-plotModel_mc <- function(mod, X, y,
-                         sort.features = FALSE,
-                         sort.ind = NULL,
-                         feature.name = FALSE,
-                         col.sign = c("deepskyblue1", "firebrick1"),
-                         main = "",
-                         slim = FALSE,
-                         importance = FALSE,
-                         res_clf = NULL, approch = "ova") {
+printModel_mc <- function(mod, method = "short", score = "fit_")
+{
+  if(!isModel(obj = mod))
+  {
+    print("printModel: please provide a valid predomics model object.")
+    return(NULL)
+  }
 
+  if(!score %in% names(mod))
+  {
+    print("printModel: please provide a valid score that is found as an attribute in the model object.")
+    return(NULL)
+  }
 
-  list_mod <- list()
-  plot_sub_model <- list()
-  list_ovo <- list()
+  list_res <- list()
+  list_matrices <- list()
+  combinaison <- list()
+  listindices <- mod$indices_
+  listnames <- mod$names_
+  listcoeffs <- mod$coeffs_
+  listsign <- mod$sign_
+  listscore <- mod$score_
+  listpos <- mod$pos_score_
+  listneg <- mod$neg_score_
+  list_intercept <- mod$list_intercept_
+  list_matrices <- mod$confusionMatrix_
+  combinaison = mod$predictions
+  list_accura <- list()
+  accura <- mod$accuracy
+  for(km in 1:length(listindices)){
+    combn_class <-  unique(combinaison[[km]])
+    mod$indices_ <- listindices[[km]]
+    mod$names_ <- listnames[[km]]
+    mod$coeffs_ <- listcoeffs[[km]]
+    mod$sign_ <-  listsign[[km]]
+    mod$score_ <- listscore[[km]]
+    mod$pos_score_ <- listpos[[km]]
+    mod$neg_score_ <- listneg[[km]]
+    mod$intercept_ <- list_intercept[[km]]
+    mod$fit_ <- accura
 
-  # Retrieve the mod elements to create the main title
-  alg = mod$learner
-  lang = mod$language
-  k = mod$eval.sparsity
+    switch(method,
+           short={
+             if(!isModelSota(mod))
+             {
+               if(all(sapply(mod$coeffs_, myAssertNotNullNorNa)))
+               {
+                 ind.pos <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == 1)
+                 ind.neg <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == -1)
 
-  # Loop to fill the list of sub-models
-  for (i in 1:length(mod$names_)) {
-    list_mod[[i]] <- list(
-      learner = mod$learner,
-      language = mod$language,
-      objective = mod$objective,
-      indices_ = mod$indices_[[i]],
-      names_ = mod$names_[[i]],
-      coeffs_ = mod$coeffs_[[i]],
-      fit_ = mod$fit_,
-      unpenalized_fit_ = mod$unpenalized_fit_,
-      auc_ = mod$auc_,
-      accuracy_ = mod$accuracy_,
-      cor_ = mod$cor_,
-      aic_ = mod$aic_,
-      intercept_ = mod$list_intercept_[[i]],
-      eval.sparsity = mod$eval.sparsity,
-      precision_ = mod$precision_,
-      recall_ = mod$recall_,
-      f1_ = mod$f1_,
-      sign_ = mod$sign_[[i]],
-      rsq_ = mod$rsq_[[i]],
-      ser_ = mod$ser_[[i]],
-      score_ = mod$score_[[i]],
-      mda.cv_ = mod$mda.cv_[[i]],
-      prev.cv_ = mod$prev.cv_[[i]],
-      mda_ = mod$mda_[[i]]
+                 if(mod$language == "ratio")
+                 {
+                   signs <- rep("+", length(mod$coeffs_))
+                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$indices_[ind.pos], sep = "", collapse = ""), ")"))
+                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$indices_[ind.neg], sep = "", collapse = ""), ")"))
+                   res <- paste(term.pos, "/", term.neg)
+                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
+                   mod.fit <- mod[[score]]
+                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, decision, "| (F=", signif(mod.fit, 4), sep = "")
+                   res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
+                 }else{
+                   signs <- rep("+", length(mod$coeffs_))
+                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$indices_[ind.pos], sep = "", collapse = ""), ")"))
+                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$indices_[ind.neg], sep = "", collapse = ""), ")"))
+                   res <- paste(term.pos, " - ", term.neg)
+                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
+                   mod.fit <- mod[[score]]
+                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, "| (F=", signif(mod.fit, 4), sep = "")
+                   res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
+                 }
+               }
+             }else{
+               if(!is.null(mod$coeffs_))
+               {
+                 coeffs <- signif(unlist(mod$coeffs_), 2)
+               }else{
+                 coeffs <- ""
+               }
+               res <- unlist(mod$indices_)
+               res <- paste(coeffs, res, sep = " * ")
+               res <- paste(res, collapse = " ")
+               res <- paste(res, mod$learner, sep = "|")
+               mod.fit <- mod[[score]]
+               if(!is.na(mod.fit)) res <- paste("|", res, " ", "| (F=", signif(mod.fit, 4), sep = "")
+               res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
+             }
+           },
+           long={
+             if(!isModelSota(mod))
+             {
+               if(all(sapply(mod$coeffs_, myAssertNotNullNorNa)))
+               {
+                 ind.pos <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == 1)
+                 ind.neg <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == -1)
+
+                 if(mod$language == "ratio")
+                 {
+                   signs <- rep("+ ", length(mod$coeffs_))
+                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$names_[ind.pos], sep = "", collapse = ""), ")"))
+                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$names_[ind.neg], sep = "", collapse = ""), ")"))
+                   res <- paste(term.pos, "/", term.neg)
+                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
+                   mod.fit <- mod[[score]]
+                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, "| (F=", signif(mod.fit, 4), sep = "")
+                   res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
+                 }else{
+                   signs <- rep("+ ", length(mod$coeffs_))
+                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$names_[ind.pos], sep = "", collapse = ""), ")"))
+                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$names_[ind.neg], sep = "", collapse = ""), ")"))
+                   res <- paste(term.pos, " - ", term.neg)
+                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
+                   mod.fit <- mod[[score]]
+                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, "| (F=", signif(mod.fit, 4), sep = "")
+                   res <- paste(res, "|K=", mod$eval.sparsity, "|L=", mod$learner, "|La=", mod$language, ")", sep = "")
+                 }
+               }
+             }else{
+               if(!is.null(mod$coeffs_))
+               {
+                 coeffs <- signif(unlist(mod$coeffs_), 2)
+               }else{
+                 coeffs <- ""
+               }
+               res <- unlist(mod$names_)
+               res <- paste(coeffs, res, sep = " * ")
+               res <- paste(res, collapse = " ")
+               res <- paste(res, mod$learner, sep = "|")
+               mod.fit <- mod[[score]]
+               res <- paste("|", res, " ", "| (F=", signif(mod.fit, 4), sep = "")
+               res <- paste(res, "|K=", mod$eval.sparsity, "|L=", mod$learner, "|La=", mod$language, ")", sep = "")
+             }
+           },
+           str={
+             res <- str(mod)
+           },
+           {
+             warning('This method does not exist! Try one of these: short, long or str')
+           }
     )
+    list_res[[km]] <- res
   }
-  y_fact = as.factor(y)
-  nClasse <- levels(y_fact)
-  list_y <- list()
-  list_X <- list()
-  combi <- generate_combinations_with_factors(y, X, approch = approch)
-  list_y <- combi$list_y
-  list_X <- combi$list_X
-  list_ovo = decompose_y_levels(y)
-
-  # Loop to generate sub-models with custom titles
-  for (i in 1:length(list_y)) {
-    # Determine the main title with alg, lang, and k
-    combination_title <- paste("alg =", alg, "\nlang =", lang, "\nk =", k)
-
-    # Addition of a specific title for each sub-model
-    if (approch == "ovo") {
-      combine <- unique(unlist(list_ovo[[i]]))
-      combination_title <- paste(combination_title, "\n", paste(combine[1], "vs", combine[2]))
-    } else {
-      combination_title <- paste(combination_title, "\n", paste(nClasse[i], "vs All"))
-    }
-
-    plot_sub_model[[i]] <- plotModel(mod = list_mod[[i]], X = list_X[[i]], y = list_y[[i]],
-                                     sort.features = sort.features,
-                                     feature.name = feature.name,
-                                     importance = importance,
-                                     main = combination_title)
-  }
-
-  return(plot_sub_model)
+  res <- list()
+  res <- list_res
+  return(res)
 }
+
+
+
+
+
+
+
+
+
+
 

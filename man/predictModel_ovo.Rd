@@ -7,22 +7,22 @@
 predictModel_ovo(mod, y, X, clf, force.re.evaluation = TRUE)
 }
 \arguments{
-\item{y:}{The true class labels}
+\item{y:}{The true class labels.}
 
-\item{X:}{The feature matrix of the data to be predicted}
+\item{X:}{The feature matrix of the data to be predicted.}
 
-\item{mod:}{The model object containing the OvO classification models}
+\item{mod:}{The model object containing the OvO classification models.}
 
-\item{clf:}{The clf object}
+\item{clf:}{Object clf.}
 
 \item{force.re.evaluation:}{Boolean to force re-evaluation of the model even if it is already evaluated.}
 }
 \value{
-This function returns mod with a list of one-versus-one predictions and the list of normalized scores.
+This function returns the list of one-versus-all predictions and the list of normalized scores.
 }
 \description{
 This function predicts outcomes for a one-versus-one (OvO) classification model.
 }
 \details{
-This function predicts outcomes for a one-versus-one (OvO) classification model.
+This function predicts outcomes for a one-versus-one (Ovo) classification model.
 }
