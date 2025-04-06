@@ -131,7 +131,7 @@ test_that('function regenerate_clf', {
 test_that("evaluateModel_mc returns correct metrics", {
   # Call the function to test
   best.model.test <- evaluateModel_mc(
-    mod = fbm[[2]],
+    mod = fbm[[5]],
     X = X.test,
     y = y.test,
     clf = clf,
@@ -144,8 +144,8 @@ test_that("evaluateModel_mc returns correct metrics", {
 
   # Check that each metric is correct with increased tolerance
   expect_length(best.model.test, 31)
-  expect_equal(best.model.test$accuracy_, 0.72, tolerance = 1e-2) # Increased tolerance
-  expect_equal(best.model.test$precision_, 0.72, tolerance = 1e-2)
-  expect_equal(best.model.test$recall_, 0.74, tolerance = 1e-2)
-  expect_equal(best.model.test$f1_, 0.73, tolerance = 1e-2)
+  expect_equal(best.model.test$accuracy_, 0.75, tolerance = 1e-2) # Increased tolerance
+  expect_equal(best.model.test$precision_, 0.76, tolerance = 1e-2)
+  expect_equal(best.model.test$recall_, 0.78, tolerance = 1e-2)
+  expect_equal(best.model.test$f1_, 0.77, tolerance = 1e-2)
 })
