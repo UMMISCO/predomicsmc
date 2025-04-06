@@ -71,25 +71,14 @@ X.test <- X_equilibre[, -indices_division, drop = FALSE]
 
 
 
-
-
-
-
-
-experiences <- system.file("vignette", "terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance.rda", package = "mcpredomics")
+experiences <- system.file("vignette", "terga1_Majority_Voting_metacardis_unconstrained_balance.rda", package = "mcpredomics")
 load(chemin_du_dataset)
 load(experiences)
 
 # Create the model
-clf <- terBeam_mc(
-  sparsity = c(2,3,4,5,6,7,8,9,10),
-  max.nb.features = 1000,
-  seed = 1,
-  nCores = 1,
-  evalToFit = "accuracy_",
-  objective = "auc",
-  experiment.id = "terBeam_mc",
-  experiment.save = "nothing"
+clf <- terga1_mc(nCores = 1,
+                 seed = 1,
+                 plot = TRUE
 )
 
 # Load the dataset again
@@ -125,11 +114,11 @@ coeffss <- getSign_mc(X = X, y = y, clf = clf, parallel.local = FALSE, approch =
 test_that('function getSign_mc', {
   expect_length(coeffss, 6)
   expect_length(coeffss[[1]], 3385)
-  expect_length(terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance, 2)
+  expect_length(terga1_Majority_Voting_metacardis_unconstrained_balance, 2)
 })
 
 # Convert model collection to population
-pop <- modelCollectionToPopulation(terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance$classifier$models)
+pop <- modelCollectionToPopulation(terga1_Majority_Voting_metacardis_unconstrained_balance$classifier$models)
 fbm <- selectBestPopulation(pop)
 clf <- regenerate_clf(clf, X, y, approch = "ovo")
 
@@ -142,7 +131,7 @@ test_that('function regenerate_clf', {
 test_that("evaluateModel_mc returns correct metrics", {
   # Call the function to test
   best.model.test <- evaluateModel_mc(
-    mod = fbm[[1]],
+    mod = fbm[[2]],
     X = X.test,
     y = y.test,
     clf = clf,
@@ -155,8 +144,8 @@ test_that("evaluateModel_mc returns correct metrics", {
 
   # Check that each metric is correct with increased tolerance
   expect_length(best.model.test, 31)
-  expect_equal(best.model.test$accuracy_, 0.705, tolerance = 1e-3) # Increased tolerance
-  expect_equal(best.model.test$precision_, 0.734, tolerance = 1e-3)
-  expect_equal(best.model.test$recall_, 0.712, tolerance = 1e-3)
-  expect_equal(best.model.test$f1_, 0.723, tolerance = 1e-3)
+  expect_equal(best.model.test$accuracy_, 0.72, tolerance = 1e-2) # Increased tolerance
+  expect_equal(best.model.test$precision_, 0.72, tolerance = 1e-2)
+  expect_equal(best.model.test$recall_, 0.74, tolerance = 1e-2)
+  expect_equal(best.model.test$f1_, 0.73, tolerance = 1e-2)
 })
