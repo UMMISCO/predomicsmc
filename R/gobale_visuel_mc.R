@@ -1103,5 +1103,129 @@ printModel_mc <- function(mod, method = "short", score = "fit_")
 
 
 
+################################################################
+# Multi-class Model Plots for Predomics
+################################################################
 
+#' @title Plots a model or a population of model objectsas barplots of scaled coefficients.
+#'
+#' @description Plots a model or a population of models as a barplots, representing each feature, the length being the coefficient
+#' @import ggplot2
+#' @param mod: a model to plot
+#' @param X: the data matrix with variables in the rows and observations in the columns
+#' @param y: the class vector
+#' @param sort.features: wether the features need to be sorted by correlation with 'y' or not (default: TRUE)
+#' @param sort.ind: computing sorting can take time if computed for every model and can be computed outside the function and passed as a parameter
+#' @param feature.name: show the name of the features (default:FALSE)
+#' @param col.sign: the colors of the cofficients based on the sign of the coefficients (default: -1=deepskyblue1, 1:firebrick1)
+#' @param main: possibility to change the title of the function (default:"")
+#' @param slim: plot without axis information (default:FALSE)
+#' @param importance: the importance (mda) of the features in crossval
+#' @param res_clf: the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.
+#' @export
+plotModel_mc <- function(mod, X, y,
+                         sort.features = FALSE,
+                         sort.ind = NULL,
+                         feature.name = FALSE,
+                         col.sign = c("deepskyblue1", "firebrick1"),
+                         main = "",
+                         slim = FALSE,
+                         importance = FALSE,
+                         res_clf = NULL, approch = "ova") {
+
+
+  list_mod <- list()
+  plot_sub_model <- list()
+
+  # Retrieve the mod elements to create the main title
+  alg = mod$learner
+  lang = mod$language
+  k = mod$eval.sparsity
+
+  # Loop to fill the list of sub-models
+  for (i in 1:length(mod$names_)) {
+    list_mod[[i]] <- list(
+      learner = mod$learner,
+      language = mod$language,
+      objective = mod$objective,
+      indices_ = mod$indices_[[i]],
+      names_ = mod$names_[[i]],
+      coeffs_ = mod$coeffs_[[i]],
+      fit_ = mod$fit_,
+      unpenalized_fit_ = mod$unpenalized_fit_,
+      auc_ = mod$auc_,
+      accuracy_ = mod$accuracy_,
+      cor_ = mod$cor_,
+      aic_ = mod$aic_,
+      intercept_ = mod$list_intercept_[[i]],
+      eval.sparsity = mod$eval.sparsity,
+      precision_ = mod$precision_,
+      recall_ = mod$recall_,
+      f1_ = mod$f1_,
+      sign_ = mod$sign_[[i]],
+      rsq_ = mod$rsq_[[i]],
+      ser_ = mod$ser_[[i]],
+      score_ = mod$score_[[i]],
+      mda.cv_ = mod$mda.cv_[[i]],
+      prev.cv_ = mod$prev.cv_[[i]],
+      mda_ = mod$mda_[[i]]
+    )
+  }
+  listComb <- generate_combinations_with_factors(y = y, X = X, approch = approch)
+  l_y = lapply(l_y, unique)
+  nbreClasse <- lapply(l_y, sort)
+  nClasse <- unique(y)
+  list_y <- list()
+  list_X <- list()
+
+  if (approch == "ovo") {
+    f <- 1
+    for (i in 1:(length(nClasse) - 1)) {
+      for (j in (i + 1):length(nClasse)) {
+        class_i <- nClasse[i]
+        class_j <- nClasse[j]
+        indices <- which(y == class_i | y == class_j)
+        y_pair <- y[indices]
+        X_pair <- X[, indices]
+        list_y[[f]] <- as.vector(y_pair)
+        list_X[[f]] <- X_pair
+        f <- f + 1
+      }
+    }
+  } else {
+    for (i in 1:length(nClasse)) {
+      class_i <- nClasse[i]
+      y_temp <- ifelse(y == class_i, as.character(class_i), "All")
+      list_y[[i]] <- as.vector(y_temp)
+      list_X[[i]] <- X
+    }
+  }
+
+  # Loop to generate sub-models with custom titles
+  for (i in 1:length(list_y)) {
+    # Determine the main title with alg, lang, and k
+    combination_title <- paste("alg =", alg, "\nlang =", lang, "\nk =", k)
+
+    # Addition of a specific title for each sub-model
+    if (approch == "ovo") {
+      combination_title <- paste0(
+        combination_title,
+        "\n",
+        nbreClasse[[i]][1],
+        " vs ",
+        nbreClasse[[i]][2]
+      )
+    } else {
+      combination_title <- paste(combination_title, "\n", paste(nClasse[i], "vs All"))
+    }
+
+    plot_sub_model[[i]] <- plotModel(mod = list_mod[[i]], X = list_X[[i]], y = list_y[[i]],
+                                     sort.features = sort.features,
+                                     feature.name = feature.name,
+                                     importance = importance,
+                                     main = combination_title)
+  }
+
+  return(plot_sub_model)
+}
 

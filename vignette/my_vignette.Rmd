@@ -469,10 +469,10 @@ plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = T
 plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
 
 # Open a PDF device to save the grid of plots
-pdf("model_visualization_plots2.pdf", width = 15, height = 15)  # Adjust width and height as needed
+pdf("model_visualization_plots2.pdf", width = 15, height = 10)  # Adjust width and height as needed
 
 # Extract the plots from each list and pass them to `grid.arrange`
-grid.arrange(grobs = c(plots1, plots2), ncol = 3)
+grid.arrange(grobs = c(plots1, plots2), ncol = 6)
 
 # Close the PDF device
 dev.off()
