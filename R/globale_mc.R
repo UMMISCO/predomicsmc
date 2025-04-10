@@ -2816,13 +2816,13 @@ mergeMeltImportanceCV_mc <- function(list.results, filter.cv.prev = 0.5, min.kfo
 
     list_res[[numb]] <- res
   }
-
+  nbre = length(list_res)
   # Extraire les plots depuis les objets dans list_res
   plots <- lapply(list_res, function(x) x$g)
   # Vérifier que tous les éléments sont des objets ggplot
   if (all(sapply(plots, function(p) inherits(p, "ggplot")))) {
     # Combiner tous les plots en une seule grille
-    do.call(grid.arrange, c(plots, ncol = 3)) # Ajustez ncol selon vos besoins
+    do.call(grid.arrange, c(plots, ncol = nbre)) # Ajustez ncol selon vos besoins
   } else {
     print("Certains éléments dans list_res[[i]]$g ne sont pas des objets ggplot.")
   }

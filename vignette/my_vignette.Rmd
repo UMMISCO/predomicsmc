@@ -429,7 +429,7 @@ plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ov
 
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=12, fig.width=13}
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=9, fig.width=25}
   feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance ),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
