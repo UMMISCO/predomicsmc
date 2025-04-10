@@ -715,7 +715,7 @@
 # # Sauvegarder le data frame en fichier RDA
 # save(terbeam_maximization_constrained_df_balance, file = "terbeam_maximization_constrained_df_balance.rda")
 #
-#
+
 #
 # ## 2 Terbeam Maximization unconstrained
 #
@@ -2431,3 +2431,8 @@
 #     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
 #     legend.position = "bottom"
 #   )
+
+
+
+
+

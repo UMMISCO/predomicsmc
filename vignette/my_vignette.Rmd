@@ -413,7 +413,7 @@ print(g.after)  # Display the plot
 The analysis of the family of best models (FBM) can be very insightful for discovering the most important variables in the prediction process. Let's start by examining the usage of variables in the FBM models. For this, we run the ?makeFeatureAnnot_mc function to obtain the feature distribution in the model matrix, which is a list of pop.noz elements. The models in the FBM are ranked by accuracy, and this order will be preserved in the coefficient dataframe. There are 20 features found in the FBM models. The figure below shows that some of these features are very prevalent in the FBM, making them likely important. The abundance and prevalence distribution of these features can be explored with ?plotAbundanceByClass_mc and ?plotPrevalence_mc, respectively. Gray stars on the right side of the graphics indicate significant differences between the prediction groups.
 
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=13, fig.width=15}
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=9, fig.width=25}
 fa <- makeFeatureAnnot_mc(pop = fbm, 
                        X = X, 
                        y = y, 
@@ -1956,24 +1956,24 @@ library(ggplot2)
 library(stringr)
 
 # Fusionner les quatre dataframes en ajoutant une colonne pour différencier les datasets
-analysis_table_no_balance_ <- analysis_table_final_complet_no_balance_ %>%
+analysis_table_no_balance_1 <- analysis_table_final_complet_no_balance_Metacardis %>%
   mutate(Dataset = "Metacardis Enterotype\nno balanced")
 
-analysis_table_balance_ <- analysis_table_final_complet_balance_ %>%
+analysis_table_balance_2 <- analysis_table_final_complet_balance_Metacardis %>%
   mutate(Dataset = "Metacardis Enterotype\nbalanced")
 
-analysis_table_no_balance_2_ <- analysis_table_final_complet_no_balance_2_ %>%
+analysis_table_no_balance_3 <- analysis_table_final_complet_no_balance_CRC %>%
   mutate(Dataset = "Study on CRC\nno balanced")
 
-analysis_table_no_balance_3_ <- analysis_table_final_complet_no_balance_3_ %>%
+analysis_table_no_balance_4 <- analysis_table_final_complet_no_balance_TD2 %>%
   mutate(Dataset = "Study on T2D\nno balanced")
 
 # Combiner les quatre tables
 df_combined <- bind_rows(
-  analysis_table_no_balance_,
-  analysis_table_balance_,
-  analysis_table_no_balance_2_,
-  analysis_table_no_balance_3_
+  analysis_table_no_balance_1,
+  analysis_table_balance_2,
+  analysis_table_no_balance_3,
+  analysis_table_no_balance_4
 )
 
 # Imputation des valeurs manquantes pour les colonnes numériques
@@ -2094,4 +2094,171 @@ dev.off()
 
 
 ```
+
+
+
+
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+
+# Fusionner les quatre dataframes en ajoutant une colonne pour différencier les datasets
+analysis_table_no_balance_1 <- analysis_table_final_complet_no_balance_Metacardis %>%
+  mutate(Dataset = "Metacardis Enterotype\nno balanced")
+
+analysis_table_balance_2 <- analysis_table_final_complet_balance_Metacardis %>%
+  mutate(Dataset = "Metacardis Enterotype\nbalanced")
+
+analysis_table_no_balance_3 <- analysis_table_final_complet_no_balance_CRC %>%
+  mutate(Dataset = "Study on CRC\nno balanced")
+
+analysis_table_no_balance_4 <- analysis_table_final_complet_no_balance_TD2 %>%
+  mutate(Dataset = "Study on T2D\nno balanced")
+
+# Combiner les quatre tables
+df_combined <- bind_rows(
+  analysis_table_no_balance_1,
+  analysis_table_balance_2,
+  analysis_table_no_balance_3,
+  analysis_table_no_balance_4
+)
+
+# Imputation des valeurs manquantes pour les colonnes numériques
+df_combined <- df_combined %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Renommer "Features" en "k"
+df_combined <- df_combined %>% rename(k = Features)
+
+# Convertir en format long
+df_long <- df_combined %>%
+  pivot_longer(
+    cols = c("Accuracy.empirique", "Accuracy.generalization"),
+    names_to = c("Metric", "Partition"),
+    names_sep = "\\.",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Partition = recode(Partition, 'empirique' = 'train', 'generalization' = 'test'),
+    Partition = factor(Partition, levels = c("train", "test")),
+    Value = as.numeric(Value),
+    Group = case_when(
+      str_starts(Methods, "terbeam") ~ "Predomics",
+      str_starts(Methods, "_terbeam") ~ "Predomics",
+      str_starts(Methods, "terga1") ~ "Predomics",
+      str_starts(Methods, "_terga1") ~ "Predomics",
+      TRUE ~ "SOTA"
+    ),
+    Subgroup = case_when(
+      str_starts(Methods, "terbeam") ~ "Terbeam unconstrained",
+      str_starts(Methods, "_terbeam") ~ "Terbeam constrained",
+      str_starts(Methods, "terga1") ~ "Terga1 unconstrained",
+      str_starts(Methods, "_terga1") ~ "Terga1 constrained",
+      TRUE ~ "SOTA"
+    )
+  )
+
+# Filtrer pour ne garder que la partition "test" et la métrique "Accuracy"
+df_accuracy <- df_long %>%
+  filter(Metric == "Accuracy" & Partition == "test")
+
+# Résumé statistique
+df_summary <- df_accuracy %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(Value, na.rm = TRUE),
+    sd_value = sd(Value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Nettoyage des noms de méthodes
+df_summary <- df_summary %>%
+  mutate(Methods = str_remove_all(Methods, "^(terbeam_|_terbeam_|terga1_|_terga1_)|(_no_balance|_balance)$")) %>%
+  group_by(Methods, Partition, Metric, k, Subgroup, Group, Dataset) %>%
+  summarize(
+    mean_value = mean(mean_value, na.rm = TRUE),
+    sd_value = mean(sd_value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  group_by(Dataset, Group) %>%
+  mutate(max_accuracy = max(mean_value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(is_max_accuracy = ifelse(mean_value == max_accuracy, TRUE, FALSE))
+
+# Ajouter une colonne pour la significativité
+df_summary <- df_summary %>%
+  mutate(is_significant = ifelse(mean_value > 0.8, "*", NA))  # Exemple avec un seuil de 0.8
+
+# Palette et formes personnalisées
+custom_colors <- c(
+  "Predomics" = "blue",
+  "SOTA" = "black",
+  "Terbeam unconstrained" = "darkgreen",
+  "Terga1 unconstrained" = "darkblue",
+  "Terbeam constrained" = "lightgreen",
+  "Terga1 constrained" = "lightblue",
+  "SOTA" = "black"
+)
+
+custom_shapes <- c(
+  "Terbeam unconstrained" = 17,
+  "Terga1 unconstrained" = 18,
+  "Terbeam constrained" = 15,
+  "Terga1 constrained" = 8,
+  "SOTA" = 19
+)
+
+# Appliquer un retour à la ligne dans les noms des méthodes uniquement pour le groupe Predomics
+df_summary <- df_summary %>%
+  mutate(Methods = ifelse(Group == "Predomics" & nchar(Methods) > 20, 
+                          str_wrap(Methods, width = 20), 
+                          Methods)) %>%
+  # Forcer le retour à la ligne avant "unconstrained" et "constrained"
+  mutate(Methods = ifelse(Group == "Predomics", 
+                          str_replace_all(Methods, 
+                                          c("unconstrained" = "\nunconstrained", 
+                                            "constrained" = "\nconstrained")), 
+                          Methods))
+
+# Création du graphique dans un PDF paysage
+pdf("accuracy_generalization_plot.pdf", width = 14, height = 9, paper = "special")
+
+ggplot(df_summary, aes(x = Methods, y = mean_value, color = Subgroup, shape = Subgroup)) +
+  geom_point(position = position_dodge(width = 0.5), size = 4) +
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value),
+                position = position_dodge(width = 0.5), width = 0.2) +
+  geom_point(data = subset(df_summary, is_max_accuracy == TRUE),
+             aes(x = Methods, y = mean_value),
+             shape = 8, color = "red", size = 5) +  # Étoile rouge pour max
+  geom_text(aes(label = is_significant), vjust = -1, color = "black", size = 5) +  # Ajouter les étoiles
+  facet_grid(Dataset ~ Group, scales = "free") +
+  ylab("accuracy (CV generalization)") +
+  xlab("Methods") +
+  theme_bw() +
+  scale_colour_manual(values = custom_colors) +
+  scale_shape_manual(values = custom_shapes) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), 
+        legend.position = "bottom")
+
+dev.off()
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
 

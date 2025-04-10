@@ -637,7 +637,7 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "ova",
   }
 
   # Use the number of combinations to set ncol for horizontal layout
-  ncol <- 3  # You can adjust this based on how many plots you want in a row
+  ncol <- length(list_y)  # You can adjust this based on how many plots you want in a row
 
   # Create the arranged grid of plots in one figure
   arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ncol)
@@ -744,8 +744,8 @@ plotPrevalence_mc <- function(features, X, y, approch = "ova", topdown = TRUE,
   }
 
   # Arrange all plots in a grid
-  arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ceiling(sqrt(length(plot_list))))
-
+  #arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ceiling(sqrt(length(plot_list))))
+  arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = length(combinations))
   return(arranged_plot)
 }
 
@@ -838,8 +838,8 @@ plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "ova",
   }
 
   # Use the number of combinations to set ncol for horizontal layout
-  ncol <- ceiling(sqrt(length(plot_list)))  # Use square root of the number of plots to determine columns
-
+  #ncol <- ceiling(sqrt(length(plot_list)))  # Use square root of the number of plots to determine columns
+  ncol = length(combinations)
   # Create the arranged grid of plots
   arranged_plot <- gridExtra::grid.arrange(grobs = plot_list, ncol = ncol)
 
