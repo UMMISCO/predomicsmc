@@ -483,44 +483,44 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
   require(pROC)
   library(RColorBrewer)
 
-  # Initialiser une liste vide pour stocker les objets ROC
+  # Initialize an empty list to store ROC objects
   roc_list <- list()
   scores_list <- scores
   list_y <- list()
   list_X <- list()
 
-  # Phase de décomposition des datasets en utilisant les approches one-vs-one et one-vs-all
+  # Decompose the datasets using one-vs-one or one-vs-all approach
   combi <- generate_combinations_with_factors(y, X, approch = approch)
   list_y <- combi$list_y
   list_X <- combi$list_X
 
-  # Palette de couleurs distinctes pour chaque courbe ROC
+  # Color palette for distinct ROC curves
   colors <- brewer.pal(length(scores_list), "Set1")
 
-  # Liste pour stocker les informations de la légende
+  # List to store legend information
   legend_info <- list()
 
-  # Tracer la première courbe ROC
+  # Flag to control first ROC plot
   first_plot <- TRUE
 
-  # Boucle à travers les listes de scores et de réponses
+  # Loop through the lists of scores and responses
   for (i in seq_along(scores_list)) {
     score <- unlist(scores_list[[i]])
     y <- unlist(list_y[[i]])
     y <- as.factor(y)
 
-    # Vérification de la correspondance des longueurs
+    # Check for length consistency between scores and labels
     if (length(score) != length(y)) {
       stop(paste("Error: The lengths of scores and responses for class", i, "do not match."))
     }
 
-    # Calculer la courbe ROC pour la classe actuelle
+    # Compute ROC curve for the current class
     rocobj <- roc(response = y, predictor = score, percent = percent, ci = ci, of = "se", sp = seq(0, 100, 5))
 
-    # Ajouter la courbe ROC à la liste des tracés
+    # Add ROC object to the list
     roc_list[[i]] <- rocobj
 
-    # Calcul de l'intervalle de confiance pour l'AUC
+    # Compute confidence interval for the AUC
     auc_ci <- ci.auc(rocobj)
     auc_ci_text <- if (ci) {
       paste0("CI: ", signif(auc_ci[1], 3), " - ", signif(auc_ci[3], 3))
@@ -528,26 +528,26 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
       "N/A"
     }
 
-    # Ajouter des informations au tableau des légendes
+    # Add class and AUC info to the legend table
     class_label <- paste(unique(list_y[[i]]), collapse = " vs ")
     legend_info[[i]] <- data.frame(Class = class_label, AUC = signif(rocobj$auc, 3), CI = auc_ci_text)
 
-    # Tracer les courbes ROC
+    # Plot the ROC curve
     if (first_plot) {
       plot.roc(rocobj, col = colors[i], main = main, ci.type = "shape", ci.col = "grey80", lwd = 2,
-               xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE)
-
+               xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE,
+               xlab = "Specificity (%)")  # Custom x-axis label
       first_plot <- FALSE
     } else {
       lines.roc(rocobj, col = colors[i], lwd = 2)
     }
   }
 
-  # Convertir la légende en DataFrame et l'afficher
+  # Convert the legend list into a data frame and print it
   legend_df <- do.call(rbind, legend_info)
-  print(legend_df)  # Affichage dans la console
+  print(legend_df)
 
-  # Ajouter la légende au graphique
+  # Add legend to the plot
   legend("bottomright",
          legend = sapply(1:length(legend_info), function(i) {
            paste(legend_info[[i]]$Class, ": AUC = ", legend_info[[i]]$AUC,
@@ -558,9 +558,10 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
          bty = "n",
          cex = 0.8)
 
-  # Retourner la liste des objets ROC
+  # Return the list of ROC objects
   return(roc_list)
 }
+
 
 
 
@@ -1136,6 +1137,9 @@ plotModel_mc <- function(mod, X, y,
 
   list_mod <- list()
   plot_sub_model <- list()
+  list_y <- list()
+  list_X <- list()
+  l_y <- list()
 
   # Retrieve the mod elements to create the main title
   alg = mod$learner
@@ -1172,11 +1176,9 @@ plotModel_mc <- function(mod, X, y,
     )
   }
   listComb <- generate_combinations_with_factors(y = y, X = X, approch = approch)
-  l_y = lapply(l_y, unique)
+  l_y = lapply(listComb$list_y, unique)
   nbreClasse <- lapply(l_y, sort)
   nClasse <- unique(y)
-  list_y <- list()
-  list_X <- list()
 
   if (approch == "ovo") {
     f <- 1
@@ -1228,4 +1230,12 @@ plotModel_mc <- function(mod, X, y,
 
   return(plot_sub_model)
 }
+
+
+
+
+
+
+
+
 
