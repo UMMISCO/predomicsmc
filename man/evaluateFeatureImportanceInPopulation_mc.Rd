@@ -16,7 +16,8 @@ evaluateFeatureImportanceInPopulation_mc(
   aggregation = "mean",
   approch = "ovo",
   verbose = TRUE,
-  aggregation_ = "votingAggregation"
+  aggregation_ = "votingAggregation",
+  constraint_factor = "unconstrained"
 )
 }
 \arguments{

@@ -271,71 +271,49 @@
 #
 #
 # #### 5
-#
-# num_folds <- 5
+#Colorectal Study
+#Study on Type 2 Diabetes
+#Balanced Enterotype
+#Imbalanced Enterotype
+
+#Terbeam_Selective_Confidence_df_4
+#Terbeam_Voting_with_Tie_Breaking_df_1
+
+# num_folds <- 10
 #
 # # Initialisation du data frame pour le modèle predomics_aggregation_ova_constrained
-# terbeam_predomics_aggregation_ova_constrained_df <- data.frame(
+# Fabien_Voting_Terbeam_1 <- data.frame(
 #   Fold = paste0("fold_", 1:num_folds),
-#   Accuracy.empirique = numeric(num_folds),
-#   Accuracy.generalization = numeric(num_folds),
-#   Precision.empirique = numeric(num_folds),
-#   Precision.generalization = numeric(num_folds),
-#   Recall.empirique = numeric(num_folds),
-#   Recall.generalization = numeric(num_folds),
-#   F1.empirique = numeric(num_folds),
-#   F1.generalization = numeric(num_folds),
-#   Methods = "_terbeam_predomics_aggregation_ova_constrained_no_balance",
-#   Features = rep(10, num_folds)
+#   Accuracy = numeric(num_folds),
+#   Methods = "Voting_with_Tie_Breaking",
+#   K = rep("6", num_folds),
+#   Constraint_factor = ("Unconstrained"),
+#   Dataset = "Balanced Enterotype",
+#   Approach = "Terga1 Predomics",
+#   Binarisation = "OVO"
+#
 # )
 #
-# # Vérification de la structure de 'terbeam_predomics_aggregation_ova_constrained' et 'crossVal'
-# # Assurez-vous que ces objets contiennent bien les éléments souhaités
-# if (exists("Predomics_aggregation_ova_terbeam_constrained_3") &&
-#     !is.null(Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores)) {
 #
-#   # Remplissage des valeurs pour chaque métrique
-#   terbeam_predomics_aggregation_ova_constrained_df$Accuracy.empirique <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$empirical.acc["k_10", ]
+# Fabien_Voting_Terbeam_1$Accuracy <- as.numeric(
+#   res_clf_voting_terbeam_balance$crossVal$scores$generalization.acc["k_6", ],
+#   res_clf_voting_terbeam_balance$crossVal$scores$generalization.rec["k_6", ],
+#   res_clf_voting_terbeam_balance$crossVal$scores$generalization.prc["k_6", ],
+#   res_clf_voting_terbeam_balance$crossVal$scores$generalization.f1s["k_6", ]
 #   )
 #
-#   terbeam_predomics_aggregation_ova_constrained_df$Accuracy.generalization <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$generalization.acc["k_10", ]
-#   )
+# print(Fabien_Voting_Terbeam_1)
 #
-#   terbeam_predomics_aggregation_ova_constrained_df$Precision.empirique <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$empirical.rec["k_10", ]
-#   )
-#
-#   terbeam_predomics_aggregation_ova_constrained_df$Precision.generalization <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$generalization.rec["k_10", ]
-#   )
-#
-#   terbeam_predomics_aggregation_ova_constrained_df$Recall.empirique <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$empirical.prc["k_10", ]
-#   )
-#
-#   terbeam_predomics_aggregation_ova_constrained_df$Recall.generalization <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$generalization.prc["k_10", ]
-#   )
-#
-#   terbeam_predomics_aggregation_ova_constrained_df$F1.empirique <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$empirical.f1s["k_10", ]
-#   )
-#
-#   terbeam_predomics_aggregation_ova_constrained_df$F1.generalization <- as.numeric(
-#     Predomics_aggregation_ova_terbeam_constrained_3$crossVal$scores$generalization.f1s["k_10", ]
-#   )
-# } else {
-#   stop("L'objet 'terbeam_predomics_aggregation_ova_constrained_no_balance' ou 'crossVal$scores' n'existe pas.")
-# }
-#
-# # Vérifier les résultats
-# print(terbeam_predomics_aggregation_ova_constrained_df)
-# terbeam_predomics_aggregation_ova_constrained_df_no_balance_3 = terbeam_predomics_aggregation_ova_constrained_df
-# # Sauvegarder le data frame en fichier RDA
-# save(terbeam_predomics_aggregation_ova_constrained_df_no_balance_3, file = "terbeam_predomics_aggregation_ova_constrained_df_no_balance_3.rda")
-#
+# save(Fabien_Voting_Terbeam_1 , file = "Fabien_Voting_Terbeam_1.rda")
+
+
+
+
+
+
+
+
+
 # #### 6
 #
 # num_folds <- 5
@@ -3361,3 +3339,185 @@
 #
 #
 #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #Colorectal Study
+# #Study T2D
+# #Balanced Enterotype
+# #Imbalanced Enterotype
+#
+# #Selective_Confidence
+# #Voting_with_Tie_Breaking
+#
+#
+# #Full_Constrained
+#
+#
+#
+# num_folds <- 10
+# total_instances <- 70
+#
+# # Extraire les métriques
+# acc <- as.numeric(sota_svm_metrics_results_no_balance$Accuracy.generalization)
+# rec <- as.numeric(sota_svm_metrics_results_no_balance$Recall.generalization)
+# prc <- as.numeric(sota_svm_metrics_results_no_balance$Precision.generalization)
+# f1s <- as.numeric(sota_svm_metrics_results_no_balance$F1.generalization)
+#
+# # Calculs
+# TP <- round(rec * total_instances)
+# FN <- round((1 - rec) * total_instances)
+# FP <- round((TP / prc) - TP)
+# ErrorRate <- round((1 - acc) * 100, 2)
+#
+# # Construction du dataframe
+# KNN_unBalance_1_1 <- data.frame(
+#   Fold = paste0("fold_", 1:num_folds),
+#   Accuracy = acc,
+#   Recall = rec,
+#   Precision = prc,
+#   F1 = f1s,
+#   TP = TP,
+#   FP = FP,
+#   FN = FN,
+#   ErrorRate = ErrorRate,
+#   Methods = "KNN",
+#   K = rep("3385", num_folds),
+#   Constraint_factor = "None",
+#   Dataset = "Imbalanced Enterotype",
+#   Approach = "Sota",
+#   Set = "Test",
+#   Binarisation = "NO"
+# )
+#
+# # Affichage
+# print(KNN_unBalance_1_1)
+# # Sauvegarde
+#
+#
+# KNN_unBalance <- rbind(KNN_unBalance_1_1,KNN_unBalance_1_2)
+#
+#
+#
+# ##KNN_T2D
+# ##KNN_CRC
+# ##KNN_Balance
+# ##KNN_unBalance
+#
+#
+#
+# A_KNN <- rbind(KNN_T2D,KNN_CRC,KNN_Balance,KNN_unBalance)
+# save(A_KNN, file = "A_KNN.rda")
+#
+# ###A_RL
+# ###A_DT
+# ###A_AN
+# ###A_RF
+# ###A_SVM
+# ##A_KNN
+#
+#
+#
+#
+#
+#
+# A_1_Sota_final <- rbind(A_RL,A_DT,A_AN,A_RF,A_SVM,A_KNN)
+# save(A_1_Sota_final, file = "A_1_Sota_final.rda")
+#
+# ####A_1_Terga1_Semi
+# ####A_1_Terga1_Unconst
+# ####A_1_Terga1_Full
+# ####A_1_Sota_final
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# #################################################################@
+#
+# ##A_Terga1 <- rbind(A_1_Terga1_Semi,A_1_Terga1_Unconst,A_1_Terga1_Full)
+# ##save(A_Terga1, file = "A_Terga1.rda")
+#
+#
+# A_1_Sota_final
+#
+#
+# ##Df_Predomics <- rbind(A_Terbeam,A_Terga1)
+# ##save(Df_Predomics, file = "Df_Predomics.rda")
+#
+#
+# Analysis_Final_Results_DF_05_2025 <- rbind(A_1_Sota_final,Df_Predomics)
+# save(Analysis_Final_Results_DF_05_2025, file = "Analysis_Final_Results_DF_05_2025.rda")
+

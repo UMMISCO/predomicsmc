@@ -5,40 +5,16 @@
 \title{printModel_mc}
 \usage{
 printModel_mc(mod, method = "short", score = "fit_")
-
-printModel_mc(mod, method = "short", score = "fit_")
 }
 \arguments{
+\item{mod:}{a model to plot}
+
 \item{method:}{an object containing the different parameters of the classifier}
 
 \item{score:}{which score to show in the fit (default:fit_)}
-
-\item{mod:}{a model to plot}
-
-\item{X:}{the data matrix with variables in the rows and observations in the columns}
-
-\item{y:}{the class vector}
-
-\item{sort.features:}{wether the features need to be sorted by correlation with 'y' or not (default: TRUE)}
-
-\item{sort.ind:}{computing sorting can take time if computed for every model and can be computed outside the function and passed as a parameter}
-
-\item{feature.name:}{show the name of the features (default:FALSE)}
-
-\item{col.sign:}{the colors of the cofficients based on the sign of the coefficients (default: -1=deepskyblue1, 1:firebrick1)}
-
-\item{main:}{possibility to change the title of the function (default:"")}
-
-\item{slim:}{plot without axis information (default:FALSE)}
-
-\item{importance:}{the importance (mda) of the features in crossval}
-
-\item{res_clf:}{the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.}
 }
 \description{
 Prints a model multi class object  as text
-
-Plots a model or a population of models as a barplots, representing each feature, the length being the coefficient
 }
 \details{
 Prints a model object as text.

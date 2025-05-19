@@ -10,7 +10,7 @@ terBeam_fit_mc(
   clf,
   approch = "ovo",
   aggregation_ = "votingAggregation",
-  constrained = FALSE
+  constraint_factor = "unconstrained"
 )
 }
 \arguments{
@@ -24,7 +24,7 @@ terBeam_fit_mc(
 
 \item{aggregation_}{A string specifying the aggregation method (e.g., "votingAggregation").}
 
-\item{constrained}{Logical indicating whether to constrain feature selection.}
+\item{constraint_factor}{feature selection.}
 }
 \value{
 A list containing generated models, selected features, and evaluation results.

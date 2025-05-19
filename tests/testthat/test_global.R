@@ -71,7 +71,7 @@ X.test <- X_equilibre[, -indices_division, drop = FALSE]
 
 
 
-experiences <- system.file("vignette", "terga1_Majority_Voting_metacardis_unconstrained_balance.rda", package = "mcpredomics")
+experiences <- system.file("vignette", "Terga1_Balance_voting_unconstrained.rda", package = "mcpredomics")
 load(chemin_du_dataset)
 load(experiences)
 
@@ -114,11 +114,11 @@ coeffss <- getSign_mc(X = X, y = y, clf = clf, parallel.local = FALSE, approch =
 test_that('function getSign_mc', {
   expect_length(coeffss, 6)
   expect_length(coeffss[[1]], 3385)
-  expect_length(terga1_Majority_Voting_metacardis_unconstrained_balance, 2)
+  expect_length(Terga1_Balance_voting_unconstrained, 2)
 })
 
 # Convert model collection to population
-pop <- modelCollectionToPopulation(terga1_Majority_Voting_metacardis_unconstrained_balance$classifier$models)
+pop <- modelCollectionToPopulation(Terga1_Balance_voting_unconstrained$classifier$models)
 fbm <- selectBestPopulation(pop)
 clf <- regenerate_clf(clf, X, y, approch = "ovo")
 
@@ -131,21 +131,42 @@ test_that('function regenerate_clf', {
 test_that("evaluateModel_mc returns correct metrics", {
   # Call the function to test
   best.model.test <- evaluateModel_mc(
-    mod = fbm[[5]],
+    mod = fbm[[1]],
     X = X.test,
     y = y.test,
     clf = clf,
     eval.all = TRUE,
     force.re.evaluation = TRUE,
-    aggregation_ = "Predomics_aggregation_ovo",
+    aggregation_ = "voting",
     mode = "test",
     approch = "ovo"
   )
 
-  # Check that each metric is correct with increased tolerance
+  # --- Affichage des métriques TEST ---
+  cat("\n--- Résultats des métriques (TEST) ---\n")
+  cat("Accuracy  :", best.model.test$accuracy_, "\n")
+  cat("Precision :", best.model.test$precision_, "\n")
+  cat("Recall    :", best.model.test$recall_, "\n")
+  cat("F1-score  :", best.model.test$f1_, "\n")
+  cat("--------------------------------------\n")
+
+  # --- Affichage des métriques TRAIN (si disponibles dans l'objet mod) ---
+  if (!is.null(fbm[[1]])) {
+    cat("\n--- Résultats des métriques (TRAIN) ---\n")
+    cat("Accuracy  :", fbm[[1]]$accuracy_, "\n")
+    cat("Precision :", fbm[[1]]$precision_, "\n")
+    cat("Recall    :", fbm[[1]]$recall_, "\n")
+    cat("F1-score  :", fbm[[1]]$f1_, "\n")
+    cat("---------------------------------------\n")
+  } else {
+    cat("\n--- Aucune métrique TRAIN disponible dans mod ---\n")
+  }
+
+  # --- Vérifications des métriques test ---
   expect_length(best.model.test, 31)
-  expect_equal(best.model.test$accuracy_, 0.75, tolerance = 1e-2) # Increased tolerance
+  expect_equal(best.model.test$accuracy_, 0.74, tolerance = 1e-2)
   expect_equal(best.model.test$precision_, 0.76, tolerance = 1e-2)
-  expect_equal(best.model.test$recall_, 0.78, tolerance = 1e-2)
-  expect_equal(best.model.test$f1_, 0.77, tolerance = 1e-2)
+  expect_equal(best.model.test$recall_, 0.74, tolerance = 1e-2)
+  expect_equal(best.model.test$f1_, 0.75, tolerance = 1e-2)
 })
+

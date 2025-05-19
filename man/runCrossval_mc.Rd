@@ -13,7 +13,7 @@ runCrossval_mc(
   approch = "ovo",
   return.all = FALSE,
   aggregation_ = "voting",
-  constrained = FALSE
+  constraint_factor = "unconstrained"
 )
 }
 \arguments{

@@ -581,9 +581,9 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
 #' @return a ggplot object
 #' @export
 plotAbundanceByClass_mc <- function(features, X, y, approch = "ova",
-                                     main = "", plot = TRUE,
-                                     col.pt = c("deepskyblue4", "firebrick4"),
-                                     col.bg = c("deepskyblue1", "firebrick1")) {
+                                    main = "", plot = TRUE,
+                                    col.pt = c("deepskyblue4", "firebrick4"),
+                                    col.bg = c("deepskyblue1", "firebrick1")) {
 
 
   nnClasse <- unique(y)
@@ -664,9 +664,9 @@ plotAbundanceByClass_mc <- function(features, X, y, approch = "ova",
 #' @return a ggplot object
 #' @export
 plotPrevalence_mc <- function(features, X, y, approch = "ova", topdown = TRUE,
-                               main = "", plot = TRUE,
-                               col.pt = c("deepskyblue4", "firebrick4"),
-                               col.bg = c("deepskyblue1", "firebrick1")) {
+                              main = "", plot = TRUE,
+                              col.pt = c("deepskyblue4", "firebrick4"),
+                              col.bg = c("deepskyblue1", "firebrick1")) {
 
   classes <- unique(sort(y))
   list_y <- list()
@@ -762,8 +762,8 @@ plotPrevalence_mc <- function(features, X, y, approch = "ova", topdown = TRUE,
 #' @return a list ggplot object
 #' @export
 plotFeatureModelCoeffs_mc <- function(feat.model.coeffs, y, approch = "ova",
-                                       topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"),
-                                       vertical.label = TRUE) {
+                                      topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"),
+                                      vertical.label = TRUE) {
 
   # Determine the class combinations based on the selected approach
   indices_sorted <- order(y)
@@ -929,181 +929,6 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo") {
 }
 
 
-
-################################################################
-# Multi-class Model Plots for Predomics
-################################################################
-
-#' @title Plots a model or a population of model objectsas barplots of scaled coefficients.
-#'
-#' @description Plots a model or a population of models as a barplots, representing each feature, the length being the coefficient
-#' @import ggplot2
-#' @param mod: a model to plot
-#' @param X: the data matrix with variables in the rows and observations in the columns
-#' @param y: the class vector
-#' @param sort.features: wether the features need to be sorted by correlation with 'y' or not (default: TRUE)
-#' @param sort.ind: computing sorting can take time if computed for every model and can be computed outside the function and passed as a parameter
-#' @param feature.name: show the name of the features (default:FALSE)
-#' @param col.sign: the colors of the cofficients based on the sign of the coefficients (default: -1=deepskyblue1, 1:firebrick1)
-#' @param main: possibility to change the title of the function (default:"")
-#' @param slim: plot without axis information (default:FALSE)
-#' @param importance: the importance (mda) of the features in crossval
-#' @param res_clf: the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.
-#' @export
-printModel_mc <- function(mod, method = "short", score = "fit_")
-{
-  if(!isModel(obj = mod))
-  {
-    print("printModel: please provide a valid predomics model object.")
-    return(NULL)
-  }
-
-  if(!score %in% names(mod))
-  {
-    print("printModel: please provide a valid score that is found as an attribute in the model object.")
-    return(NULL)
-  }
-
-  list_res <- list()
-  list_matrices <- list()
-  combinaison <- list()
-  listindices <- mod$indices_
-  listnames <- mod$names_
-  listcoeffs <- mod$coeffs_
-  listsign <- mod$sign_
-  listscore <- mod$score_
-  listpos <- mod$pos_score_
-  listneg <- mod$neg_score_
-  list_intercept <- mod$list_intercept_
-  list_matrices <- mod$confusionMatrix_
-  combinaison = mod$predictions
-  list_accura <- list()
-  accura <- mod$accuracy
-  for(km in 1:length(listindices)){
-    combn_class <-  unique(combinaison[[km]])
-    mod$indices_ <- listindices[[km]]
-    mod$names_ <- listnames[[km]]
-    mod$coeffs_ <- listcoeffs[[km]]
-    mod$sign_ <-  listsign[[km]]
-    mod$score_ <- listscore[[km]]
-    mod$pos_score_ <- listpos[[km]]
-    mod$neg_score_ <- listneg[[km]]
-    mod$intercept_ <- list_intercept[[km]]
-    mod$fit_ <- accura
-
-    switch(method,
-           short={
-             if(!isModelSota(mod))
-             {
-               if(all(sapply(mod$coeffs_, myAssertNotNullNorNa)))
-               {
-                 ind.pos <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == 1)
-                 ind.neg <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == -1)
-
-                 if(mod$language == "ratio")
-                 {
-                   signs <- rep("+", length(mod$coeffs_))
-                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$indices_[ind.pos], sep = "", collapse = ""), ")"))
-                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$indices_[ind.neg], sep = "", collapse = ""), ")"))
-                   res <- paste(term.pos, "/", term.neg)
-                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
-                   mod.fit <- mod[[score]]
-                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, decision, "| (F=", signif(mod.fit, 4), sep = "")
-                   res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
-                 }else{
-                   signs <- rep("+", length(mod$coeffs_))
-                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$indices_[ind.pos], sep = "", collapse = ""), ")"))
-                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$indices_[ind.neg], sep = "", collapse = ""), ")"))
-                   res <- paste(term.pos, " - ", term.neg)
-                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
-                   mod.fit <- mod[[score]]
-                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, "| (F=", signif(mod.fit, 4), sep = "")
-                   res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
-                 }
-               }
-             }else{
-               if(!is.null(mod$coeffs_))
-               {
-                 coeffs <- signif(unlist(mod$coeffs_), 2)
-               }else{
-                 coeffs <- ""
-               }
-               res <- unlist(mod$indices_)
-               res <- paste(coeffs, res, sep = " * ")
-               res <- paste(res, collapse = " ")
-               res <- paste(res, mod$learner, sep = "|")
-               mod.fit <- mod[[score]]
-               if(!is.na(mod.fit)) res <- paste("|", res, " ", "| (F=", signif(mod.fit, 4), sep = "")
-               res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
-             }
-           },
-           long={
-             if(!isModelSota(mod))
-             {
-               if(all(sapply(mod$coeffs_, myAssertNotNullNorNa)))
-               {
-                 ind.pos <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == 1)
-                 ind.neg <- sapply(mod$coeffs_, function(coeffs) sign(coeffs) == -1)
-
-                 if(mod$language == "ratio")
-                 {
-                   signs <- rep("+ ", length(mod$coeffs_))
-                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$names_[ind.pos], sep = "", collapse = ""), ")"))
-                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$names_[ind.neg], sep = "", collapse = ""), ")"))
-                   res <- paste(term.pos, "/", term.neg)
-                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
-                   mod.fit <- mod[[score]]
-                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, "| (F=", signif(mod.fit, 4), sep = "")
-                   res <- paste(res, "|K=", mod$eval.sparsity, "|Le=", mod$learner, "|La=", mod$language, ")", sep = "")
-                 }else{
-                   signs <- rep("+ ", length(mod$coeffs_))
-                   term.pos <- ifelse(all(!ind.pos), "0", paste("(", paste(signs[ind.pos], mod$names_[ind.pos], sep = "", collapse = ""), ")"))
-                   term.neg <- ifelse(all(!ind.neg), "0", paste("(", paste(signs[ind.neg], mod$names_[ind.neg], sep = "", collapse = ""), ")"))
-                   res <- paste(term.pos, " - ", term.neg)
-                   mod.inter <- paste(mod$sign_, signif(mod$intercept_, 2))
-                   mod.fit <- mod[[score]]
-                   if(!is.na(mod.fit)) res <- paste("|", res, " ", mod.inter, "| (F=", signif(mod.fit, 4), sep = "")
-                   res <- paste(res, "|K=", mod$eval.sparsity, "|L=", mod$learner, "|La=", mod$language, ")", sep = "")
-                 }
-               }
-             }else{
-               if(!is.null(mod$coeffs_))
-               {
-                 coeffs <- signif(unlist(mod$coeffs_), 2)
-               }else{
-                 coeffs <- ""
-               }
-               res <- unlist(mod$names_)
-               res <- paste(coeffs, res, sep = " * ")
-               res <- paste(res, collapse = " ")
-               res <- paste(res, mod$learner, sep = "|")
-               mod.fit <- mod[[score]]
-               res <- paste("|", res, " ", "| (F=", signif(mod.fit, 4), sep = "")
-               res <- paste(res, "|K=", mod$eval.sparsity, "|L=", mod$learner, "|La=", mod$language, ")", sep = "")
-             }
-           },
-           str={
-             res <- str(mod)
-           },
-           {
-             warning('This method does not exist! Try one of these: short, long or str')
-           }
-    )
-    list_res[[km]] <- res
-  }
-  res <- list()
-  res <- list_res
-  return(res)
-}
-
-
-
-
-
-
-
-
-
 ################################################################
 # Multi-class Model Plots for Predomics
 ################################################################
@@ -1132,7 +957,7 @@ plotModel_mc <- function(mod, X, y,
                          main = "",
                          slim = FALSE,
                          importance = FALSE,
-                         res_clf = NULL, approch = "ova") {
+                         res_clf = NULL, approch = "ovo") {
 
 
   list_mod <- list()
@@ -1140,11 +965,14 @@ plotModel_mc <- function(mod, X, y,
   list_y <- list()
   list_X <- list()
   l_y <- list()
-
+  lk <- list()
+  for (i in seq_along(mod$indices_)) {
+    lk[[i]] <- length(mod$indices_[[i]])
+  }
   # Retrieve the mod elements to create the main title
   alg = mod$learner
   lang = mod$language
-  k = mod$eval.sparsity
+
 
   # Loop to fill the list of sub-models
   for (i in 1:length(mod$names_)) {
@@ -1162,7 +990,9 @@ plotModel_mc <- function(mod, X, y,
       cor_ = mod$cor_,
       aic_ = mod$aic_,
       intercept_ = mod$list_intercept_[[i]],
-      eval.sparsity = mod$eval.sparsity,
+      #eval.sparsity = mod$eval.sparsity,
+      eval.sparsity = length(mod$indices_[[i]]),
+
       precision_ = mod$precision_,
       recall_ = mod$recall_,
       f1_ = mod$f1_,
@@ -1206,7 +1036,8 @@ plotModel_mc <- function(mod, X, y,
   # Loop to generate sub-models with custom titles
   for (i in 1:length(list_y)) {
     # Determine the main title with alg, lang, and k
-    combination_title <- paste("alg =", alg, "\nlang =", lang, "\nk =", k)
+    k = lk[[i]]
+    combination_title <- paste("alg =", alg, "\nlang =", lang, "\nk =", k )
 
     # Addition of a specific title for each sub-model
     if (approch == "ovo") {
@@ -1230,12 +1061,6 @@ plotModel_mc <- function(mod, X, y,
 
   return(plot_sub_model)
 }
-
-
-
-
-
-
 
 
 

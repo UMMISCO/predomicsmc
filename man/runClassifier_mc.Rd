@@ -12,7 +12,7 @@ runClassifier_mc(
   y_test = NULL,
   approch = "ovo",
   aggregation_ = "voting",
-  constrained = FALSE
+  constraint_factor = "unconstrained"
 )
 }
 \arguments{

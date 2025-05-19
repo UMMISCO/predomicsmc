@@ -325,8 +325,8 @@ Launching the experiment using the TerBeam_MC heuristic, with the Predomics Aggr
 runit = TRUE
 if(runit)
 {
-terbeam_maximization_CRC_unconstrained_no_balance <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "maximization", nfolds= 10, constrained = FALSE); 
-save(terbeam_maximization_CRC_unconstrained_no_balance, clf, file ="terbeam_maximization_CRC_unconstrained_no_balance.rda", compression_level = 9)
+res_clf3 <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "voting", nfolds = 10, constraint_factor = "semi_constrained"); 
+save(res_clf3 , clf, file ="res_clf3.rda", compression_level = 9)
 }
 
 
@@ -355,7 +355,7 @@ res_clf.dig <- digest(obj = resclf2 , penalty = 0.75/100, plot = TRUE)
 ### Regenerate object Clf 
 
 ```{r}
-clf <- regenerate_clf(clf, X, y, approch = "ova")
+clf <- regenerate_clf(clf, X, y, approch = "ovo")
 ```
 
 
@@ -366,7 +366,7 @@ A family of best models is defined as the set of models returned by the predomic
 
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance$classifier$models)
+pop <- modelCollectionToPopulation(res_clf$classifier$models)
 printy_mc(pop)
 # Function to create boxplot for a given data frame
 create_boxplot <- function(data, title) {
@@ -430,7 +430,7 @@ plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ov
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
 ```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=9, fig.width=25}
-  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance ),
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -441,7 +441,7 @@ Finally, we can explore the feature importance using mean decrease accuracy info
                                         cv.prevalence = FALSE)
 
 
-  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = terbeam_Majority_Voting_with_Tie_Breaking_metacardis_unconstrained_balance),
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -469,7 +469,7 @@ plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = T
 plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
 
 # Open a PDF device to save the grid of plots
-pdf("model_visualization_plots2.pdf", width = 15, height = 10)  # Adjust width and height as needed
+pdf("model_visualization_plots2.pdf", width = 18, height = 12)  # Adjust width and height as needed
 
 # Extract the plots from each list and pass them to `grid.arrange`
 grid.arrange(grobs = c(plots1, plots2), ncol = 6)
@@ -2256,9 +2256,106 @@ dev.off()
 
 
 
+```{r warning=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+
+df_test <- subset(Analysis_Final_Results_DF_05_2025, Set == "Test")
+
+ggplot(df_test, aes(x = Methods, y = Accuracy, fill = Dataset)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA, position = position_dodge(width = 0.8)) +
+  geom_jitter(aes(color = Dataset), 
+              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), 
+              size = 1.5, alpha = 0.8) +
+  facet_grid(Approach ~ Constraint_factor, scales = "free_x", space = "free_x") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text.y = element_text(angle = 0) # pour mieux lire les facettes verticales
+  ) +
+  labs(
+    title = "Accuracy en test selon les méthodes, datasets, approche et contraintes",
+    x = "Méthode",
+    y = "Accuracy",
+    fill = "Dataset",
+    color = "Dataset"
+  )
+```
+
+
+
+```{r}
+library(dplyr)
+library(gridExtra)
+
+df_test <- Analysis_Final_Results_DF_05_2025 %>% filter(Set == "Test")
+
+# Liste des méthodes uniques
+methods_list <- unique(df_test$Methods)
+
+for (method in methods_list) {
+  cat("\n--- Méthode :", method, "---\n")
+  
+  # Filtrer par méthode
+  df_sub <- df_test %>% filter(Methods == method)
+  
+  # Calcul stats groupées par Dataset, Constraint_factor, Approach
+  summary_stats <- df_sub %>%
+    group_by(Dataset, Constraint_factor, Approach) %>%
+    summarise(
+      Mean_Accuracy = mean(Accuracy, na.rm = TRUE),
+      SD_Accuracy = sd(Accuracy, na.rm = TRUE),
+      Mean_Recall = mean(Recall, na.rm = TRUE),
+      SD_Recall = sd(Recall, na.rm = TRUE),
+      Mean_Precision = mean(Precision, na.rm = TRUE),
+      SD_Precision = sd(Precision, na.rm = TRUE),
+      Mean_F1 = mean(F1, na.rm = TRUE),
+      SD_F1 = sd(F1, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  print(summary_stats)
+  
+  # Affichage tableau avec gridExtra
+  grid.table(summary_stats)
+  
+  # Pause pour visualiser chaque tableau
+  readline(prompt = "Appuyez sur Entrée pour continuer à la méthode suivante...")
+}
 
 
 
 
+```
 
+
+
+```{r}
+df_test <- Analysis_Final_Results_DF_05_2025 %>% filter(Set == "Test")
+
+```
+
+
+
+```{r}
+summary_stats <- df_test %>%
+  group_by(Methods, Dataset, Approach, Constraint_factor) %>%
+  summarise(
+    Mean_Accuracy = mean(Accuracy, na.rm = TRUE),
+    SD_Accuracy = sd(Accuracy, na.rm = TRUE),
+    Mean_Recall = mean(Recall, na.rm = TRUE),
+    SD_Recall = sd(Recall, na.rm = TRUE),
+    Mean_Precision = mean(Precision, na.rm = TRUE),
+    SD_Precision = sd(Precision, na.rm = TRUE),
+    Mean_F1 = mean(F1, na.rm = TRUE),
+    SD_F1 = sd(F1, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+```
+
+
+
+```{r}
+print(head(summary_stats, 10))
+```
 

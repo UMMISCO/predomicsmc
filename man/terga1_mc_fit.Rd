@@ -10,7 +10,7 @@ terga1_mc_fit(
   clf,
   approch = "ova",
   aggregation_ = "Predomics_aggregation_ova",
-  constrained = FALSE
+  constraint_factor = "unconstrained"
 )
 }
 \arguments{

@@ -65,7 +65,7 @@ fit_mc <- function(X,
                    log.file = "parallel.log",
                    approch ="ova",
                    aggregation_ = "voting",
-                   constrained = FALSE,
+                   constraint_factor = "unconstrained" , #fully_constrained,  semi_constrained
                    path = NULL)
 {
   # test the classifier object
@@ -408,7 +408,7 @@ fit_mc <- function(X,
   {
     cat("... No cross validation mode\n")
     res.clf               <- list()
-    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch, aggregation_ = aggregation_, constrained = constrained)
+    res.clf$classifier    <- runClassifier_mc(X, y, clf, approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
 
   } else
   {
@@ -416,7 +416,7 @@ fit_mc <- function(X,
     res.clf               <- list()
     res.clf$classifier    <- list()
     res.clf$lfolds        <- lfolds
-    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch, aggregation_ = aggregation_, constrained = constrained)
+    res.clf$crossVal      <- runCrossval_mc(X, y, clf, lfolds = lfolds, nfolds = nfolds, return.all = return.all, approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
     # store the whole dataset results in the right place
     res.clf$classifier    <- res.clf$crossVal$whole
     # unweight the crossVal object that played the role of the transporter
@@ -562,7 +562,7 @@ fit_mc <- function(X,
 #' @param x_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @param y_test: if not NULL (default) this dataset will be used to evaluate the models in a subset for the feature importance
 #' @return the classifier along with the classification results as a sub-element
-runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo", aggregation_ = "voting", constrained = FALSE)
+runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="ovo", aggregation_ = "voting", constraint_factor = "unconstrained")
 {
 
   if(clf$params$verbose) cat("... Entering runClassifier\n")
@@ -608,7 +608,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terga1_mc=
            {
              if(clf$params$verbose) cat('... First version of terga fitting based on Genetic Algorithm heuristics ...\n')
-             res <- terga1_mc_fit(X, y, clf,approch = approch , aggregation_ = aggregation_,constrained = constrained )
+             res <- terga1_mc_fit(X, y, clf,approch = approch , aggregation_ = aggregation_,constraint_factor = constraint_factor )
            },
          terga2=
            {
@@ -624,7 +624,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
          terBeam_mc=
            {
              if(clf$params$verbose) cat('... terbeam fitting based on Exhaustive Heuristic beam search ...\n')
-             res <- terBeam_fit_mc(X, y, clf,approch = approch, aggregation_ = aggregation_, constrained = constrained)
+             res <- terBeam_fit_mc(X, y, clf,approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
            },
 
          metal=
@@ -690,7 +690,8 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
                                                           aggregation = "mean",
                                                           approch = approch,
                                                           aggregation_ = aggregation_,
-                                                          verbose = clf$params$verbose)
+                                                          verbose = clf$params$verbose,
+                                                          constraint_factor = constraint_factor)
     clf$fip <- efip.fold
   }
 
@@ -720,7 +721,7 @@ runClassifier_mc <- function(X, y, clf, x_test = NULL, y_test = NULL, approch="o
 #' @param return.all: return all results from the crossvalidation for feature stability testing
 #' @return a list containing empirical, generalisation scores for each fold as well as a matrix with the mean values.
 #' @export
-runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE, aggregation_ = "voting", constrained = FALSE)
+runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo",return.all = FALSE, aggregation_ = "voting", constraint_factor = "unconstrained")
 {
 
   # test the classifier object
@@ -778,7 +779,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   res.crossval$scores                         <- list()
   res.crossval$mods_train                     <- list()
   res.crossval$mods_test                      <- list()
-  res.crossval$expe_cv                       <- list()
+  res.crossval$expe_cv                        <- list()
 
   res.crossval$scores$empirical.auc           <- as.data.frame(matrix(nrow=max(clf$params$sparsity), ncol=(nfolds-1)))
   rownames(res.crossval$scores$empirical.auc) <- c(paste("k",c(1:max(clf$params$sparsity)), sep="_"))
@@ -860,12 +861,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
             cat("=> DBG: before runclassifier\n")
 
-            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constrained = constrained)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
           }else
           {
             try(
               {
-                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constrained = constrained)
+                runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
               }, silent = TRUE
             )
           }
@@ -931,12 +932,12 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
       if(clf$params$debug)
       {
-        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constrained = constrained )
+        res.all[[i]]                    <- runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test, approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor )
       }else
       {
         res.all[[i]]                    <- try(
           {
-            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch, aggregation_ = aggregation_, constrained = constrained)
+            runClassifier_mc(X = x_train, y =  y_train, clf = clf, x_test = x_test, y_test = y_test,approch = approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
           }, silent = FALSE
         ) # end try
       } # end else debug
@@ -946,22 +947,38 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   if(clf$params$verbose) cat("... Cross validation finished\n")
 
   # store the empirical result separately
+  # omit it from the empirical results as they will be extracted separately and
 
 
   res.crossval$whole <- res.all[[1]]
-  # omit it from the empirical results as they will be extracted separately and
   res.all <- res.all[-1]
   list_mods <- list()
-  for (i in seq_along(res.all)) {
-    too = modelCollectionToPopulation(res.all[[1]]$models)
-    list_mods[[i]] <- listOfModels2ModelCollection(too)
+  list_too <- list()
+  if (constraint_factor == "unconstrained"){
+    for (i in seq_along(res.all)) {
+      too = modelCollectionToPopulation(res.all[[i]]$models)
+      list_too$k_4 <- too
+      list_mods[[i]] <- list_too
+
+    }
+    for (i in seq_along(list_mods)) {
+      res.all[[i]]$models = list_mods[[i]]
+
+    }
 
   }
-  for (i in seq_along(list_mods)) {
-    res.all[[i]]$models = list_mods[[i]]
+  else{
 
+    for (i in seq_along(res.all)) {
+      too = modelCollectionToPopulation(res.all[[i]]$models)
+      list_mods[[i]] <- listOfModels2ModelCollection(too)
+
+    }
+    for (i in seq_along(list_mods)) {
+      res.all[[i]]$models = list_mods[[i]]
+
+    }
   }
-
   res.crossval$expe_cv <- res.all
   # also clean the lfolds object
   lfolds  <- lfolds[-1]
@@ -1016,6 +1033,82 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
     # if the results could be digested
     if(!is.null(res_train.digest))
     {
+
+      if (constraint_factor == "unconstrained"){
+
+
+        # for all the best models of each k-sparse (create empty matrix) for auc
+        res.crossval$k$auc                <- as.data.frame(matrix(nrow=max(1), ncol=2))
+        rownames(res.crossval$k$auc)      <- c(paste("k","4", sep="_"))
+        colnames(res.crossval$k$auc)      <- c("empirical","generalization")
+        # add another table for accuracy
+        res.crossval$k$acc                <- res.crossval$k$auc
+        # recall
+        res.crossval$k$rec                <- res.crossval$k$auc
+        # precision
+        res.crossval$k$prc                <- res.crossval$k$auc
+        # f1-score
+        res.crossval$k$f1s                <- res.crossval$k$auc
+        # add another table for correlation
+        res.crossval$k$cor                <- res.crossval$k$auc
+
+        # for all k-sparse BEST models
+        for(k in 1:length(res_train.digest$best_models))
+        {
+          k_sparse.name     <- names(res_train.digest$best_models)[k]
+          mod               <- res_train.digest$best_models[[k_sparse.name]]
+          # update the final indexes as the input X
+          ###mod               <- updateObjectIndex_mc(obj = mod, features = rownames(X))
+          mod.train         <- mod # since this is the same as computed above
+          mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test', aggregation_ = aggregation_, constraint_factor = constraint_factor)
+          res.crossval$mods_train[[k_sparse.name]]  <- mod.train
+          res.crossval$mods_test[[k_sparse.name]]   <- mod.test
+          if(!is.null(mod.train) & !is.null(mod.test))
+          {
+            # Empirical fitting score
+            res.crossval$scores$empirical.auc[k_sparse.name,i]            <- mod.train$auc_
+            res.crossval$scores$empirical.acc[k_sparse.name,i]            <- mod.train$accuracy_
+            res.crossval$scores$empirical.rec[k_sparse.name,i]            <- mod.train$recall_
+            res.crossval$scores$empirical.prc[k_sparse.name,i]            <- mod.train$precision_
+            res.crossval$scores$empirical.f1s[k_sparse.name,i]            <- mod.train$f1_
+            res.crossval$scores$empirical.cor[k_sparse.name,i]            <- mod.train$cor_
+
+            # Generalization fitting score
+            res.crossval$scores$generalization.auc[k_sparse.name,i]       <- mod.test$auc_
+            res.crossval$scores$generalization.acc[k_sparse.name,i]       <- mod.test$accuracy_
+            res.crossval$scores$generalization.rec[k_sparse.name,i]       <- mod.test$recall_
+            res.crossval$scores$generalization.prc[k_sparse.name,i]       <- mod.test$precision_
+            res.crossval$scores$generalization.f1s[k_sparse.name,i]       <- mod.test$f1_
+            res.crossval$scores$generalization.cor[k_sparse.name,i]       <- mod.test$cor_
+
+            # store by k
+            # AUC
+            res.crossval$k$auc[k_sparse.name,"empirical"]                 <- mod.train$auc_
+            res.crossval$k$auc[k_sparse.name,"generalization"]            <- mod.test$auc_
+            # Accuracy
+            res.crossval$k$acc[k_sparse.name,"empirical"]                 <- mod.train$accuracy_
+            res.crossval$k$acc[k_sparse.name,"generalization"]            <- mod.test$accuracy_
+            # Recall
+            res.crossval$k$rec[k_sparse.name,"empirical"]                 <- mod.train$recall_
+            res.crossval$k$rec[k_sparse.name,"generalization"]            <- mod.test$recall_
+            # Precision
+            res.crossval$k$prc[k_sparse.name,"empirical"]                 <- mod.train$precision_
+            res.crossval$k$prc[k_sparse.name,"generalization"]            <- mod.test$precision_
+            # F1-Score
+            res.crossval$k$f1s[k_sparse.name,"empirical"]                 <- mod.train$f1_
+            res.crossval$k$f1s[k_sparse.name,"generalization"]            <- mod.test$f1_
+
+            # Regression
+            res.crossval$k$cor[k_sparse.name,"empirical"]                 <- mod.train$cor_
+            res.crossval$k$cor[k_sparse.name,"generalization"]            <- mod.test$cor_
+
+
+          } # if training and testing results exist
+        } # end of k_sparse loop
+
+
+      }
+
       # for all the best models of each k-sparse (create empty matrix) for auc
       res.crossval$k$auc                <- as.data.frame(matrix(nrow=max(clf$params$sparsity), ncol=2))
       rownames(res.crossval$k$auc)      <- c(paste("k",c(1:max(clf$params$sparsity)), sep="_"))
@@ -1039,7 +1132,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
         # update the final indexes as the input X
         mod               <- updateObjectIndex_mc(obj = mod, features = rownames(X))
         mod.train         <- mod # since this is the same as computed above
-        mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test', aggregation_ = aggregation_)
+        mod.test          <- evaluateModel_mc(mod = mod, X=x_test, y=y_test, clf=clf, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode='test', aggregation_ = aggregation_, constraint_factor = constraint_factor)
         res.crossval$mods_train[[k_sparse.name]]  <- mod.train
         res.crossval$mods_test[[k_sparse.name]]   <- mod.test
         if(!is.null(mod.train) & !is.null(mod.test))

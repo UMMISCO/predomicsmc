@@ -1,7 +1,7 @@
 plotPrevalence_mmc <- function(features, X, y, approch = "ova", topdown = TRUE,
-                              main = "", plot = TRUE,
-                              col.pt = c("deepskyblue4", "firebrick4"),
-                              col.bg = c("deepskyblue1", "firebrick1")) {
+                               main = "", plot = TRUE,
+                               col.pt = c("deepskyblue4", "firebrick4"),
+                               col.bg = c("deepskyblue1", "firebrick1")) {
   # Sort data
   resul <- sort_data(y, X)
   y <- resul$y
@@ -87,9 +87,9 @@ plotPrevalence_mmc <- function(features, X, y, approch = "ova", topdown = TRUE,
 
 
 plotAbundanceByClass_mmc <- function(features, X, y, approch = "ova",
-                                    main = "", plot = TRUE,
-                                    col.pt = c("deepskyblue4", "firebrick4"),
-                                    col.bg = c("deepskyblue1", "firebrick1")) {
+                                     main = "", plot = TRUE,
+                                     col.pt = c("deepskyblue4", "firebrick4"),
+                                     col.bg = c("deepskyblue1", "firebrick1")) {
 
   # Sort data
   resul = sort_data(y, X)
@@ -304,8 +304,8 @@ plotAUC_mcc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch
 
 
 plotFeatureModelCoeffs_mmc <- function(feat.model.coeffs, y, approch = "ova",
-                                      topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"),
-                                      vertical.label = TRUE) {
+                                       topdown = TRUE, col = c("deepskyblue1", "white", "firebrick1"),
+                                       vertical.label = TRUE) {
 
   # Determine the class combinations based on the selected approach
   indices_sorted <- order(y)
@@ -972,11 +972,240 @@ computeConfusionMatrix <- function(mod, X, y, clf)
   return(cm)
 }
 
+#' sortPopulation
+#'
+#' @description Sort a population according to a given attribute (evalToOrder)
+#' @param pop: a population (list) of evaluated predomics objects
+#' @param evalToOrder: the attribute to be used in the sorting (default:fit_)
+#' @param decreasing: whether the sorting should be be decreasing or not (default:decreasing)
+#' @return a sorted population of predomics objects
+#' @export
+sortPopulation <- function(pop, evalToOrder = "fit_", decreasing = TRUE)
+{
+
+  if(!isPopulation(pop))
+  {
+    warning("sortPopulation: the population object is not a a valid one, returning NULL")
+    return(NULL)
+  }
+
+  # # OVERRIDE
+  # # for correlation use the standard error of the mean and reverse
+  # if(pop[[1]]$objective == "cor")
+  # {
+  #   #
+  #   evalToOrder   <- "ser_"
+  #   decreasing    <- TRUE
+  # }
+
+  evaluation <- populationGet_X(element2get = evalToOrder, toVec = TRUE, na.rm = TRUE)(pop)
+
+  if(length(evaluation) > 0)
+  {
+    ord <- order(evaluation, decreasing = decreasing)
+  }else
+  {
+    return(NULL)
+  }
+
+  return(pop[ord])
+}
 
 
 
 
+#' Group model population by combination index
+#'
+#' Structures a list of predomics models into a grouped collection based on their combination index,
+#' regardless of their sparsity level.
+#'
+#' @param pop A list of model populations indexed by sparsity level. Each element contains multiple models,
+#'            and each model contains several pairwise combinations (e.g., A vs B, A vs C).
+#'
+#' @return A named list where each entry (e.g., "comb_1", "comb_2", ...) contains all submodels
+#'         corresponding to the same combination across all sparsity levels.
+group_population_by_combination <- function(pop) {
+  regroupement <- list()
+
+  for (s_index in seq_along(pop)) {
+    cat("Processing sparsity index:", s_index, "\n")  # debug
+    sparsity_models <- pop[[s_index]]  # list of models for this sparsity level
+
+    for (m_index in seq_along(sparsity_models)) {
+      model <- sparsity_models[[m_index]]
+      nb_combinaisons <- length(model)
+
+      for (i in seq_len(nb_combinaisons)) {
+        comb_name <- paste0("comb_", i)
+
+        if (!comb_name %in% names(regroupement)) {
+          regroupement[[comb_name]] <- list()
+        }
+
+        regroupement[[comb_name]] <- append(
+          regroupement[[comb_name]],
+          list(model[[i]])
+        )
+      }
+    }
+  }
+
+  return(regroupement)
+}
+
+
+#' Sort and filter combinations by performance
+#'
+#' For each combination group, this function sorts the models in descending order of their accuracy
+#' and retains only the top N most performant ones.
+#'
+#' @param regroupement A named list of model combinations (e.g., result from group_population_by_combination),
+#'                     where each element contains multiple models with an accuracy_ field.
+#' @param top_n Integer. Number of top models to retain per combination. Default is 500.
+#'
+#' @return A list containing the top N models for each combination, sorted by descending accuracy.
+sort_and_filter_by_performance <- function(regroupement, top_n = 100) {
+  resultat <- list()
+
+  for (comb_name in names(regroupement)) {
+    liste_models <- regroupement[[comb_name]]
+
+    # Check if models contain the 'accuracy_' field
+    if (is.null(liste_models[[1]]$accuracy_)) {
+      stop(paste("The field 'accuracy_' is missing in", comb_name))
+    }
+
+    # Sort models in descending order by accuracy_
+    sorted <- liste_models[order(sapply(liste_models, function(x) x$accuracy_), decreasing = TRUE)]
+
+    # Keep only the top_n best models
+    resultat[[comb_name]] <- head(sorted, top_n)
+  }
+
+  return(resultat)
+}
 
 
 
+#' Create list of best models by index across combinations
+#'
+#' Constructs a list where each element contains the i-th best model from all combinations.
+#' Useful for evaluating top-k aggregated models across different combination groups.
+#'
+#' @param top_models A named list of sorted top models (e.g., from sort_and_filter_by_performance),
+#'                   where each element (e.g., "comb_1", "comb_2", ...) contains a list of models sorted by accuracy.
+#' @param k Integer. Number of top entries to extract by index. Default is 500.
+#'
+#' @return A list of length k, where each element is a list of models (one per combination) at the same rank.
+create_top_models_by_index <- function(top_models, k = 100) {
+  # Get the combination names (e.g., "comb_1", "comb_2", "comb_3", ...)
+  comb_names <- names(top_models)
+
+  # Find the smallest number of models available across all combinations
+  max_len <- min(sapply(top_models, length))  # safety check
+
+  if (k > max_len) {
+    warning(paste("k reduced to", max_len, "because some combinations have fewer models."))
+    k <- max_len
+  }
+
+  # Final list of top-k model sets
+  liste_par_index <- vector("list", k)
+
+  for (i in 1:k) {
+    current_set <- list()
+    for (comb_name in comb_names) {
+      current_set[[comb_name]] <- top_models[[comb_name]][[i]]
+    }
+    liste_par_index[[i]] <- current_set
+  }
+
+  return(liste_par_index)
+}
+
+digestModelCollection <- function(obj, X = NULL, clf, k.penalty = 0, mmprev = FALSE)
+{
+  if(!isModelCollection(obj))
+  {
+    # STOP for debug
+    stop("digestModelCollection: The object is not a modelCollection")
+  }
+
+  res <- list()
+  res$learner <- clf$learner
+
+  # extract the best models
+  # TODO include getTheBestModel & getBestIndividual in getBestModels
+  if(mmprev & !is.null(X))
+  {
+    res$best_models           <- getNBestModels(obj = obj,
+                                                significance = TRUE,
+                                                by.k.sparsity = TRUE,
+                                                k.penalty = k.penalty,
+                                                n.best = 1,
+                                                single.best = FALSE,
+                                                single.best.cv = FALSE,
+                                                single.best.k = NULL,
+                                                max.min.prevalence = TRUE, # max min prevalence
+                                                X = NULL,
+                                                verbose = FALSE,
+                                                evalToOrder = "fit_",
+                                                return.population = TRUE, # population
+                                                unique.control = TRUE
+    )
+    res$best_model            <- getNBestModels(obj = obj,
+                                                significance = TRUE,
+                                                by.k.sparsity = TRUE,
+                                                k.penalty = k.penalty,
+                                                n.best = 1,
+                                                single.best = TRUE, # !!! give best
+                                                single.best.cv = FALSE, # based on CV
+                                                single.best.k = NULL,
+                                                max.min.prevalence = TRUE, # max min prevalence
+                                                X = NULL,
+                                                verbose = FALSE,
+                                                evalToOrder = "fit_",
+                                                return.population = FALSE # this will be a model
+    )
+  }else
+  {
+    res$best_models           <- getNBestModels(obj = obj,
+                                                significance = TRUE,
+                                                by.k.sparsity = TRUE,
+                                                k.penalty = k.penalty,
+                                                n.best = 1,
+                                                single.best = FALSE,
+                                                single.best.cv = FALSE,
+                                                single.best.k = NULL,
+                                                max.min.prevalence = FALSE,
+                                                X = NULL,
+                                                verbose = FALSE,
+                                                evalToOrder = "fit_",
+                                                return.population = TRUE, # population
+                                                unique.control = TRUE
+    )
+    res$best_model            <- getNBestModels(obj = obj,
+                                                significance = TRUE,
+                                                by.k.sparsity = TRUE,
+                                                k.penalty = k.penalty,
+                                                n.best = 1,
+                                                single.best = TRUE, # !!! give best
+                                                single.best.cv = FALSE, # based on CV
+                                                single.best.k = NULL,
+                                                max.min.prevalence = FALSE,
+                                                X = NULL,
+                                                verbose = FALSE,
+                                                evalToOrder = "fit_",
+                                                return.population = FALSE # this will be a model
+    )
+  }
+  res$best_models.fit       <- populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = FALSE)(pop = res$best_models)
+  res$best_models.accuracy  <- populationGet_X(element2get = "accuracy_", toVec = TRUE, na.rm = FALSE)(pop = res$best_models)
+  res$best_models.precision <- populationGet_X(element2get = "precision_", toVec = TRUE, na.rm = FALSE)(pop = res$best_models)
+  res$best_models.recall    <- populationGet_X(element2get = "recall_", toVec = TRUE, na.rm = FALSE)(pop = res$best_models)
+  res$best_models.f1_       <- populationGet_X(element2get = "f1_", toVec = TRUE, na.rm = FALSE)(pop = res$best_models)
+  res$best_models.cor_      <- populationGet_X(element2get = "cor_", toVec = TRUE, na.rm = FALSE)(pop = res$best_models)
+
+  return(res)
+}
 

@@ -234,7 +234,7 @@
 # sota_gbm_metrics_results_no_balance_3 <- gbm_metrics_results
 # save(sota_gbm_metrics_results_no_balance_3, file = "sota_gbm_metrics_results_no_balance_3.rda")
 #
-#
+# #
 #
 #
 # ## Multiple decision trees
@@ -451,107 +451,6 @@
 #
 #
 #
-# ## Logistic Regression
-#
-# # Load necessary libraries
-# library(glmnet)  # For logistic regression with cross-validation
-# library(caret)   # For data partitioning and evaluation metrics
-# library(dplyr)   # For data manipulation
-# library(tibble)  # For structured data storage
-#
-# # Ensure the target variable (y) is a factor
-# y <- as.factor(y)
-# X <- t(X)
-# set.seed(123)  # Set seed for reproducibility
-#
-# # Remove constant columns (zero variance)
-# X_non_constant <- X[, apply(X, 2, var, na.rm = TRUE) != 0]
-#
-# # Check for missing values and perform imputation if necessary
-# if (any(is.na(X_non_constant))) {
-#   # Simple mean imputation for missing values
-#   X_non_constant[is.na(X_non_constant)] <- colMeans(X_non_constant, na.rm = TRUE)
-# }
-#
-# # Initialize a tibble to store metrics for each fold
-# logreg_metrics_results <- tibble(
-#   Fold = character(),
-#   Accuracy.empirique = numeric(),
-#   Accuracy.generalization = numeric(),
-#   Precision.empirique = numeric(),
-#   Precision.generalization = numeric(),
-#   Recall.empirique = numeric(),
-#   Recall.generalization = numeric(),
-#   F1.empirique = numeric(),
-#   F1.generalization = numeric(),
-#   Methods = character(),
-#   Features = numeric()
-# )
-#
-# # Perform k-fold cross-validation (k=10)
-# fold_idx <- 1
-# for (i in 1:5) {
-#   # Create training and validation indices for the current fold
-#   index_train <- createFolds(y, k = 5, list = TRUE, returnTrain = TRUE)[[i]]
-#
-#   # Split the data into training and validation sets
-#   X_train <- X_non_constant[index_train, ]
-#   y_train <- y[index_train]
-#   X_val <- X_non_constant[-index_train, ]
-#   y_val <- y[-index_train]
-#
-#   # Train a multinomial logistic regression model using cross-validation
-#   logreg_model <- cv.glmnet(as.matrix(X_train), y_train, family = "multinomial", alpha = 1)
-#
-#   # Predict on the training set (empirical predictions)
-#   y_train_pred <- predict(logreg_model, newx = as.matrix(X_train), s = "lambda.min", type = "class")
-#   y_train_pred <- factor(y_train_pred, levels = levels(y))  # Convert predictions to factor
-#
-#   # Predict on the validation set (generalization predictions)
-#   y_val_pred <- predict(logreg_model, newx = as.matrix(X_val), s = "lambda.min", type = "class")
-#   y_val_pred <- factor(y_val_pred, levels = levels(y))  # Convert predictions to factor
-#
-#   # Compute empirical metrics on the training set
-#   cm_train <- caret::confusionMatrix(y_train_pred, y_train)
-#   accuracy_empirical <- cm_train$overall['Accuracy']
-#   precision_empirical <- mean(cm_train$byClass[,'Precision'], na.rm = TRUE)
-#   recall_empirical <- mean(cm_train$byClass[,'Recall'], na.rm = TRUE)
-#   f1_empirical <- mean(cm_train$byClass[,'F1'], na.rm = TRUE)
-#
-#   # Compute generalization metrics on the validation set
-#   cm_val <- caret::confusionMatrix(y_val_pred, y_val)
-#   accuracy_generalization <- cm_val$overall['Accuracy']
-#   precision_generalization <- mean(cm_val$byClass[,'Precision'], na.rm = TRUE)
-#   recall_generalization <- mean(cm_val$byClass[,'Recall'], na.rm = TRUE)
-#   f1_generalization <- mean(cm_val$byClass[,'F1'], na.rm = TRUE)
-#
-#   # Store the results for the current fold
-#   logreg_metrics_results <- logreg_metrics_results %>% add_row(
-#     Fold = paste0("Fold", fold_idx),
-#     Accuracy.empirique = accuracy_empirical,
-#     Accuracy.generalization = accuracy_generalization,
-#     Precision.empirique = precision_empirical,
-#     Precision.generalization = precision_generalization,
-#     Recall.empirique = recall_empirical,
-#     Recall.generalization = recall_generalization,
-#     F1.empirique = f1_empirical,
-#     F1.generalization = f1_generalization,
-#     Methods = "Logistic Regression (glmnet)",
-#     Features = 2049
-#   )
-#
-#   # Increment the fold index
-#   fold_idx <- fold_idx + 1
-# }
-#
-# # Display the results tibble
-# print(logreg_metrics_results)
-#
-# # Save the results to a file
-# sota_logreg_metrics_results_no_balance_3 <- logreg_metrics_results
-# save(sota_logreg_metrics_results_no_balance_3, file = "sota_logreg_metrics_results_no_balance_3.rda")
-#
-#
 #
 # # Charger les bibliothèques nécessaires
 # library(class)     # Pour KNN
@@ -666,24 +565,108 @@
 # # Sauvegarder les résultats dans un fichier
 # save(sota_knn_metrics_results_no_balance_3, file = "sota_knn_metrics_results_no_balance_3.rda")
 #
-# # ANN
+# library(glmnet)   # For logistic regression with cross-validation
+# library(caret)    # For data partitioning and evaluation metrics
+# library(dplyr)    # For data manipulation
+# library(tibble)   # For structured data storage
 #
+# # Ensure the target variable (y) is a factor
+# y <- as.factor(y)
+# X <- t(X)
+# set.seed(123)  # Set seed for reproducibility
 #
+# # Vérifier les valeurs manquantes et les imputer si nécessaire
+# if (any(is.na(X))) {
+#   for (j in seq_len(ncol(X))) {
+#     if (anyNA(X[, j])) {
+#       X[, j][is.na(X[, j])] <- mean(X[, j], na.rm = TRUE)
+#     }
+#   }
+# }
 #
+# # Initialiser la tibble pour stocker les métriques
+# logreg_metrics_results <- tibble(
+#   Fold = character(),
+#   Accuracy.empirique = numeric(),
+#   Accuracy.generalization = numeric(),
+#   Precision.empirique = numeric(),
+#   Precision.generalization = numeric(),
+#   Recall.empirique = numeric(),
+#   Recall.generalization = numeric(),
+#   F1.empirique = numeric(),
+#   F1.generalization = numeric(),
+#   Methods = character(),
+#   Features = numeric()
+# )
 #
+# set.seed(123)  # Fixe la graine pour rendre les folds reproductibles
+# folds <- createFolds(y, k = 10, list = TRUE, returnTrain = FALSE)
 #
+# # Boucle sur les 10 folds
+# for (fold_idx in seq_along(folds)) {
+#   index_val <- folds[[fold_idx]]
+#   index_train <- setdiff(seq_along(y), index_val)
 #
+#   X_train <- X[index_train, ]
+#   y_train <- y[index_train]
+#   X_val <- X[index_val, ]
+#   y_val <- y[index_val]
 #
+#   # Entraîner le modèle de régression logistique multinomiale
+#   logreg_model <- cv.glmnet(as.matrix(X_train), y_train, family = "multinomial", alpha = 1)
 #
+#   # Prédiction sur les données d'entraînement
+#   y_train_pred <- predict(logreg_model, newx = as.matrix(X_train), s = "lambda.min", type = "class")
+#   y_train_pred <- factor(y_train_pred, levels = levels(y))
 #
+#   # Prédiction sur les données de validation
+#   y_val_pred <- predict(logreg_model, newx = as.matrix(X_val), s = "lambda.min", type = "class")
+#   y_val_pred <- factor(y_val_pred, levels = levels(y))
 #
+#   # Métriques sur les données d'entraînement
+#   cm_train <- confusionMatrix(y_train_pred, y_train)
+#   accuracy_empirical <- cm_train$overall['Accuracy']
+#   precision_empirical <- mean(cm_train$byClass[, 'Precision'], na.rm = TRUE)
+#   recall_empirical <- mean(cm_train$byClass[, 'Recall'], na.rm = TRUE)
+#   f1_empirical <- mean(cm_train$byClass[, 'F1'], na.rm = TRUE)
 #
+#   # Métriques sur les données de validation
+#   cm_val <- confusionMatrix(y_val_pred, y_val)
+#   accuracy_generalization <- cm_val$overall['Accuracy']
+#   precision_generalization <- mean(cm_val$byClass[, 'Precision'], na.rm = TRUE)
+#   recall_generalization <- mean(cm_val$byClass[, 'Recall'], na.rm = TRUE)
+#   f1_generalization <- mean(cm_val$byClass[, 'F1'], na.rm = TRUE)
 #
+#   # Ajouter les résultats
+#   logreg_metrics_results <- logreg_metrics_results %>% add_row(
+#     Fold = paste0("Fold", fold_idx),
+#     Accuracy.empirique = accuracy_empirical,
+#     Accuracy.generalization = accuracy_generalization,
+#     Precision.empirique = precision_empirical,
+#     Precision.generalization = precision_generalization,
+#     Recall.empirique = recall_empirical,
+#     Recall.generalization = recall_generalization,
+#     F1.empirique = f1_empirical,
+#     F1.generalization = f1_generalization,
+#     Methods = "Logistic Regression (glmnet)",
+#     Features = ncol(X)
+#   )
+# }
 #
-#
-#
-#
-#
-#
-#
-#
+# # Affichage des résultats
+# print(logreg_metrics_results)
+# Sota_RL_CRC <- logreg_metrics_results
+# save(Sota_RL_CRC, file = "Sota_RL_CRC.rda")
+
+
+
+
+
+
+
+
+
+
+
+
+

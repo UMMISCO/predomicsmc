@@ -17,7 +17,7 @@ fit_mc(
   log.file = "parallel.log",
   approch = "ova",
   aggregation_ = "voting",
-  constrained = FALSE,
+  constraint_factor = "unconstrained",
   path = NULL
 )
 }
@@ -57,10 +57,10 @@ or "ovo" (one-vs-one) (default: "ova")}
 \item{aggregation_}{The aggregation method used for combining results from
 binary models in multi-class classification (default: "Predomics_aggregation_ova")}
 
+\item{path}{The path where to save temporary data}
+
 \item{constrained}{Logical flag indicating whether the classification should
 be constrained (default: FALSE)}
-
-\item{path}{The path where to save temporary data}
 }
 \value{
 An experiment object containing the classifier along with the

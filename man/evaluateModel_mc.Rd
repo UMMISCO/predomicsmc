@@ -14,7 +14,8 @@ evaluateModel_mc(
   estim.feat.importance = FALSE,
   approch = "ovo",
   mode = "train",
-  aggregation_ = "voting"
+  aggregation_ = "voting",
+  constraint_factor = "unconstrained"
 )
 }
 \arguments{

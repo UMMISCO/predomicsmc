@@ -16,7 +16,7 @@ plotModel_mc(
   slim = FALSE,
   importance = FALSE,
   res_clf = NULL,
-  approch = "ova"
+  approch = "ovo"
 )
 }
 \arguments{

@@ -546,7 +546,7 @@ evaluateFit_mc <- function(mod, X, y, clf, force.re.evaluation = FALSE,approch="
 #' of the model (default:"train") or not "test" for the c("terinter","bininter","ratio") languages
 #' @return a model ovo object with the fitting scores evaluated
 #' @export
-evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, approch = "ovo", mode = 'train', aggregation_ = "voting") {
+evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluation = FALSE, estim.feat.importance = FALSE, approch = "ovo", mode = 'train', aggregation_ = "voting", constraint_factor = "unconstrained") {
 
   # Validate mode parameter; it must be either 'train' or 'test'
   if (mode != "train" & mode != "test") {
@@ -640,6 +640,141 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     }
   }
 
+  if (constraint_factor == "unconstrained" && mode == "train") {
+
+    list_modPop <- mod
+    res_listmodPop <- list()
+
+    for (i in seq_along(list_modPop)) {
+      list_mod.res <- list_modPop[[i]]
+      res_listmod.res <- list()
+
+      for (j in seq_along(list_mod.res)) {
+        mod.res <- list_mod.res[[j]]
+
+
+        # Reset attributes
+        for (k in seq_along(mod.res)) {
+          mod.res[[k]]$fit_ <- NA
+          mod.res[[k]]$unpenalized_fit_ <- NA
+          mod.res[[k]]$auc_ <- NA
+          mod.res[[k]]$accuracy_ <- NA
+          mod.res[[k]]$precision_ <- NA
+          mod.res[[k]]$recall_ <- NA
+          mod.res[[k]]$f1_ <- NA
+          mod.res[[k]]$intercept_ <- NA
+          mod.res[[k]]$sign_ <- NA
+          mod.res[[k]]$cor_ <- NA
+          mod.res[[k]]$rsq_ <- NA
+          mod.res[[k]]$ser_ <- NA
+          mod.res[[k]]$aic_ <- NA
+          mod.res[[k]]$score_ <- NA
+          mod.res[[k]]$pos_score_ <- NA
+          mod.res[[k]]$neg_score_ <- NA
+        }
+
+        # Handle regression with correlation objective
+        if (clf$params$objective == "cor") {
+          for (k in seq_along(mod.res)) {
+            if (!isModelSota(mod.res[[k]])) {
+              mod.res <- evaluateModelRegression_mc(
+                mod = mod.res, X = X, y = y, clf = clf,
+                eval.all = eval.all, force.re.evaluation = force.re.evaluation
+              )
+              return(mod.res)
+            } else if (clf$params$warnings) {
+              warning("evaluateModel: evaluating a sota model in correlation objective")
+            }
+          }
+        }
+
+        # Disable feature importance if model is SOTA
+        for (k in seq_along(mod.res)) {
+          if (isModelSota(mod.res[[k]]) && estim.feat.importance) {
+            estim.feat.importance <- FALSE
+          }
+        }
+
+        # Handle sparse models
+        for (k in seq_along(list_y)) {
+          if (mod.res[[k]]$eval.sparsity != length(unique(mod.res[[k]]$indices_))) {
+            if (clf$params$warnings) {
+              warning("evaluateModel: An individual has at least one index replicated")
+            }
+            values2keep <- which(mod.res[[k]]$indices_ == unique(mod.res[[k]]$indices_))
+            mod.res[[k]]$indices_ <- mod.res[[k]]$indices_[values2keep]
+            mod.res[[k]]$names_ <- mod.res[[k]]$names_[values2keep]
+            mod.res[[k]]$coeffs_ <- mod.res[[k]]$coeffs[values2keep]
+            mod.res[[k]]$eval.sparsity <- length(unique(mod.res[[k]]$indices_))
+          }
+        }
+
+        # Evaluate model fit
+        mod.res <- evaluateFit_mc(
+          mod = mod.res, X = X, y = y, clf = clf,
+          force.re.evaluation = force.re.evaluation,
+          approch = approch, mode = mode
+        )
+
+        # Evaluate additional metrics
+        if (eval.all) {
+          mod.res <- evaluateAdditionnalMetrics_mc(
+            mod = mod.res, X = X, y = y, clf = clf,
+            approch = approch, mode = mode
+          )
+        }
+
+        # Feature importance (if needed)
+        for (k in seq_along(mod.res)) {
+          if (!isModelSota(mod.res[[k]]) && estim.feat.importance) {
+            clf$coeffs_ <- listcoeffs[[k]]
+            clf$data$X <- listX[[k]]
+            clf$data$X.min <- listXmin[[k]]
+            clf$data$X.max <- listXmax[[k]]
+            clf$data$y <- listy[[k]]
+            mod.res[[k]] <- estimateFeatureImportance(
+              mod = mod.res[[k]], X = list_X[[k]], y = list_y[[k]],
+              clf = clf, plot.importance = FALSE
+            )
+          }
+        }
+
+        res_listmod.res[[j]] <- mod.res
+      }
+
+      res_listmodPop[[i]] <- res_listmod.res
+    }
+
+    # Group, sort, and select top models
+    group_mods <- group_population_by_combination(res_listmodPop)
+    sort_mods <- sort_and_filter_by_performance(group_mods)
+    top_models <- create_top_models_by_index(sort_mods)
+
+    # Evaluate top-k models by aggregation
+    listmod_aggr <- list()
+    for (i in seq_along(top_models)) {
+      ##cat("Évaluation du groupe", i, "/", length(top_models), "\n")
+      tryCatch({
+        mod.res <- evaluateModels_aggregation(
+          mod = top_models[[i]], y = y, X = X,
+          force.re.evaluation = TRUE, clf = clf,
+          approch = approch, aggregation_ = aggregation_
+        )
+        listmod_aggr[[i]] <- mod.res
+      }, error = function(e) {
+        warning(paste("Erreur à l'index", i, ":", e$message))
+        listmod_aggr[[i]] <- NULL
+      })
+    }
+
+    # Résultat final
+    mod.res <- listmod_aggr
+    return(mod.res)
+  }
+
+
+  #### Autres cas
+
   # Regression-specific handling if objective is correlation
   if (clf$params$objective == "cor") {
     for (i in 1:length(mod.res)) {
@@ -705,6 +840,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
   )
 
   return(mod.res)
+
 }
 
 
@@ -734,7 +870,8 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                   delete.null.models = TRUE,
                                   approch = "ovo",
                                   aggregation_ = "voting",
-                                  lfolds = NULL)
+                                  lfolds = NULL,
+                                  constraint_factor = "unconstrained")
 {
   # test the classifier object
   if(!isClf(clf))
@@ -767,7 +904,8 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                                  delete.null.models = delete.null.models,
                                                  approch = approch,
                                                  aggregation_ =  aggregation_,
-                                                 lfolds = NULL)
+                                                 lfolds = NULL,
+                                                 constraint_factor = constraint_factor)
       }else # test
       {
         pop.lfolds[[f]] <- evaluatePopulation_mc(X[,lfolds[[f]]],
@@ -781,41 +919,64 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
                                                  delete.null.models = delete.null.models,
                                                  approch = approch,
                                                  aggregation_ =  aggregation_,
-                                                 lfolds = NULL)
+                                                 lfolds = NULL,
+                                                 constraint_factor = constraint_factor)
       }
     }
     names(pop.lfolds) <- names(lfolds)
     return(pop.lfolds)
   }
 
-  # otherwise we continue to evaluate normally the population
-
+  # Initialisation des listes de résultats
   res <- list()
-  for (i in 1:length(pop)) # for all the individuals in the population
-  {
-    mod <- pop[[i]]
-    if(!is.null(mod))
-    {
-      res[[i]] <- evaluateModel_mc(mod = mod,
-                                   X = X,
-                                   y = y,
-                                   clf = clf,
-                                   eval.all = eval.all,
-                                   force.re.evaluation = force.re.evaluation,
-                                   estim.feat.importance = estim.feat.importance,
-                                   approch = approch,
-                                   aggregation_ =  aggregation_,
-                                   mode = mode)
+  mod_res <- list()
+  list_res <- list()
 
-      #print(i)
-    } # end else existance pop
-  } # end for loop
+  # Cas 1 : Contrainte désactivée ET mode entraînement
+  if (constraint_factor == "unconstrained" && mode == "train") {
+    mod <- pop
+    res <- evaluateModel_mc(
+      mod = mod,
+      X = X,
+      y = y,
+      clf = clf,
+      eval.all = eval.all,
+      force.re.evaluation = force.re.evaluation,
+      estim.feat.importance = estim.feat.importance,
+      approch = approch,
+      aggregation_ = aggregation_,
+      mode = mode,
+      constraint_factor = constraint_factor
+    )
 
-  # clean population after evaluation as well
-  if(delete.null.models)
-  {
+  } else {
+    # Cas 2 : Autres configurations (ex. mode = "test" ou contraintes activées)
+    for (i in seq_along(pop)) {
+      mod <- pop[[i]]
+
+      if (!is.null(mod)) {
+        res[[i]] <- evaluateModel_mc(
+          mod = mod,
+          X = X,
+          y = y,
+          clf = clf,
+          eval.all = eval.all,
+          force.re.evaluation = force.re.evaluation,
+          estim.feat.importance = estim.feat.importance,
+          approch = approch,
+          aggregation_ = aggregation_,
+          mode = mode,
+          constraint_factor = constraint_factor
+        )
+      }
+    }
+  }
+
+  # Nettoyage final : suppression des modèles NULL si demandé
+  if (delete.null.models) {
     res <- cleanPopulation(pop = res, clf = clf)
   }
+
 
   return(res)
 }
@@ -918,7 +1079,7 @@ listOfSparseVecToListOfModels_mc <- function(X, y, clf, v, lobj = NULL, eval.all
 #' @return a data.frame with features in rows and the population mean/median score for each model*seed of the population
 #' @export
 evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fit_", filter.ci = TRUE, method = "optimized",
-                                                     seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE, aggregation_ = "votingAggregation")
+                                                     seed = c(1:10), aggregation = "mean", approch = "ovo", verbose = TRUE, aggregation_ = "votingAggregation", constraint_factor = "unconstrained")
 {
   list_y <- list()
   list_X <- list()
@@ -990,7 +1151,7 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
   }
 
   # Reevaluate the population in X (which is the x_test) in generalization
-  pop <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode = "test", aggregation_ = aggregation_)
+  pop <- evaluatePopulation_mc(X = X, y = y, clf = clf, pop = pop, eval.all = TRUE, force.re.evaluation = TRUE, approch = approch, mode = "test", aggregation_ = aggregation_, constraint_factor = constraint_factor)
   # compute the presence of features in the models
   listfa  <- makeFeatureAnnot_mc(pop = pop, X = X, y = y, clf = clf, approch = approch)
 
@@ -1187,64 +1348,69 @@ evaluateFeatureImportanceInPopulation_mc <- function(pop, X, y, clf, score = "fi
 #' @export
 #'
 predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
-  # Initialize empty lists for models, predictions, and scores
+  # Initialize lists
   predictions_list <- list()
   scorelist <- list()
   list_y <- list()
 
-  # Determine the number of combinations
-  mods <- list()
+  # Make a copy of the models
   mods <- mod
-  mods$binary_scores_mods <- mods$score_
+  mods$binary_scores_mods <- mods$score_  # Optional: backup
 
-  # Calculate scores for each model and store in scorelist
-  for (i in 1:length(mods)) {
-    scorelist[[i]] <- getModelScore(mod = mods[[i]], X = X, clf = clf, force.re.evaluation = TRUE)
+  # Calculate scores for each model
+  for (i in seq_along(mods)) {
+    scorelist[[i]] <- getModelScore(
+      mod = mods[[i]],
+      X = X,
+      clf = clf,
+      force.re.evaluation = force.re.evaluation
+    )
   }
 
-  # Extract scores only
+  # Extract score values only
   score_list <- lapply(scorelist, function(x) x$score_)
 
-  # List of prediction vectors for each combination
+  # Generate predictions per model
   predictions_list <- lapply(seq_along(score_list), function(j) {
-    # Get the class name (level) of y
     class_name <- levels(as.factor(y))[j]
+    scores <- score_list[[j]]
 
-    # Calculate predictions for the current class using calibrated scores
-    sapply(score_list[[j]], function(score) {
+    sapply(scores, function(score) {
       ifelse(score > mods[[j]]$intercept_, class_name, "ALL")
     })
   })
 
-  # Calculate distances with softmax normalization
+  # Compute softmax-based distances from intercept
   distances <- lapply(seq_along(score_list), function(j) {
     scores <- as.numeric(unlist(score_list[[j]]))
     intercept <- mods[[j]]$intercept_
 
-    # Softmax normalization for score distances
+    # Softmax normalization of scores
     softmax_scores <- exp(scores) / sum(exp(scores))
-    softmax_distances <- sqrt((softmax_scores - intercept)^2)
-    softmax_distances
+
+    # Euclidean distance to intercept
+    sqrt((softmax_scores - intercept)^2)
   })
 
-  # Normalization of distances using Z-score
+  # Normalize distances using Z-score
   scores_normalises <- lapply(distances, function(distance_vector) {
     moyenne <- mean(distance_vector)
     ecart_type <- sd(distance_vector)
     z_scores <- (distance_vector - moyenne) / ecart_type
-    z_scores[is.nan(z_scores)] <- 0  # Replace NaN with 0
+    z_scores[is.nan(z_scores)] <- 0  # Handle division by zero or NaNs
     z_scores
   })
 
-  # Store normalized scores and predictions in each model
-  for (i in 1:length(scores_normalises)) {
+  # Attach normalized scores and predictions to models
+  for (i in seq_along(scores_normalises)) {
     mods[[i]]$scores_predictions <- scores_normalises[[i]]
     mods[[i]]$predictions <- predictions_list[[i]]
   }
 
-  # Return models with normalized scores and predictions
+  # Return enriched model list
   return(mods)
 }
+
 
 
 
@@ -1331,7 +1497,7 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   normalized_scores <- lapply(scores_distance, normalize)
 
   # Invert the normalized scores
-  new_scores <- lapply(normalized_scores, function(x) 1 - x)
+  #new_scores <- lapply(normalized_scores, function(x) 1 - x)
 
   # Z-score standardization function with absolute value
   z_score <- function(x) {
@@ -1347,7 +1513,7 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   }
 
   # Apply Z-score standardization to the normalized scores
-  standardized_scores <- lapply(new_scores, z_score)
+  standardized_scores <- lapply(normalized_scores, z_score)
 
   # Store the standardized scores and predictions in each model
   for (i in 1:length(standardized_scores)) {
@@ -1360,6 +1526,7 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   # Return mod with predicted class labels, score vectors, and distances
   return(mod)
 }
+
 
 
 # Function to aggregate one-versus-one predictions using majority voting
