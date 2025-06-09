@@ -260,122 +260,99 @@ terga1_mc_fit <- function(X, y, clf, approch="ova", aggregation_ = "Predomics_ag
 
 
 
-  # set the size of the world
   clf$params$size_world <- nrow(X)
 
   # Print the experiment configuration
-  if(clf$params$verbose) printClassifier(obj = clf)
+  if (clf$params$verbose) printClassifier(obj = clf)
 
-  res <- list() # the final object containing the evolved models
+  res <- list()  # The final object containing the evolved models
+  pop_last.mod_list <- list()
+  evaluation <- c()  # Initialize evaluation vector
 
+  if (constraint_factor == "unconstrained") {
 
-  if(constraint_factor == "unconstrained"){
-    pop_last.mod_list <- list()
+    for (k in clf$params$sparsity) {  # 'k' instead of 'i' to avoid conflict later
+      cat("\t\tResolving problem with\t", k, "\tvariables ...\n")
 
-    for(i in clf$params$sparsity) # sparsity is = k, i.e. the number of features in a model
-    {
-      cat("\t\tResolving problem with\t", i, "\tvariables ...\n")
+      # Set the current sparsity
+      clf$params$current_sparsity <- k
 
-      # set the current_sparsity
-      clf$params$current_sparsity <- i
+      if (clf$params$current_sparsity == 1 & !clf$params$evolve_k1) {
+        # Create population directly from rows of X if k == 1 and no evolution
+        pop_last <- as.list(1:nrow(X))
+      } else {
+        best_ancestor <- NULL
 
-
-      # test for
-      if (clf$params$current_sparsity == 1 & !clf$params$evolve_k1) # if we want to evolve features for k_sparse=1 we create a normal population
-      {
-        pop_last      <- as.list(1:nrow(X)) # create population with k_sparse = 1
-
-      }else
-      {
-        best_ancestor = NULL
-
-        if (exists("pop_last"))
-        {
-          if(length(evaluation) != 0)
-          {
-            best_ancestor = pop_last[[which.max(evaluation)]]
-          }
-
-          # build a new population seeded by the last one
-          pop         <- population(clf = clf,
-                                    size_ind = i,
-                                    #size_world = nrow(list_X[[1]])
-                                    size_world = nrow(X),
-                                    best_ancestor = best_ancestor,
-                                    size_pop = clf$params$size_pop,
-                                    seed = clf$params$current_seed)
-        }else
-        {
-          # build a new population from scratch
-          pop         <- population(clf = clf,
-                                    size_ind = i,
-                                    size_world = nrow(X),
-                                    best_ancestor = best_ancestor,
-                                    size_pop = clf$params$size_pop,
-                                    seed = clf$params$current_seed)
+        if (exists("pop_last") && length(evaluation) != 0) {
+          best_ancestor <- pop_last[[which.max(evaluation)]]
         }
 
-        # if this is population with model objects we transform in an index population
-        if(isPopulation(obj = pop))
-        {
+        # Build a new population
+        pop <- population(
+          clf = clf,
+          size_ind = k,
+          size_world = nrow(X),
+          best_ancestor = best_ancestor,
+          size_pop = clf$params$size_pop,
+          seed = clf$params$current_seed
+        )
+
+        # Convert to sparse vector if necessary
+        if (isPopulation(obj = pop)) {
           pop <- listOfModelsToListOfSparseVec(list.models = pop)
         }
-        # then we evolve
-        pop_last      <- evolve_mc(X, y, clf, pop, seed = clf$params$current_seed,approch = approch)
-        # Initialiser la liste des indices
+
+        # Evolve the population
+        pop_last <- evolve_mc(X, y, clf, pop, seed = clf$params$current_seed, approch = approch)
+
+        # Initialize the list of indices
         list_indices <- list()
 
-        # Convert 'constrained' to logical type if it's not already
-
-
-        if (constraint_factor == "unconstrained") {
-          # Loop through the indices of the first list in 'pop_last'
-          for (i in 1:length(pop_last[[1]])) {
-            # Initialize the list of indices for each iteration
-            list_indices[[i]] <- list()
-
-            # Loop through the different lists in 'pop_last'
-            for (j in 1:length(pop_last)) {
-              if (i <= length(pop_last[[j]])) {
-                # Add the corresponding element from 'pop_last' to 'list_indices'
-                list_indices[[i]][[j]] <- pop_last[[j]][[i]]
-              } else {
-                # Reuse the previous element if the index exceeds the length of the sublist
-                list_indices[[i]][[j]] <- list_indices[[i - 1]][[j]]
-              }
+        # Normalize structure of pop_last
+        for (ii in 1:length(pop_last[[1]])) {
+          list_indices[[ii]] <- list()
+          for (j in 1:length(pop_last)) {
+            if (ii <= length(pop_last[[j]])) {
+              list_indices[[ii]][[j]] <- pop_last[[j]][[ii]]
+            } else if (ii > 1) {
+              list_indices[[ii]][[j]] <- list_indices[[ii - 1]][[j]]
+            } else {
+              list_indices[[ii]][[j]] <- NA  # Or some other default
             }
           }
-          # Update 'pop_last' with the new list of indices
-          pop_last <- list_indices
-
         }
+
+        pop_last <- list_indices
       }
-      pop_last.mod <- listOfSparseVecToListOfModels_mc(X, y , clf = clf, v = pop_last,approch = approch)
-      pop_last.mod_list[[i]] <- pop_last.mod
 
+      # Convert sparse vectors to model objects
+      pop_last.mod <- listOfSparseVecToListOfModels_mc(X, y, clf = clf, v = pop_last, approch = approch)
+      pop_last.mod_list[[k]] <- pop_last.mod
     }
-    pop_last.mod <- list()
-    pop_last.mod <- pop_last.mod_list
 
-    # evaluate the population
-    pop.last.eval <- evaluatePopulation_mc(X , y, clf, pop_last.mod, force.re.evaluation = TRUE, eval.all = TRUE, approch=approch, aggregation_ = aggregation_, constraint_factor = constraint_factor)
-    # get the evaluation vector
-    evaluation    <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
-    # get the evaluation
+    # Evaluate the population of models
+    pop.last.eval <- evaluatePopulation_mc(
+      X, y, clf,
+      pop_last.mod_list,
+      force.re.evaluation = TRUE,
+      eval.all = TRUE,
+      approch = approch,
+      aggregation_ = aggregation_,
+      constraint_factor = constraint_factor
+    )
+
+    # Extract and order evaluation scores
+    evaluation <- as.numeric(populationGet_X(element2get = "fit_", toVec = TRUE, na.rm = TRUE)(pop = pop.last.eval))
     evaluation.ord <- order(abs(evaluation), decreasing = TRUE)
-    # order by best in front
     evaluation <- evaluation[evaluation.ord]
-    pop_ordered_mod <- pop.last.eval[evaluation.ord] # we gain speed
-
+    pop_ordered_mod <- pop.last.eval[evaluation.ord]
     pop_ordered_mod <- unique(pop_ordered_mod)
 
-    # save the whole list of models ordered by fitting score. The best is the first
-    res$k_4 <- pop_ordered_mod
+    # Save the results for this sparsity level
+    res$k_n <- pop_ordered_mod
 
     return(res)
-
   }
-
 
   else{
 

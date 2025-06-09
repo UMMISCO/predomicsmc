@@ -7,9 +7,9 @@
 terBeam_mc(
   sparsity = 1:5,
   max.nb.features = 1000,
-  maxNbOfModels = 10000,
+  maxNbOfModels = 5000,
   nbBest = round(maxNbOfModels/10),
-  nbVeryBest = round(maxNbOfModels/100),
+  nbVeryBest = round(maxNbOfModels/50),
   final.pop.perc = 100,
   popSaveFile = "NULL",
   saveFiles = FALSE,

@@ -650,8 +650,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
       res_listmod.res <- list()
 
       for (j in seq_along(list_mod.res)) {
-        mod.res <- list_mod.res[[j]]
-
+       mod.res <- list_mod.res[[j]]
 
         # Reset attributes
         for (k in seq_along(mod.res)) {
@@ -1742,7 +1741,7 @@ weighted <- function(mod) {
   mod <- list()
   mod <- model
   mod$predictions_aggre <- aggregated_vector
-  mod$method = "weighted_voting"
+  mod$method = "maximization_ovo"
   mod$approach = "ovo"
   return(mod)
 }
@@ -2343,6 +2342,10 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
       mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_maximization_f1_auc <-  maximization_f1_auc(mod = mod_predict, y = y)
       mod_evaluate <- evaluateModel_aggregation(mod =  mod_maximization_f1_auc , y = y)
+    }else if (aggregation_ == "votingova") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_votingova <-  votingova(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod =  mod_votingova , y = y)
     }
 
   }
@@ -3956,4 +3959,81 @@ digestmc <- function(obj,
 
 }
 
+
+
+
+
+
+#' @title votingova
+#' @description Function to aggregate one-versus-one or one-versus-all predictions using majority voting.
+#' If there's a tie, a class is randomly selected. If no class is predicted, one is also randomly chosen among all possible.
+#' @param mod List of submodels containing predictions and metadata.
+#' @param y Vector of class labels (true labels or full set of possible classes).
+#' @return A list representing the aggregated model object.
+#' @export
+votingova <- function(mod, y) {
+  predictions_list <- lapply(mod, function(x) x$predictions)  # Extract predictions
+
+  all_classes <- unique(as.character(y))
+  num_samples <- length(predictions_list[[1]])
+  aggregated_vector <- character(num_samples)
+
+  set.seed(123)  # Fix seed for reproducibility
+
+  for (i in 1:num_samples) {
+    votes <- table(sapply(predictions_list, `[`, i))
+
+    # Remove votes for "ALL" (OVA: means not predicted)
+    votes <- votes[names(votes) != "ALL"]
+
+    if (length(votes) == 0) {
+      # No class predicted at all: choose randomly from all classes
+      aggregated_vector[i] <- sample(all_classes, 1)
+    } else {
+      max_vote <- max(votes)
+      top_classes <- names(votes)[votes == max_vote]
+
+      if (length(top_classes) == 1) {
+        aggregated_vector[i] <- top_classes
+      } else {
+        aggregated_vector[i] <- sample(top_classes, 1)
+      }
+    }
+  }
+
+  # Reconstruct the model
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- predictions_list
+  model$scores_predictions <- lapply(mod, function(x) x$scores_predictions)
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_vector
+  model$method <- "votingova"
+  model$approach <- "ova"  # <-- Change ici si besoin
+
+  return(model)
+}
 

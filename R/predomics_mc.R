@@ -63,7 +63,7 @@ fit_mc <- function(X,
                    compute.importance = TRUE,
                    return.all = FALSE,
                    log.file = "parallel.log",
-                   approch ="ova",
+                   approch ="ovo",
                    aggregation_ = "voting",
                    constraint_factor = "unconstrained" , #fully_constrained,  semi_constrained
                    path = NULL)
@@ -957,7 +957,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
   if (constraint_factor == "unconstrained"){
     for (i in seq_along(res.all)) {
       too = modelCollectionToPopulation(res.all[[i]]$models)
-      list_too$k_4 <- too
+      list_too$k_n <- too
       list_mods[[i]] <- list_too
 
     }
@@ -1039,7 +1039,7 @@ runCrossval_mc <- function(X, y, clf, lfolds = NULL, nfolds = 10, approch = "ovo
 
         # for all the best models of each k-sparse (create empty matrix) for auc
         res.crossval$k$auc                <- as.data.frame(matrix(nrow=max(1), ncol=2))
-        rownames(res.crossval$k$auc)      <- c(paste("k","4", sep="_"))
+        rownames(res.crossval$k$auc)      <- c(paste("k","n", sep="_"))
         colnames(res.crossval$k$auc)      <- c("empirical","generalization")
         # add another table for accuracy
         res.crossval$k$acc                <- res.crossval$k$auc

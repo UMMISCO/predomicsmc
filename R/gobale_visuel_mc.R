@@ -1064,3 +1064,93 @@ plotModel_mc <- function(mod, X, y,
 
 
 
+
+
+
+
+
+plotAUC_mcc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
+  require(pROC)
+  library(RColorBrewer)
+
+  # Initialisation des listes pour stocker les objets ROC
+  roc_list <- list()
+  scores_list <- scores
+  list_y <- list()
+  list_X <- list()
+
+  # Décomposition des datasets selon l'approche one-vs-one ou one-vs-all
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
+
+  # Palette de couleurs distinctes pour les courbes ROC
+  colors <- brewer.pal(length(scores_list), "Set1")
+
+  # Liste pour stocker les infos de légende
+  legend_info <- list()
+
+  # Flag pour contrôler le premier plot ROC
+  first_plot <- TRUE
+
+  for (i in seq_along(scores_list)) {
+    score <- unlist(scores_list[[i]])
+    yi <- unlist(list_y[[i]])
+    yi <- as.factor(yi)
+
+    # Vérification de la cohérence des longueurs
+    if (length(score) != length(yi)) {
+      stop(paste("Error: The lengths of scores and responses for class", i, "do not match."))
+    }
+
+    # Calcul de la courbe ROC
+    rocobj <- roc(response = yi, predictor = score, percent = percent, ci = ci,
+                  legacy.axes = TRUE)
+
+    roc_list[[i]] <- rocobj
+
+    # Calcul de l'intervalle de confiance AUC
+    auc_ci <- ci.auc(rocobj)
+    auc_ci_text <- if (ci) {
+      paste0("CI: ", signif(auc_ci[1], 3), " - ", signif(auc_ci[3], 3))
+    } else {
+      "N/A"
+    }
+
+    # Tri alphabétique des classes pour un affichage cohérent
+    sorted_classes <- sort(unique(yi))
+    class_label <- paste(sorted_classes, collapse = " vs ")
+
+    legend_info[[i]] <- data.frame(Class = class_label, AUC = signif(rocobj$auc, 3), CI = auc_ci_text)
+
+    # Tracé de la courbe ROC
+    if (first_plot) {
+      plot.roc(rocobj, col = colors[i], main = main, lwd = 2,
+               xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE,
+               xlab = "Specificity (%)", ylab = "Sensitivity (%)",
+               print.auc = FALSE, ci = FALSE)
+      first_plot <- FALSE
+    } else {
+      lines.roc(rocobj, col = colors[i], lwd = 2)
+    }
+  }
+
+  # Conversion de la liste légende en data.frame et affichage
+  legend_df <- do.call(rbind, legend_info)
+  print(legend_df)
+
+  # Ajout de la légende sur le graphique
+  legend("bottomright",
+         legend = sapply(1:length(legend_info), function(i) {
+           paste(legend_info[[i]]$Class, ": AUC = ", legend_info[[i]]$AUC,
+                 " (", legend_info[[i]]$CI, ")", sep = "")
+         }),
+         col = colors,
+         lwd = 2,
+         bty = "n",
+         cex = 0.8)
+
+  # Retourne la liste des objets ROC
+  return(roc_list)
+}
+

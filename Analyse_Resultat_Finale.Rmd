@@ -1,0 +1,275 @@
+---
+title: "Analyse_Resultat_final"
+author: "Fabien"
+date: "2025-05-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r warning=FALSE, fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(dplyr)
+library(ggplot2)
+#load("Analysis_Final_Results_DF_06_2025_finale")
+
+# Prepare only Test data with Binarisation
+df_all <- Analysis_Final_Results_DF_06_2025_finale %>%
+  filter(Set == "Test") %>%
+  group_by(Set, Dataset, Methods, Constraint_factor, Approach, Binarisation) %>%
+  summarise(
+    mean_acc = mean(Accuracy, na.rm = TRUE),
+    sd_acc = sd(Accuracy, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Constraint_factor = factor(Constraint_factor,
+      levels = c("None", "Unconstrained", "Semi_Constrained", "Full_Constrained")),
+    Set = factor(Set, levels = c("Train", "Test"))
+  )
+
+# Create the plot for Test data only
+ggplot(df_all, aes(x = Methods, y = mean_acc,
+                   color = Constraint_factor,
+                   shape = Set)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbar(aes(ymin = mean_acc - sd_acc, ymax = mean_acc + sd_acc),
+                position = position_dodge(width = 0.6), width = 0.2) +
+  facet_grid(Dataset ~ Approach + Binarisation, scales = "free_x", space = "free_x") +
+  scale_shape_manual(values = c("Train" = 16, "Test" = 15)) +
+  labs(
+    title = "Accuracy (Test only) by Method, Constraint, Approach, and Binarisation",
+    x = "Method",
+    y = "Accuracy (mean ± SD)",
+    color = "Constraints",
+    shape = "Set"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(fill = "grey95"),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+```{r}
+
+df <- Analysis_Final_Results_DF_06_2025_finale
+
+# Clean Dataset and Constraint labels
+df <- df %>%
+  mutate(
+    # Standardize Dataset names
+    Dataset = str_trim(Dataset),
+    Dataset = case_when(
+      Dataset %in% c("Balanced Enterotype", "Balanced Enterotypes") ~ "Enterotype (balanced)",
+      Dataset %in% c("Colorectal Study", "Colorectal Study ") ~ "Colorectal cancer",
+      Dataset %in% c("Imbalanced Enterotype", "Imbalanced Enterotypes") ~ "Enterotype (unbalanced)",
+      str_detect(Dataset, "Type 2 Diabetes") ~ "T2D",
+      TRUE ~ Dataset
+    ),
+    
+    # Standardize Constraint labels
+    Constrained = str_trim(Constraint_factor),
+    Constrained = case_when(
+      Constrained == "Full_Constrained" ~ "Full-constrained",
+      Constrained == "Semi_Constrained" ~ "Semi-constrained",
+      str_to_lower(Constrained) == "unconstrained" ~ "Unconstrained",
+      TRUE ~ Constrained
+    )
+  ) %>%
+  select(-Constraint_factor)
+
+# Summary of cleaned Dataset labels
+df %>% count(Dataset)
+
+# Reorder Method factor levels manually
+ordered_methods <- c(
+  "Artificial Neural Network", "Decision Tree", "KNN", "Logistic Regression", 
+  "Random Forest", "SVM", 
+  "Maximization", "Selective_Confidence", "Voting", "Voting_with_Tie_Breaking"
+)
+
+df <- df %>%
+  mutate(Methods = factor(Methods, levels = ordered_methods)) %>%
+  arrange(Methods)
+
+
+```
+
+```{r}
+DataExplorer::create_report(df, 
+                output_file = "Analysis_Results_final_DF_report.html", 
+                output_dir = ".")
+
+```
+
+
+
+
+
+
+
+```{r  warning=FALSE, fig.height=10, fig.width=22, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(dplyr)
+library(ggplot2)
+
+df %>%
+  filter(Set == "Test") %>%
+  mutate(
+    Dataset_label = case_when(
+      Dataset == "Enterotype (unbalanced)" ~ "Enterotype",
+      Dataset == "Enterotype (balanced)" ~ "Enterotype (balanced)",
+      Dataset == "Colorectal cancer" ~ "CRC",
+      Dataset == "Study T2D" ~ "T2D",
+      TRUE ~ Dataset
+    ),
+    FacetLabel = paste0(Dataset_label, "\n", Approach),  # Base + sous-titre
+    MethodName = ifelse(!is.na(Binarisation), paste0(Methods, " (", Binarisation, ")"), Methods)
+  ) %>%
+  ggplot(aes(x = MethodName, y = Accuracy, color = Constrained)) +
+  geom_jitter(alpha = 0.5) +
+  geom_violin(alpha = 0.2) +
+  facet_grid(~ FacetLabel, scales = "free") +
+  labs(
+    title = "Accuracy",
+    x = "Prediction Methods",
+    y = "Accuracy"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    strip.text = element_text(face = "bold", size = 10)
+  )
+
+```
+
+
+
+
+
+```{r}
+library(writexl)  # pour l'export Excel
+
+# Charger le dataframe principal
+df <-Analysis_Final_Results_DF_06_2025_finale
+
+# Étape 1 : Remplacer les noms de Dataset
+df <- df %>%
+  mutate(Dataset = recode(Dataset,
+                          "Study T2D" = "T2D",
+                          "Colorectal Study" = "Colorectal cancer",
+                          "Balanced Enterotypes" = "Enterotype (balanced)",
+                          "Imbalanced Enterotype" = "Enterotype (unbalanced)"))
+
+# Étape 2 : Calculer les moyennes ± écarts-types pour Set = "Test"
+summary_df <- df %>%
+  filter(Set == "Test") %>%
+  group_by(Methods, Dataset, Approach, Binarisation,Constraint_factor) %>%
+  summarise(
+    Accuracy_value = mean(Accuracy, na.rm = TRUE),
+    Accuracy  = sprintf("%.3f ± %.3f", Accuracy_value, sd(Accuracy, na.rm = TRUE)),
+    Recall    = sprintf("%.3f ± %.3f", mean(Recall, na.rm = TRUE), sd(Recall, na.rm = TRUE)),
+    Precision = sprintf("%.3f ± %.3f", mean(Precision, na.rm = TRUE), sd(Precision, na.rm = TRUE)),
+    F1        = sprintf("%.3f ± %.3f", mean(F1, na.rm = TRUE), sd(F1, na.rm = TRUE)),
+    .groups = "drop"
+  )
+
+# Étape 3 : Extraire les noms de dataset
+dataset_names <- unique(summary_df$Dataset)
+
+# Étape 4 : Générer et sauvegarder un fichier Excel par dataset
+for (d in dataset_names) {
+  dataset_df <- summary_df %>%
+    filter(Dataset == d) %>%
+    arrange(desc(Accuracy_value)) %>%
+    select(Dataset, Approach, Methods, Binarisation, Constraint_factor, Accuracy, Recall, Precision, F1)
+
+  # Écriture du fichier Excel
+  write_xlsx(dataset_df, path = paste0("summary_", d, ".xlsx"))
+
+  # Assigner à une variable R
+  assign(paste0("summary_", gsub(" ", "_", d)), dataset_df)
+}
+
+```
+
+
+
+
+```{r}
+library(PMCMRplus)
+
+# Chargement + renommer les noms de datasets
+df <- Analysis_Final_Results_DF_06_20251 %>%
+  mutate(Dataset = recode(Dataset,
+                          "Study T2D" = "T2D",
+                          "Colorectal Study" = "Colorectal cancer",
+                          "Balanced Enterotypes" = "Enterotype (balanced)",
+                          "Imbalanced Enterotype" = "Enterotype (unbalanced)"))
+
+# Lister les datasets uniques
+dataset_names <- unique(df$Dataset)
+
+# Boucle principale par dataset
+for (d in dataset_names) {
+  df_sub <- df %>%
+    filter(Set == "Test", Dataset == d)
+
+  # Résumé statistique Accuracy
+  accuracy_stats <- df_sub %>%
+    group_by(Methods, Approach, Binarisation, Constraint_factor) %>%
+    summarise(
+      n = n(),
+      Median_Accuracy = median(Accuracy),
+      IQR_Accuracy    = IQR(Accuracy),
+      Min_Accuracy    = min(Accuracy),
+      Max_Accuracy    = max(Accuracy),
+      .groups = "drop"
+    ) %>%
+    mutate(Dataset = d) %>%
+    arrange(desc(Median_Accuracy)) %>%
+    select(Dataset, Approach, Methods, Binarisation, Constraint_factor, n,
+           Median_Accuracy, IQR_Accuracy, Min_Accuracy, Max_Accuracy)
+
+  # Export Excel du résumé
+  write_xlsx(accuracy_stats, path = paste0("advanced_summary_", gsub(" ", "_", d), ".xlsx"))
+  assign(paste0("summary_", gsub(" ", "_", d)), accuracy_stats)
+
+  # === Analyse statistique ===
+  cat("\n============================\nDataset:", d, "\n============================\n")
+
+  df_metric <- df_sub %>%
+    select(Methods, Accuracy) %>%
+    filter(!is.na(Accuracy), is.finite(Accuracy))
+
+  if (n_distinct(df_metric$Methods) > 1) {
+    df_metric$Methods <- factor(df_metric$Methods)
+
+    # Test Kruskal-Wallis
+    kw_result <- kruskal.test(Accuracy ~ Methods, data = df_metric)
+    print(kw_result)
+
+    # Post-hoc Nemenyi si significatif
+    if (kw_result$p.value < 0.05) {
+      cat("→ Test post-hoc Nemenyi (p < 0.05) :\n")
+      posthoc <- kwAllPairsNemenyiTest(Accuracy ~ Methods, data = df_metric)
+      print(posthoc)
+    } else {
+      cat("→ Pas de différence significative (p >= 0.05).\n")
+    }
+  } else {
+    cat(" Pas assez de groupes distincts pour tester.\n")
+  }
+}
+
+```
+

@@ -138,6 +138,7 @@ test_that("evaluateModel_mc returns correct metrics", {
     eval.all = TRUE,
     force.re.evaluation = TRUE,
     aggregation_ = "voting",
+    constraint_factor = "semi_constrained",
     mode = "test",
     approch = "ovo"
   )

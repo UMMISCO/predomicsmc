@@ -55,11 +55,11 @@
 #' @export
 terBeam_mc <- function(sparsity = 1:5, max.nb.features = 1000,
                        # maxNbOfModels corresponds to the width of the beam search in terms of models
-                       maxNbOfModels = 10000, # population size
+                       maxNbOfModels = 5000, # population size
                        # nbBest is the number of models to keep such that the most frequent feature in the best models are kept
                        nbBest = round(maxNbOfModels/10),
                        # nbVeryBest
-                       nbVeryBest = round(maxNbOfModels/100),
+                       nbVeryBest = round(maxNbOfModels/50),
                        final.pop.perc = 100,  # percentage of models in the returned results
                        # population options
                        popSaveFile = "NULL", saveFiles = FALSE,
@@ -399,7 +399,7 @@ terBeam_fit_mc <- function(X, y, clf,approch = "ovo", aggregation_ = "votingAggr
     )
     # Sort the population according to the clf$params$evalToFit attribute
     pop                 <- sortPopulation(pop, evalToOrder = "fit_")
-    res.mod.coll$k_4 <- pop
+    res.mod.coll$k_n <- pop
     if(clf$params$verbose) print(paste("... ... models are coverted onto a model collection"))
     return(res.mod.coll)
 

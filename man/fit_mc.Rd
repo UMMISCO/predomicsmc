@@ -15,7 +15,7 @@ fit_mc(
   compute.importance = TRUE,
   return.all = FALSE,
   log.file = "parallel.log",
-  approch = "ova",
+  approch = "ovo",
   aggregation_ = "voting",
   constraint_factor = "unconstrained",
   path = NULL
