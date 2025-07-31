@@ -532,11 +532,11 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
     class_label <- paste(unique(list_y[[i]]), collapse = " vs ")
     legend_info[[i]] <- data.frame(Class = class_label, AUC = signif(rocobj$auc, 3), CI = auc_ci_text)
 
-    # Plot the ROC curve
+    # Plot the ROC curve (without shaded CI area)
     if (first_plot) {
-      plot.roc(rocobj, col = colors[i], main = main, ci.type = "shape", ci.col = "grey80", lwd = 2,
+      plot.roc(rocobj, col = colors[i], main = main, lwd = 2,
                xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE,
-               xlab = "Specificity (%)")  # Custom x-axis label
+               xlab = "Specificity (%)")
       first_plot <- FALSE
     } else {
       lines.roc(rocobj, col = colors[i], lwd = 2)
@@ -561,6 +561,9 @@ plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch 
   # Return the list of ROC objects
   return(roc_list)
 }
+
+
+
 
 
 
@@ -949,6 +952,109 @@ makeFeatureAnnot_mc <- function(pop, X, y, clf, approch = "ovo") {
 #' @param importance: the importance (mda) of the features in crossval
 #' @param res_clf: the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.
 #' @export
+plotAUC_mc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
+  require(pROC)
+  library(RColorBrewer)
+
+  # Initialize an empty list to store ROC objects
+  roc_list <- list()
+  scores_list <- scores
+  list_y <- list()
+  list_X <- list()
+
+  # Decompose the datasets using one-vs-one or one-vs-all approach
+  combi <- generate_combinations_with_factors(y, X, approch = approch)
+  list_y <- combi$list_y
+  list_X <- combi$list_X
+
+  # Color palette for distinct ROC curves
+  colors <- brewer.pal(length(scores_list), "Set1")
+
+  # List to store legend information
+  legend_info <- list()
+
+  # Flag to control first ROC plot
+  first_plot <- TRUE
+
+  # Loop through the lists of scores and responses
+  for (i in seq_along(scores_list)) {
+    score <- unlist(scores_list[[i]])
+    y <- unlist(list_y[[i]])
+    y <- as.factor(y)
+
+    # Check for length consistency between scores and labels
+    if (length(score) != length(y)) {
+      stop(paste("Error: The lengths of scores and responses for class", i, "do not match."))
+    }
+
+    # Compute ROC curve for the current class WITHOUT bar error CI
+    rocobj <- roc(response = y, predictor = score, percent = percent, ci = ci)
+
+    # Add ROC object to the list
+    roc_list[[i]] <- rocobj
+
+    # Compute confidence interval for the AUC
+    auc_ci <- ci.auc(rocobj)
+    auc_ci_text <- if (ci) {
+      paste0("CI: ", signif(auc_ci[1], 3), " - ", signif(auc_ci[3], 3))
+    } else {
+      "N/A"
+    }
+
+    # Add class and AUC info to the legend table
+    class_label <- paste(unique(list_y[[i]]), collapse = " vs ")
+    legend_info[[i]] <- data.frame(Class = class_label, AUC = signif(rocobj$auc, 3), CI = auc_ci_text)
+
+    # Plot the ROC curve
+    if (first_plot) {
+      plot.roc(rocobj, col = colors[i], main = main, lwd = 2,
+               xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE,
+               xlab = "Specificity (%)")
+      first_plot <- FALSE
+    } else {
+      lines.roc(rocobj, col = colors[i], lwd = 2)
+    }
+  }
+
+  # Convert the legend list into a data frame and print it
+  legend_df <- do.call(rbind, legend_info)
+  print(legend_df)
+
+  # Add legend to the plot
+  legend("bottomright",
+         legend = sapply(1:length(legend_info), function(i) {
+           paste(legend_info[[i]]$Class, ": AUC = ", legend_info[[i]]$AUC,
+                 " (", legend_info[[i]]$CI, ")", sep = "")
+         }),
+         col = colors,
+         lwd = 2,
+         bty = "n",
+         cex = 0.8)
+
+  # Return the list of ROC objects
+  return(roc_list)
+}
+
+################################################################
+# Multi-class Model Plots for Predomics
+################################################################
+
+#' @title Plots a model or a population of model objectsas barplots of scaled coefficients.
+#'
+#' @description Plots a model or a population of models as a barplots, representing each feature, the length being the coefficient
+#' @import ggplot2
+#' @param mod: a model to plot
+#' @param X: the data matrix with variables in the rows and observations in the columns
+#' @param y: the class vector
+#' @param sort.features: wether the features need to be sorted by correlation with 'y' or not (default: TRUE)
+#' @param sort.ind: computing sorting can take time if computed for every model and can be computed outside the function and passed as a parameter
+#' @param feature.name: show the name of the features (default:FALSE)
+#' @param col.sign: the colors of the cofficients based on the sign of the coefficients (default: -1=deepskyblue1, 1:firebrick1)
+#' @param main: possibility to change the title of the function (default:"")
+#' @param slim: plot without axis information (default:FALSE)
+#' @param importance: the importance (mda) of the features in crossval
+#' @param res_clf: the result of the learning process (default:NULL). If provided information on MDA will be extracted for the importance graphic.
+#' @export
 plotModel_mc <- function(mod, X, y,
                          sort.features = FALSE,
                          sort.ind = NULL,
@@ -1062,95 +1168,4 @@ plotModel_mc <- function(mod, X, y,
   return(plot_sub_model)
 }
 
-
-
-
-
-
-
-
-plotAUC_mcc <- function(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo") {
-  require(pROC)
-  library(RColorBrewer)
-
-  # Initialisation des listes pour stocker les objets ROC
-  roc_list <- list()
-  scores_list <- scores
-  list_y <- list()
-  list_X <- list()
-
-  # Décomposition des datasets selon l'approche one-vs-one ou one-vs-all
-  combi <- generate_combinations_with_factors(y, X, approch = approch)
-  list_y <- combi$list_y
-  list_X <- combi$list_X
-
-  # Palette de couleurs distinctes pour les courbes ROC
-  colors <- brewer.pal(length(scores_list), "Set1")
-
-  # Liste pour stocker les infos de légende
-  legend_info <- list()
-
-  # Flag pour contrôler le premier plot ROC
-  first_plot <- TRUE
-
-  for (i in seq_along(scores_list)) {
-    score <- unlist(scores_list[[i]])
-    yi <- unlist(list_y[[i]])
-    yi <- as.factor(yi)
-
-    # Vérification de la cohérence des longueurs
-    if (length(score) != length(yi)) {
-      stop(paste("Error: The lengths of scores and responses for class", i, "do not match."))
-    }
-
-    # Calcul de la courbe ROC
-    rocobj <- roc(response = yi, predictor = score, percent = percent, ci = ci,
-                  legacy.axes = TRUE)
-
-    roc_list[[i]] <- rocobj
-
-    # Calcul de l'intervalle de confiance AUC
-    auc_ci <- ci.auc(rocobj)
-    auc_ci_text <- if (ci) {
-      paste0("CI: ", signif(auc_ci[1], 3), " - ", signif(auc_ci[3], 3))
-    } else {
-      "N/A"
-    }
-
-    # Tri alphabétique des classes pour un affichage cohérent
-    sorted_classes <- sort(unique(yi))
-    class_label <- paste(sorted_classes, collapse = " vs ")
-
-    legend_info[[i]] <- data.frame(Class = class_label, AUC = signif(rocobj$auc, 3), CI = auc_ci_text)
-
-    # Tracé de la courbe ROC
-    if (first_plot) {
-      plot.roc(rocobj, col = colors[i], main = main, lwd = 2,
-               xlim = c(100, 0), ylim = c(0, 100), percent = percent, legacy.axes = TRUE,
-               xlab = "Specificity (%)", ylab = "Sensitivity (%)",
-               print.auc = FALSE, ci = FALSE)
-      first_plot <- FALSE
-    } else {
-      lines.roc(rocobj, col = colors[i], lwd = 2)
-    }
-  }
-
-  # Conversion de la liste légende en data.frame et affichage
-  legend_df <- do.call(rbind, legend_info)
-  print(legend_df)
-
-  # Ajout de la légende sur le graphique
-  legend("bottomright",
-         legend = sapply(1:length(legend_info), function(i) {
-           paste(legend_info[[i]]$Class, ": AUC = ", legend_info[[i]]$AUC,
-                 " (", legend_info[[i]]$CI, ")", sep = "")
-         }),
-         col = colors,
-         lwd = 2,
-         bty = "n",
-         cex = 0.8)
-
-  # Retourne la liste des objets ROC
-  return(roc_list)
-}
 

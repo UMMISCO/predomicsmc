@@ -5,6 +5,8 @@
 \title{Plots a model or a population of model multi class objectsas barplots of scaled coefficients.}
 \usage{
 plotAUC_mc(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo")
+
+plotAUC_mc(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo")
 }
 \arguments{
 \item{mod:}{a model to plot}
@@ -31,4 +33,6 @@ plotAUC_mc(scores, y, main = "", ci = TRUE, percent = TRUE, approch = "ovo")
 }
 \description{
 Plots a model or a population of models multi class as a barplots, representing each feature, the length being the coefficient
+
+Plots a model or a population of models as a barplots, representing each feature, the length being the coefficient
 }

@@ -1,195 +1,97 @@
-# #Colorectal Study
-# #Study T2D
-# #Balanced Enterotype
-# #Imbalanced Enterotype
-#
-# #Selective_Confidence
-# #Voting_with_Tie_Breaking
-#
-#
-# #Full_Constrained
-# #Unconstrained
-# #Semi_Constrained
-#
-# #Terbeam Predomics
-# #Train
-# #Test
-# #"Multi_K"
-#
-# # Balance : 54 = 486
-# # UnBalance : 72 = 646
+# # #Colorectal cancer
+# # #T2D
+# # #Balanced Enterotype
+# # #Imbalanced Enterotype
+# #
+# # #Selective_Confidence
+# # #Voting_with_Tie_Breaking
+# # #Logistic Regression,SVM,Decision Tree, Artificial Neural Network, KNN,Logistic Regression, Random Forest
+# #
+# # #Full_Constrained
+# # #Unconstrained
+# # #Semi_Constrained
+# #
+# # #Terbeam Predomics
+# # #Train
+# # #Test
+# # #"Multi_K"
+# #
+# #Balance : 54 = 486
+# # # UnBalance : 72 = 646
 # # CRC : 16 : 137
-# # TD2 : 28 : 114
-#
-# num_folds <- 10
-# total_instances <- 646
-#
-# # Extraire les métriques
-# acc <- as.numeric(sota_knn_metrics_results_no_balance_2$Accuracy.empirique)
-# rec <- as.numeric(sota_knn_metrics_results_no_balance_2$Recall.empirique)
-# prc <- as.numeric(sota_knn_metrics_results_no_balance_2$Precision.empirique)
-# f1s <- as.numeric(sota_knn_metrics_results_no_balance_2$F1.empirique)
-#
-#
-# # Calculs
-# TP <- round(rec * total_instances)
-# FN <- round((1 - rec) * total_instances)
-# FP <- round((TP / prc) - TP)
-# ErrorRate <- round((1 - acc) * 100, 2)
-#
-# # Construction du dataframe
-# Knn_1_2 <- data.frame(
-#   Fold = paste0("fold_", 1:num_folds),
-#   Accuracy = acc,
-#   Recall = rec,
-#   Precision = prc,
-#   F1 = f1s,
-#   TP = TP,
-#   FP = FP,
-#   FN = FN,
-#   ErrorRate = ErrorRate,
-#   Methods = "KNN",
-#   K = rep("3385", num_folds),
-#   Constraint_factor = "None",
-#   Dataset = "Imbalanced Enterotype",
-#   Approach = "Sota",
-#   Set = "Train",
-#   Binarisation = "NO"
-# )
-#
-# # Affichage
-# print(Knn_1_2)
-# # Sauvegarde
-#
-#
-# Knn <- rbind(Knn_1_1, Knn_1_2)
-#
-#
-# #Maximization_ovo_terga1_unBalance_full
-# #Maximization_ovo_terga1_unBalance_semi
-# Maximization_ovo_terga1_unBalance_unco
-#
-#
-# Maximization_ovo_terga1_unBalance <- rbind(Maximization_ovo_terga1_unBalance_full,Maximization_ovo_terga1_unBalance_unco,Maximization_ovo_terga1_unBalance_semi)
-#
-# ##Maximization_ovo_terga1_TD2
-# ##Maximization_ovo_terga1_CRC
-# #Maximization_ovo_terga1_Balance
-# #Maximization_ovo_terga1_unBalance
-#
-# Constraint_factor
-# Unconstrained
-#
-#
-#
-#
-#
-# Maximization_ovo_Terga1$Accuracy[
-#   Maximization_ovo_Terga1$Constraint_factor == "Unconstrained" &
-#     Maximization_ovo_Terga1$Binarisation == "OVO"
-# ] <- Maximization_ovo_Terga1$Accuracy[
-#   Maximization_ovo_Terga1$Constraint_factor == "Unconstrained" &
-#     Maximization_ovo_Terga1$Binarisation == "OVO"
-# ] * 0.87
+# # # TD2 : 14 : 128
+# # #3385, 2049
+# # # Nombre de folds et instances
+#  num_folds <- 10
+#  total_instances_train <- 137
+#  total_instances_test <- 16
+# #
+# # # Fonction pour construire un data.frame à partir des résultats d'un ensemble (train/test)
+#  build_metrics_df <- function(score_list, total_instances, set_name) {
+# #   # Extraire les scores
+#    acc <- as.numeric(score_list$acc["k_10", ])
+#    acc <- as.numeric(score_list$acc)
+#    rec <- as.numeric(score_list$rec)
+#    prc <- as.numeric(score_list$prc)
+#    f1s <- as.numeric(score_list$f1s)
+# #
+# #   # Calcul TP, FP, FN
+#    TP <- round(rec * total_instances)
+#    FN <- round((1 - rec) * total_instances)
+#    FP <- round((TP / prc) - TP)
+#    ErrorRate <- round((1 - acc) * 100, 2)
+# #
+# #   # Construction du data.frame
+#    df <- data.frame(
+#      Fold = paste0("fold_", 1:num_folds),
+#      Accuracy = acc,
+#      Recall = rec,
+#      Precision = prc,
+#      F1 = f1s,
+#      TP = TP,
+#      FP = FP,
+#      FN = FN,
+#      ErrorRate = ErrorRate,
+#      Methods = "Voting_with_Tie_Breaking",
+#      K = rep("2049", num_folds),
+#      Constraint_factor = "Semi_Constrained",
+#      Dataset = "Colorectal cancer",
+#      Approach = "Terbeam Predomics",
+#      Set = set_name,
+#      Binarisation = "OVO"
+#    )
+#    return(df)
+#   }
+# #
+# # # Récupération des scores
+#  train_scores <- list(
+#     #acc = res_clf_TD2_voting_tie_semi$crossVal$scores$empirical.acc,
+#     acc = Exa$crossVal$scores$empirical.acc["k_8", ],
+#     rec = Exa$crossVal$scores$empirical.rec["k_8", ],
+#     prc = Exa$crossVal$scores$empirical.prc["k_8", ],
+#     f1s = Exa$crossVal$scores$empirical.f1s["k_8", ]
+#  )
+# #
+#  test_scores <- list(
+#    acc = Exa$crossVal$scores$generalization.acc["k_8", ],
+#    rec = Exa$crossVal$scores$generalization.rec["k_8", ],
+#    prc = Exa$crossVal$scores$generalization.prc["k_8", ],
+#    f1s = Exa$crossVal$scores$generalization.f1s["k_8", ]
+#  )
+# #
+# # # Générer les deux tableaux
+#  train_df <- build_metrics_df(train_scores, total_instances_train, "Train")
+#  test_df  <- build_metrics_df(test_scores, total_instances_test, "Test")
+# #
+# # # Fusion des résultats
+#  predo_crc <- rbind(train_df, test_df)
+# #
+# # # Affichage final
+#  print(predo_crc)
 #
 #
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-# Maximization_ovo_Terga1 <- rbind(Maximization_ovo_terga1_TD2,Maximization_ovo_terga1_CRC,Maximization_ovo_terga1_Balance,Maximization_ovo_terga1_unBalance)
-# save(Maximization_ovo_Terga1, file = "Maximization_ovo_Terga1.rda")
-#
-# # Maximization_ovo_Terbeam
-# # Voting_ova_Terbeam
-# # Voting_ova_Terga1
-# #Maximization_ovo_Terga1
-#
-# Analysis_Final_Results_DF_05_2025_suite1 <- rbind(Maximization_ovo_Terbeam,Voting_ova_Terbeam,Voting_ova_Terga1,Maximization_ovo_Terga1)
-# save(Analysis_Final_Results_DF_05_2025_suite1 , file = "Analysis_Final_Results_DF_05_2025_suite1.rda")
-#
-#
-#
-#
-#
-#
-#
-# ######Analysis_Final_Results_DF_05_2025
-#
-# #Analysis_Final_Results_DF_06_20251 <- rbind(Analysis_Final_Results_DF_05_2025,Analysis_Final_Results_DF_05_2025_suite1)
-# save(Analysis_Final_Results_DF_06_20251 , file = "Analysis_Final_Results_DF_06_20251.rda")
-#
-#
-# Analysis_Final_Results_DF_06_20251
 #
 # #
-# #
-# #
-# # A_1_Sota_final <- rbind(A_RL,A_DT,A_AN,A_RF,A_SVM,A_KNN)
-# # save(A_1_Sota_final, file = "A_1_Sota_final.rda")
-# #
-# # ####A_1_Terga1_Semi
-# # ####A_1_Terga1_Unconst
-# # ####A_1_Terga1_Full
-# # ####A_1_Sota_final
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# #
-# # #################################################################@
-# #
-# # ##A_Terga1 <- rbind(A_1_Terga1_Semi,A_1_Terga1_Unconst,A_1_Terga1_Full)
-# # ##save(A_Terga1, file = "A_Terga1.rda")
-# #
-# #
-# # A_1_Sota_final
-# #
-# #
-# # ##Df_Predomics <- rbind(A_Terbeam,A_Terga1)
-# # ##save(Df_Predomics, file = "Df_Predomics.rda")
-# #
-# #
-# # Analysis_Final_Results_DF_05_2025 <- rbind(A_1_Sota_final,Df_Predomics)
-# # save(Analysis_Final_Results_DF_05_2025, file = "Analysis_Final_Results_DF_05_2025.rda")
-#
-#
-# # Étape 1 : Définir les lignes à remplacer dans le grand dataframe
-# indices_remplacement <- Analysis_Final_Results_DF_06_20251$Dataset == "Imbalanced Enterotype" &
-#   Analysis_Final_Results_DF_06_20251$Methods == "KNN" &
-#   Analysis_Final_Results_DF_06_20251$Approach == "Sota"
-#
-# # Étape 2 : Vérifier que le nombre de lignes correspond bien
-# if (sum(indices_remplacement) == nrow(Knn)) {
-#   # Étape 3 : Remplacer les lignes correspondantes
-#   Analysis_Final_Results_DF_06_20251[indices_remplacement, ] <- Knn
-# } else {
-#   warning("Le nombre de lignes à remplacer ne correspond pas à celui du dataframe Knn.")
-# }
-#
-#
-#
-#
-#
-#
-#
+# # # ##Df_Predomics <- rbind(A_Terbeam,A_Terga1)
+# #save(Analysis_Dataset_Complet_Sota_Predo, file = "Analysis_Dataset_Complet_Sota_Predo.rda")
 #

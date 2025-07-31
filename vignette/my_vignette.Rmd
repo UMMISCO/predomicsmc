@@ -148,6 +148,9 @@ library(glmnet)
 library(readr) 
 # String manipulation and regular expression functions
 library(stringr) 
+# package Excel
+library(writexl)
+
 
 ```
 
@@ -268,33 +271,7 @@ table(y)
 dim(X)
 
 ```
-```{r}
-library(caret)  # pour createDataPartition
 
-# Charger les données
-datatest <- predomics.inputs$FengQ_2015
-y.test <- datatest$y.df$study_condition
-X.test <- datatest$X
-
-# Vérifier les dimensions d'origine
-table(y.test)
-dim(X.test)
-
-# Créer un échantillon stratifié de 10 %
-set.seed(42)  # pour reproductibilité
-sample_index <- createDataPartition(y.test, p = 0.1, list = FALSE)
-
-# Sous-échantillonnage
-X.sampled <- X.test[sample_index, ]
-y.sampled <- y.test[sample_index]
-
-# Vérification du résultat
-table(y.sampled)
-dim(X.sampled)
-y.test = y.sampled
-X.test = X.sampled
-
-```
 
 
 ### T2D
@@ -356,8 +333,8 @@ Launching the experiment using the TerBeam_MC heuristic, with the Predomics Aggr
 runit = TRUE
 if(runit)
 {
-res_clf_terga1_TD2_unco <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "voting", nfolds = 5, constraint_factor = "unconstrained"); 
-save(res_clf_terga1_TD2_unco  , clf, file ="res_clf_terga1_TD2_unco.rda", compression_level = 9)
+res_clf_mc <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Majority_Voting_with_Tie_Breaking", nfolds = 10, constraint_factor = "semi_constrained"); 
+save(res_clf_mc , clf, file ="res_clf_mc.rda", compression_level = 9)
 }
 
 
@@ -375,21 +352,6 @@ save(res_clf_terga1_TD2_unco  , clf, file ="res_clf_terga1_TD2_unco.rda", compre
 ```
 
 
-```{r warning=FALSE}
-res_clf.dig <- digest(obj = resclf2 , penalty = 0.75/100, plot = TRUE)
-```
-
-
-
-
-
-### Regenerate object Clf 
-
-```{r}
-clf <- regenerate_clf(clf, X, y, approch = "ovo")
-```
-
-
 ### Family of Best Models (FBM)
 
 A family of best models is defined as the set of models returned by the predomics algorithm, whose accuracy is within a given window of the best model's accuracy. This window is defined by computing a significance threshold assuming that accuracy follows a binomial distribution (p<0.05). 
@@ -397,7 +359,7 @@ A family of best models is defined as the set of models returned by the predomic
 
 ```{r}
 # Convert the model collection into a population of models scrambled by model size
-pop <- modelCollectionToPopulation(res_clf_TD2_ovo$classifier$models)
+pop <- modelCollectionToPopulation(Exa$classifier$models)
 printy_mc(pop)
 # Function to create boxplot for a given data frame
 create_boxplot <- function(data, title) {
@@ -444,7 +406,7 @@ print(g.after)  # Display the plot
 The analysis of the family of best models (FBM) can be very insightful for discovering the most important variables in the prediction process. Let's start by examining the usage of variables in the FBM models. For this, we run the ?makeFeatureAnnot_mc function to obtain the feature distribution in the model matrix, which is a list of pop.noz elements. The models in the FBM are ranked by accuracy, and this order will be preserved in the coefficient dataframe. There are 20 features found in the FBM models. The figure below shows that some of these features are very prevalent in the FBM, making them likely important. The abundance and prevalence distribution of these features can be explored with ?plotAbundanceByClass_mc and ?plotPrevalence_mc, respectively. Gray stars on the right side of the graphics indicate significant differences between the prediction groups.
 
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=14, fig.width=43}
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=8, fig.width=43}
 fa <- makeFeatureAnnot_mc(pop = fbm, 
                        X = X, 
                        y = y, 
@@ -460,8 +422,10 @@ plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ov
 
 Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
 
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=14, fig.width=45}
-  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_TD2_ovo),
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=8, fig.width=43}
+
+
+  feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam =  res_clf_CRC_prodomics_ovo),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -472,7 +436,8 @@ Finally, we can explore the feature importance using mean decrease accuracy info
                                         cv.prevalence = FALSE)
 
 
-  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_TD2_ovo),
+
+  feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_CRC_prodomics_ovo),
                                         filter.cv.prev = 0,
                                         min.kfold.nb = FALSE,
                                         learner.grep.pattern = "*",
@@ -489,27 +454,47 @@ Finally, we can explore the feature importance using mean decrease accuracy info
 
 The best-learned model can be visualized simply by printing it along with a summary of information on performance and model size. Furthermore, we can further explore the model by visualizing it using the barcode plot ?plotModel_mc. Finally, the importance of each feature can also be displayed using the same function, as illustrated in the figure below.
 
-```{r best model, fig.width=12, warning=FALSE}
-# get the best model
-best.model = fbm[[1]]
-# Visualize the model information (if needed)
+```{r best model, fig.height=28, fig.width=70, warning=FALSE}
+
+library(ggplot2)
+library(gridExtra)
+
+# Obtenir le meilleur modèle
+best.model <- fbm[[1]]
+
+# Visualiser les infos (facultatif)
 printy_mc(best.model)
 
-# Generate the plots
+# Générer les graphiques
 plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ovo")
 plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
 
-# Open a PDF device to save the grid of plots
-pdf("model_visualization_plots2.pdf", width = 45, height = 28)  # Adjust width and height as needed
+# Fonction utilitaire pour améliorer la lisibilité
+adjust_plot_theme <- function(plot) {
+  plot + theme(
+    text = element_text(size = 16),              # Texte global
+    axis.title = element_text(size = 20),        # Titre des axes
+    axis.text = element_text(size = 14),         # Texte des axes
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    plot.title = element_text(size = 20, face = "bold"),
+    strip.text = element_text(size = 16)
+  )
+}
 
-# Extract the plots from each list and pass them to `grid.arrange`
+# Appliquer le thème à chaque plot
+plots1 <- lapply(plots1, adjust_plot_theme)
+plots2 <- lapply(plots2, adjust_plot_theme)
+
+# 📄 Enregistrer en PDF avec bonne lisibilité
+pdf("model_visualization_plots2.pdf", width = 70, height = 28)  # A0 ~ 1189 × 841 mm
+grid.arrange(grobs = c(plots1, plots2), ncol = 3)
+dev.off()
+cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\n")
+
+#️ Affichage direct dans RStudio (avec meilleures polices)
 grid.arrange(grobs = c(plots1, plots2), ncol = 3)
 
-# Close the PDF device
-dev.off()
-
-# Confirmation of the save process
-cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\n")
 
 ```
 
@@ -522,7 +507,7 @@ cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\
     clf = clf,
     eval.all = TRUE,
     force.re.evaluation = TRUE,
-    aggregation_ = "voting",
+    aggregation_ = "Majority_Voting_with_Tie_Breaking",
     constraint_factor = "semi_constrained",
     mode = "test",
     approch = "ovo"
@@ -536,7 +521,93 @@ cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\
 ### Visualizing model performance AUC
 
 ```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
-tmp <- plotAUC_mcc(scores = best.model.test$score_, y = y, percent = TRUE, approch = "ovo"); rm(tmp)
+tmp <- plotAUC_mc(scores = best.model.test$score_, y = y, percent = TRUE, approch = "ovo"); rm(tmp)
 
 
 ```
+
+
+
+
+
+
+
+```{r}
+
+df_filtereds <- Analysis_Dataset_Complet_Sota_Predo %>%
+  filter(Binarisation != "NO")
+# Créer le résumé pour le dataset T2D
+t2d_summary <- df_filtereds %>%
+  filter(Dataset == "T2D", Set == "Test") %>%
+  group_by(Methods, Approach, Binarisation, Constraint_factor) %>%
+  summarise(
+    Accuracy = sprintf("%.3f ± %.3f", mean(Accuracy), sd(Accuracy)),
+    Recall = sprintf("%.3f ± %.3f", mean(Recall), sd(Recall)),
+    Precision = sprintf("%.3f ± %.3f", mean(Precision), sd(Precision)),
+    F1 = sprintf("%.3f ± %.3f", mean(F1), sd(F1)),
+    .groups = "drop"
+  ) %>%
+  mutate(Dataset = "T2D") %>%
+  arrange(desc(as.numeric(sub(" ±.*", "", Accuracy))))  # Trier par Accuracy
+
+# Sauvegarder le fichier Excel
+write_xlsx(t2d_summary, path = "T2D_summary_results.xlsx")
+
+```
+```{r}
+# Créer le résumé pour le dataset CRC
+crc_summary <- df_filtereds %>%
+  filter(Dataset == "Colorectal cancer", Set == "Test") %>%
+  group_by(Methods, Approach, Binarisation, Constraint_factor) %>%
+  summarise(
+    Accuracy = sprintf("%.3f ± %.3f", mean(Accuracy), sd(Accuracy)),
+    Recall = sprintf("%.3f ± %.3f", mean(Recall), sd(Recall)),
+    Precision = sprintf("%.3f ± %.3f", mean(Precision), sd(Precision)),
+    F1 = sprintf("%.3f ± %.3f", mean(F1), sd(F1)),
+    .groups = "drop"
+  ) %>%
+  mutate(Dataset = "Colorectal cancer") %>%
+  arrange(desc(as.numeric(sub(" ±.*", "", Accuracy))))  # Trier par Accuracy
+
+# Sauvegarder le fichier Excel
+write_xlsx(crc_summary, path = "CRC_summary_results.xlsx")
+```
+```{r}
+# Créer le résumé pour le dataset Enterotype
+imbaEntero_summary <- df_filtereds %>%
+  filter(Dataset == "Imbalanced Enterotype", Set == "Test") %>%
+  group_by(Methods, Approach, Binarisation, Constraint_factor) %>%
+  summarise(
+    Accuracy = sprintf("%.3f ± %.3f", mean(Accuracy), sd(Accuracy)),
+    Recall = sprintf("%.3f ± %.3f", mean(Recall), sd(Recall)),
+    Precision = sprintf("%.3f ± %.3f", mean(Precision), sd(Precision)),
+    F1 = sprintf("%.3f ± %.3f", mean(F1), sd(F1)),
+    .groups = "drop"
+  ) %>%
+  mutate(Dataset = "Imbalanced Enterotype") %>%
+  arrange(desc(as.numeric(sub(" ±.*", "", Accuracy))))  # Trier par Accuracy
+
+# Sauvegarder le fichier Excel
+write_xlsx(imbaEntero_summary, path = "imbaENTERO_summary_results.xlsx")
+```
+
+
+```{r}
+# Créer le résumé pour le dataset Enterotype
+baEntero_summary <- df_filtereds %>%
+  filter(Dataset == "Balanced Enterotype", Set == "Test") %>%
+  group_by(Methods, Approach, Binarisation, Constraint_factor) %>%
+  summarise(
+    Accuracy = sprintf("%.3f ± %.3f", mean(Accuracy), sd(Accuracy)),
+    Recall = sprintf("%.3f ± %.3f", mean(Recall), sd(Recall)),
+    Precision = sprintf("%.3f ± %.3f", mean(Precision), sd(Precision)),
+    F1 = sprintf("%.3f ± %.3f", mean(F1), sd(F1)),
+    .groups = "drop"
+  ) %>%
+  mutate(Dataset = "Balanced Enterotype") %>%
+  arrange(desc(as.numeric(sub(" ±.*", "", Accuracy))))  # Trier par Accuracy
+
+# Sauvegarder le fichier Excel
+write_xlsx(baEntero_summary, path = "baENTERO_summary_results.xlsx")
+```
+

@@ -1352,11 +1352,11 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   scorelist <- list()
   list_y <- list()
 
-  # Make a copy of the models
+  # Copy models
   mods <- mod
-  mods$binary_scores_mods <- mods$score_  # Optional: backup
+  mods$binary_scores_mods <- mods$score_  # Optional backup
 
-  # Calculate scores for each model
+  # Compute raw scores for each model
   for (i in seq_along(mods)) {
     scorelist[[i]] <- getModelScore(
       mod = mods[[i]],
@@ -1366,10 +1366,10 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
     )
   }
 
-  # Extract score values only
+  # Extract raw scores
   score_list <- lapply(scorelist, function(x) x$score_)
 
-  # Generate predictions per model
+  # Generate predictions for each model
   predictions_list <- lapply(seq_along(score_list), function(j) {
     class_name <- levels(as.factor(y))[j]
     scores <- score_list[[j]]
@@ -1379,38 +1379,31 @@ predictModel_ova <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
     })
   })
 
-  # Compute softmax-based distances from intercept
+  # Compute distances between scores and intercepts (without softmax)
   distances <- lapply(seq_along(score_list), function(j) {
     scores <- as.numeric(unlist(score_list[[j]]))
     intercept <- mods[[j]]$intercept_
 
-    # Softmax normalization of scores
-    softmax_scores <- exp(scores) / sum(exp(scores))
-
-    # Euclidean distance to intercept
-    sqrt((softmax_scores - intercept)^2)
+    abs(scores - intercept)
   })
 
-  # Normalize distances using Z-score
-  scores_normalises <- lapply(distances, function(distance_vector) {
-    moyenne <- mean(distance_vector)
-    ecart_type <- sd(distance_vector)
-    z_scores <- (distance_vector - moyenne) / ecart_type
-    z_scores[is.nan(z_scores)] <- 0  # Handle division by zero or NaNs
-    z_scores
+  # Compute Z-scores directly on raw distances
+  scores_z <- lapply(distances, function(distance_vector) {
+    mean_val <- mean(distance_vector)
+    sd_val <- sd(distance_vector)
+    z_scores <- (distance_vector - mean_val) / sd_val
+    z_scores[is.nan(z_scores)] <- 0  # Handle NaN if sd = 0
+    abs(z_scores)  # Optional: take absolute to keep interpretation as confidence
   })
 
-  # Attach normalized scores and predictions to models
-  for (i in seq_along(scores_normalises)) {
-    mods[[i]]$scores_predictions <- scores_normalises[[i]]
+  # Attach Z-score distances and predictions to models
+  for (i in seq_along(scores_z)) {
+    mods[[i]]$scores_predictions <- scores_z[[i]]
     mods[[i]]$predictions <- predictions_list[[i]]
   }
 
-  # Return enriched model list
   return(mods)
 }
-
-
 
 
 #' This function predicts outcomes for a one-versus-one (Ovo) classification model.
@@ -1429,7 +1422,6 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   predictions_list <- list()
   scorelist <- list()
   list_y <- list()
-  mods <- list()
   mods <- mod
 
   # Calculate scores for each model and store in scorelist
@@ -1472,47 +1464,29 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
   # Calculate distances between scores and intercepts
   scores_distance <- list()
 
-  # Check if 'score_only_list' contains only zeros
   if (all(sapply(score_only_list, function(scores) all(scores == 0)))) {
-    # Fill 'scores_distance' with zero lists of the same length
     scores_distance <- lapply(score_only_list, function(scores) rep(0, length(scores)))
   } else {
-    # Calculate the distances between scores and intercepts
     for (i in 1:length(mods)) {
-      scores_distance[[i]] <- abs((score_only_list[[i]]) - mods[[i]]$intercept)
+      scores_distance[[i]] <- abs(score_only_list[[i]] - mods[[i]]$intercept)
     }
   }
 
-  # Normalization function (Min-Max scaling)
-  normalize <- function(x) {
-    if (length(x) == 0 || max(x) == min(x)) {
-      return(x)  # No variation
-    } else {
-      return((x - min(x)) / (max(x) - min(x)))  # Min-max normalization
-    }
-  }
-
-  # Apply normalization to each vector in the list
-  normalized_scores <- lapply(scores_distance, normalize)
-
-  # Invert the normalized scores
-  #new_scores <- lapply(normalized_scores, function(x) 1 - x)
-
-  # Z-score standardization function with absolute value
+  # Z-score standardization function without prior normalization
   z_score <- function(x) {
     if (length(x) == 0) {
-      return(x)  # Handle empty vectors
+      return(x)
     } else {
-      mean_x <- mean(x, na.rm = TRUE)  # Calculate mean without NA values
-      sd_x <- sd(x, na.rm = TRUE)      # Calculate standard deviation without NA values
-      if (sd_x == 0) return(rep(0, length(x)))  # Avoid division by zero
-      z <- (x - mean_x) / sd_x  # Calculate Z-score
-      return(abs(z))  # Take absolute value to avoid negative scores
+      mean_x <- mean(x, na.rm = TRUE)
+      sd_x <- sd(x, na.rm = TRUE)
+      if (sd_x == 0) return(rep(0, length(x)))
+      z <- (x - mean_x) / sd_x
+      return(abs(z))
     }
   }
 
-  # Apply Z-score standardization to the normalized scores
-  standardized_scores <- lapply(normalized_scores, z_score)
+  # Apply Z-score standardization directly to the raw distances
+  standardized_scores <- lapply(scores_distance, z_score)
 
   # Store the standardized scores and predictions in each model
   for (i in 1:length(standardized_scores)) {
@@ -1520,12 +1494,10 @@ predictModel_ovo <- function(mod, y, X, clf, force.re.evaluation = TRUE) {
     mods[[i]]$predictions <- predictions_list[[i]]
   }
 
-  mod <- mods  # Update mod with the new values
+  mod <- mods  # Update mod with new values
 
-  # Return mod with predicted class labels, score vectors, and distances
   return(mod)
 }
-
 
 
 # Function to aggregate one-versus-one predictions using majority voting
@@ -1591,7 +1563,7 @@ voting <- function(mod) {
 #' @param mod: The model object containing predictions and scores.
 #' @return The function returns the model object with aggregated predictions.
 #' @export
-Predomics_aggregation_ovo <- function(mod) {
+Majority_Voting_with_Tie_Breaking <- function(mod) {
   predictions_list <- lapply(mod, function(x) x$predictions)
   scores_list <- lapply(mod, function(x) x$scores_predictions)
   num_samples <- length(predictions_list[[1]])  # Number of samples in one vector
@@ -1659,7 +1631,7 @@ Predomics_aggregation_ovo <- function(mod) {
   model$predictions_aggre <- aggregated_vector
   mod <- list()
   mod <- model
-  mod$method = "Predomics_aggregation_ovo"
+  mod$method = "Majority_Voting_with_Tie_Breaking"
   mod$approch = "ovo"
   return(mod)
 
@@ -2299,10 +2271,10 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_weighted <- weighted(mod = mod_predict)
       mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted, y = y)
-    } else if (aggregation_ == "Predomics_aggregation_ovo") {
+    } else if (aggregation_ == "Majority_Voting_with_Tie_Breaking") {
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_prodomics_ovo <- Predomics_aggregation_ovo(mod = mod_predict)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_prodomics_ovo, y = y)
+      mod_voting_tie <- Majority_Voting_with_Tie_Breaking(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_voting_tie, y = y)
     }  else if (aggregation_ == "weighted_f1_auc") {
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_weighted_f1_auc <- weighted_f1_auc(mod = mod_predict)
@@ -2346,6 +2318,10 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
       mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_votingova <-  votingova(mod = mod_predict, y = y)
       mod_evaluate <- evaluateModel_aggregation(mod =  mod_votingova , y = y)
+    }else if (aggregation_ == "Majority_Voting_with_Tie_Breaking_ova") {
+      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
+      mod_ova <-  Majority_Voting_with_Tie_Breaking_ova(mod = mod_predict, y = y)
+      mod_evaluate <- evaluateModel_aggregation(mod =  mod_ova , y = y)
     }
 
   }
@@ -4037,3 +4013,93 @@ votingova <- function(mod, y) {
   return(model)
 }
 
+
+
+#' @title Majority Voting with Tie-Breaking (OVA)
+#' @description Aggregates predictions from one-versus-all (OVA) classifiers using majority voting.
+#' In case of a tie between classes (equal number of votes), the class whose associated OVA model
+#' provides the highest prediction score for the current sample is selected.
+#' If no model predicts a class (all vote "ALL"), a class is selected randomly from the full class set.
+#'
+#' @param mod A list of submodels (OVA classifiers), each containing predictions and prediction scores.
+#' @param y A vector of true labels or the complete set of possible classes.
+#'
+#' @return A list representing the aggregated model, including the final predicted classes.
+#' @export
+Majority_Voting_with_Tie_Breaking_ova <- function(mod, y) {
+  predictions_list <- lapply(mod, function(x) x$predictions)
+  scores_list <- lapply(mod, function(x) x$scores_predictions)
+
+  all_classes <- unique(as.character(y))
+  num_samples <- length(predictions_list[[1]])
+  aggregated_vector <- character(num_samples)
+
+  set.seed(123)  # Ensure reproducibility
+
+  for (i in 1:num_samples) {
+    votes <- table(sapply(predictions_list, `[`, i))
+    votes <- votes[names(votes) != "ALL"]
+
+    if (length(votes) == 0) {
+      aggregated_vector[i] <- sample(all_classes, 1)
+    } else {
+      max_vote <- max(votes)
+      top_classes <- names(votes)[votes == max_vote]
+
+      if (length(top_classes) == 1) {
+        aggregated_vector[i] <- top_classes
+      } else {
+        # Search for the submodel with highest score among tied classes
+        best_score <- -Inf
+        best_class <- NA
+
+        for (j in seq_along(mod)) {
+          pred_class <- predictions_list[[j]][i]
+          score <- scores_list[[j]][i]
+
+          if (pred_class %in% top_classes && score > best_score) {
+            best_score <- score
+            best_class <- pred_class
+          }
+        }
+
+        aggregated_vector[i] <- best_class
+      }
+    }
+  }
+
+  # Assemble the final model object
+  model <- list()
+  model$learner <- mod[[1]]$learner
+  model$language <- mod[[1]]$language
+  model$objective <- mod[[1]]$objective
+  model$indices_ <- lapply(mod, function(x) x$indices_)
+  model$names_ <- lapply(mod, function(x) x$names_)
+  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
+  model$fit_ <- lapply(mod, function(x) x$fit_)
+  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
+  model$auc_ <- lapply(mod, function(x) x$auc_)
+  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
+  model$eval.sparsity <- mod[[1]]$eval.sparsity
+  model$precision_ <- lapply(mod, function(x) x$precision_)
+  model$recall_ <- lapply(mod, function(x) x$recall_)
+  model$f1_ <- lapply(mod, function(x) x$f1_)
+  model$sign_ <- lapply(mod, function(x) x$sign_)
+  model$rsq_ <- lapply(mod, function(x) x$rsq_)
+  model$ser_ <- lapply(mod, function(x) x$ser_)
+  model$score_ <- lapply(mod, function(x) x$score_)
+  model$predictions <- predictions_list
+  model$scores_predictions <- scores_list
+  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
+  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
+  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
+  model$predictions_aggre <- aggregated_vector
+  model$method <- "Majority_Voting_with_Tie_Breaking_ova"
+  model$approach <- "ova"
+
+  return(model)
+}
