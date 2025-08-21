@@ -127,15 +127,15 @@
 #
 # ######################################################################################################################
 #
-# # Arbre de décision NATIVE
+# # Arbre de decision NATIVE
 #
 # # ## Multiple decision trees
 # #
-# # Charger les bibliothèques nécessaires
-# library(rpart)  # Pour les arbres de décision
-# library(caret)  # Pour la validation croisée et les métriques
-# library(dplyr)  # Pour la manipulation de données
-# library(tibble) # Pour la manipulation avancée des dataframes
+# # Charger les bibliotheques necessaires
+# library(rpart)  # Pour les arbres de decision
+# library(caret)  # Pour la validation croisee et les metriques
+# library(dplyr)  # Pour la manipulation de donnees
+# library(tibble) # Pour la manipulation avancee des dataframes
 #
 # # S'assurer que y est un facteur
 # y <- as.factor(y)
@@ -148,7 +148,7 @@
 #
 # set.seed(123)
 #
-# # Initialiser un tibble pour stocker les résultats des métriques
+# # Initialiser un tibble pour stocker les resultats des metriques
 # dt_metrics_results <- tibble(
 #   Fold = character(),
 #   Accuracy.empirique = numeric(),
@@ -163,11 +163,11 @@
 #   Features = numeric()
 # )
 #
-# # Boucle sur chaque fold pour la validation croisée
+# # Boucle sur chaque fold pour la validation croisee
 # fold_idx <- 1
 #
 # for (i in 1:10) {
-#   # Définir les indices d'entraînement et de validation
+#   # Definir les indices d'entrainement et de validation
 #   index_train <- createFolds(y, k = 10, list = TRUE, returnTrain = TRUE)[[i]]
 #
 #   X_train <- as.data.frame(X[index_train, , drop = FALSE])  # Assurer le format dataframe
@@ -175,37 +175,37 @@
 #   X_val <- as.data.frame(X[-index_train, , drop = FALSE])
 #   y_val <- y[-index_train]
 #
-#   # Vérifier la structure des données après la transposition
+#   # Verifier la structure des donnees apres la transposition
 #   if (!all(rownames(X_train) %in% rownames(X))) {
-#     stop(paste("Problème dans la structure des données après la transposition de X au fold", fold_idx))
+#     stop(paste("Probleme dans la structure des donnees apres la transposition de X au fold", fold_idx))
 #   }
 #
-#   # Créer et entraîner le modèle d'arbre de décision
+#   # Creer et entrainer le modele d'arbre de decision
 #   dt_model <- rpart(y_train ~ ., data = cbind(y_train = y_train, X_train), method = "class")
 #
-#   # Faire les prédictions sur l'ensemble d'entraînement (empirique)
+#   # Faire les predictions sur l'ensemble d'entrainement (empirique)
 #   y_train_pred <- predict(dt_model, X_train, type = "class")
 #
-#   # Faire les prédictions sur l'ensemble de validation (généralisation)
+#   # Faire les predictions sur l'ensemble de validation (generalisation)
 #   y_val_pred <- predict(dt_model, X_val, type = "class")
 #
-#   # Vérification des tailles des prédictions et des vraies valeurs
+#   # Verification des tailles des predictions et des vraies valeurs
 #   if(length(y_train) == length(y_train_pred) & length(y_val) == length(y_val_pred)) {
-#     # Calcul des métriques empiriques
+#     # Calcul des metriques empiriques
 #     cm_train <- caret::confusionMatrix(y_train_pred, y_train)
 #     accuracy_empirical <- cm_train$overall['Accuracy']
 #     precision_empirical <- mean(cm_train$byClass[,'Precision'], na.rm = TRUE)
 #     recall_empirical <- mean(cm_train$byClass[,'Recall'], na.rm = TRUE)
 #     f1_empirical <- mean(cm_train$byClass[,'F1'], na.rm = TRUE)
 #
-#     # Calcul des métriques de généralisation
+#     # Calcul des metriques de generalisation
 #     cm_val <- caret::confusionMatrix(y_val_pred, y_val)
 #     accuracy_generalization <- cm_val$overall['Accuracy']
 #     precision_generalization <- mean(cm_val$byClass[,'Precision'], na.rm = TRUE)
 #     recall_generalization <- mean(cm_val$byClass[,'Recall'], na.rm = TRUE)
 #     f1_generalization <- mean(cm_val$byClass[,'F1'], na.rm = TRUE)
 #
-#     # Stocker les résultats
+#     # Stocker les resultats
 #     dt_metrics_results <- dt_metrics_results %>% add_row(
 #       Fold = paste0("Fold", fold_idx),
 #       Accuracy.empirique = accuracy_empirical,
@@ -220,13 +220,13 @@
 #       Features = ncol(X)  # Mettre le bon nombre de features
 #     )
 #   } else {
-#     warning(paste("Les tailles des prédictions et des vraies valeurs ne correspondent pas au fold", fold_idx))
+#     warning(paste("Les tailles des predictions et des vraies valeurs ne correspondent pas au fold", fold_idx))
 #   }
 #
 #   fold_idx <- fold_idx + 1
 # }
 #
-# # Afficher le dataframe des résultats
+# # Afficher le dataframe des resultats
 # print(dt_metrics_results)
 #
 # # Save the results
@@ -239,7 +239,7 @@
 # # ## Random Forest NATIVE
 # #
 # #
-# # Charger les bibliothèques nécessaires
+# # Charger les bibliotheques necessaires
 # library(randomForest)
 # library(caret)
 # library(dplyr)
@@ -249,9 +249,9 @@
 # y <- as.factor(y)
 # # Transposer X
 # X <- t(X)
-# set.seed(123)  # Fixer le seed pour la reproductibilité
+# set.seed(123)  # Fixer le seed pour la reproductibilite
 #
-# # Initialiser un tibble pour stocker les résultats
+# # Initialiser un tibble pour stocker les resultats
 # forest_metrics_results <- tibble(
 #   Fold = character(),
 #   Accuracy.empirique = numeric(),
@@ -266,54 +266,54 @@
 #   Features = numeric()
 # )
 #
-# # Créer les indices de validation pour 10 folds
+# # Creer les indices de validation pour 10 folds
 # folds <- createFolds(y, k = 10, list = TRUE)
 #
 # # Boucle sur chaque fold
 # for (fold_idx in seq_along(folds)) {
 #
-#   # Définition des indices d'entraînement et de validation
+#   # Definition des indices d'entrainement et de validation
 #   index_val <- folds[[fold_idx]]
 #   index_train <- setdiff(seq_len(length(y)), index_val)
 #
-#   # Découpage des données
+#   # Decoupage des donnees
 #   X_train <- X[index_train, , drop = FALSE]
 #   y_train <- y[index_train]
 #   X_val <- X[index_val, , drop = FALSE]
 #   y_val <- y[index_val]
 #
-#   # Vérification de la distribution des classes
+#   # Verification de la distribution des classes
 #   cat("\n==== Fold", fold_idx, "====\n")
 #   print(table(y_train))
 #   print(table(y_val))
 #
-#   # Entraînement du modèle Random Forest
+#   # Entrainement du modele Random Forest
 #   forest_model <- randomForest(x = X_train, y = y_train, ntree = 1000)
 #
-#   # Prédictions sur l'ensemble d'entraînement (empirique)
+#   # Predictions sur l'ensemble d'entrainement (empirique)
 #   y_train_pred <- predict(forest_model, X_train)
 #
-#   # Prédictions sur l'ensemble de validation (généralisation)
+#   # Predictions sur l'ensemble de validation (generalisation)
 #   y_val_pred <- predict(forest_model, X_val)
 #
-#   # Vérifier la correspondance des dimensions
+#   # Verifier la correspondance des dimensions
 #   if (length(y_train) == length(y_train_pred) & length(y_val) == length(y_val_pred)) {
 #
-#     # Calcul des métriques empiriques
+#     # Calcul des metriques empiriques
 #     cm_train <- caret::confusionMatrix(y_train_pred, y_train)
 #     accuracy_empirical <- cm_train$overall['Accuracy']
 #     precision_empirical <- mean(cm_train$byClass[,'Precision'], na.rm = TRUE)
 #     recall_empirical <- mean(cm_train$byClass[,'Recall'], na.rm = TRUE)
 #     f1_empirical <- mean(cm_train$byClass[,'F1'], na.rm = TRUE)
 #
-#     # Calcul des métriques de généralisation
+#     # Calcul des metriques de generalisation
 #     cm_val <- caret::confusionMatrix(y_val_pred, y_val)
 #     accuracy_generalization <- cm_val$overall['Accuracy']
 #     precision_generalization <- mean(cm_val$byClass[,'Precision'], na.rm = TRUE)
 #     recall_generalization <- mean(cm_val$byClass[,'Recall'], na.rm = TRUE)
 #     f1_generalization <- mean(cm_val$byClass[,'F1'], na.rm = TRUE)
 #
-#     # Stocker les résultats
+#     # Stocker les resultats
 #     forest_metrics_results <- forest_metrics_results %>% add_row(
 #       Fold = paste0("Fold", fold_idx),
 #       Accuracy.empirique = accuracy_empirical,
@@ -329,14 +329,14 @@
 #     )
 #
 #   } else {
-#     warning(paste("Problème de correspondance des tailles au fold", fold_idx))
+#     warning(paste("Probleme de correspondance des tailles au fold", fold_idx))
 #   }
 # }
 #
-# # Afficher le DataFrame des résultats
+# # Afficher le DataFrame des resultats
 # print(forest_metrics_results)
 #
-# # Sauvegarder les résultats
+# # Sauvegarder les resultats
 # sota_forest_metrics_results_T2D <- forest_metrics_results
 # save(sota_forest_metrics_results_T2D, file = "sota_forest_metrics_results_T2D.rda")
 #
@@ -345,27 +345,27 @@
 #
 # # KNN NATIVE
 #
-# ### Charger les bibliothèques nécessaires
+# ### Charger les bibliotheques necessaires
 # library(class)     # Pour KNN
-# library(caret)     # Pour la validation croisée et les métriques
-# library(dplyr)     # Pour la manipulation des données
-# library(tibble)    # Pour une manipulation avancée des data frames
+# library(caret)     # Pour la validation croisee et les metriques
+# library(dplyr)     # Pour la manipulation des donnees
+# library(tibble)    # Pour une manipulation avancee des data frames
 #
 # # S'assurer que la variable cible (y) est un facteur
 # y <- as.factor(y)
-# X <- t(X)  # Transposition de X si nécessaire
-# set.seed(123)  # Pour la reproductibilité
+# X <- t(X)  # Transposition de X si necessaire
+# set.seed(123)  # Pour la reproductibilite
 #
 # # Retirer les colonnes constantes (variance nulle)
 # X_non_constant <- X[, apply(X, 2, var, na.rm = TRUE) != 0]
 #
-# # Vérification des valeurs manquantes et imputation si nécessaire
+# # Verification des valeurs manquantes et imputation si necessaire
 # if (any(is.na(X_non_constant))) {
 #   # Imputation simple par la moyenne des colonnes
 #   X_non_constant[is.na(X_non_constant)] <- colMeans(X_non_constant, na.rm = TRUE)
 # }
 #
-# # Initialisation d'un tibble pour stocker les métriques par pli
+# # Initialisation d'un tibble pour stocker les metriques par pli
 # knn_metrics_results <- tibble(
 #   Fold = character(),
 #   Accuracy.empirique = numeric(),
@@ -380,60 +380,60 @@
 #   Features = numeric()  # Ajouter la colonne Nbre_Features
 # )
 #
-# # Validation croisée k-fold (k=10)
+# # Validation croisee k-fold (k=10)
 # fold_idx <- 1
 # for (i in 1:10) {
-#   # Créer les indices d'entraînement et de validation pour le pli actuel
+#   # Creer les indices d'entrainement et de validation pour le pli actuel
 #   index_train <- createFolds(y, k = 10, list = TRUE, returnTrain = TRUE)[[i]]
 #
-#   # Diviser les données en ensembles d'entraînement et de validation
+#   # Diviser les donnees en ensembles d'entrainement et de validation
 #   X_train <- X_non_constant[index_train, ]
 #   y_train <- y[index_train]
 #   X_val <- X_non_constant[-index_train, ]
 #   y_val <- y[-index_train]
 #
-#   # Entraînement du modèle KNN
+#   # Entrainement du modele KNN
 #   knn_model <- knn(
 #     train = X_train, test = X_train, cl = y_train, k = 3
 #   )
 #
-#   # Prédictions sur l'ensemble d'entraînement (prédictions empiriques)
+#   # Predictions sur l'ensemble d'entrainement (predictions empiriques)
 #   y_train_pred <- knn(
 #     train = X_train, test = X_train, cl = y_train, k = 3
 #   )
 #
-#   # Prédictions sur l'ensemble de validation (prédictions de généralisation)
+#   # Predictions sur l'ensemble de validation (predictions de generalisation)
 #   y_val_pred <- knn(
 #     train = X_train, test = X_val, cl = y_train, k = 3
 #   )
 #
-#   # Assurez-vous que les prédictions sont des facteurs avec les mêmes niveaux que les valeurs réelles
+#   # Assurez-vous que les predictions sont des facteurs avec les memes niveaux que les valeurs reelles
 #   y_train_pred <- factor(y_train_pred, levels = levels(y_train))
 #   y_val_pred <- factor(y_val_pred, levels = levels(y_val))
 #
-#   # Vérification des tailles des prédictions et des véritables valeurs
+#   # Verification des tailles des predictions et des veritables valeurs
 #   if (length(y_train_pred) != length(y_train)) {
-#     stop(paste("La longueur des prédictions d'entraînement ne correspond pas à celle des véritables valeurs pour le pli", fold_idx))
+#     stop(paste("La longueur des predictions d'entrainement ne correspond pas a celle des veritables valeurs pour le pli", fold_idx))
 #   }
 #   if (length(y_val_pred) != length(y_val)) {
-#     stop(paste("La longueur des prédictions de validation ne correspond pas à celle des véritables valeurs pour le pli", fold_idx))
+#     stop(paste("La longueur des predictions de validation ne correspond pas a celle des veritables valeurs pour le pli", fold_idx))
 #   }
 #
-#   # Calcul des métriques pour l'ensemble d'entraînement
+#   # Calcul des metriques pour l'ensemble d'entrainement
 #   cm_train <- caret::confusionMatrix(y_train_pred, y_train)
 #   accuracy_empirical <- cm_train$overall['Accuracy']
 #   precision_empirical <- mean(cm_train$byClass[,'Precision'], na.rm = TRUE)
 #   recall_empirical <- mean(cm_train$byClass[,'Recall'], na.rm = TRUE)
 #   f1_empirical <- mean(cm_train$byClass[,'F1'], na.rm = TRUE)
 #
-#   # Calcul des métriques pour l'ensemble de validation
+#   # Calcul des metriques pour l'ensemble de validation
 #   cm_val <- caret::confusionMatrix(y_val_pred, y_val)
 #   accuracy_generalization <- cm_val$overall['Accuracy']
 #   precision_generalization <- mean(cm_val$byClass[,'Precision'], na.rm = TRUE)
 #   recall_generalization <- mean(cm_val$byClass[,'Recall'], na.rm = TRUE)
 #   f1_generalization <- mean(cm_val$byClass[,'F1'], na.rm = TRUE)
 #
-#   # Stockage des résultats pour le pli actuel
+#   # Stockage des resultats pour le pli actuel
 #   knn_metrics_results <- knn_metrics_results %>% add_row(
 #     Fold = paste0("Fold", fold_idx),
 #     Accuracy.empirique = accuracy_empirical,
@@ -448,14 +448,14 @@
 #     Features = 2049  # Ajouter la valeur de Nbre_Features
 #   )
 #
-#   # Incrémenter l'indice du pli
+#   # Incrementer l'indice du pli
 #   fold_idx <- fold_idx + 1
 # }
 #
-# # Afficher le tableau des résultats
+# # Afficher le tableau des resultats
 # print(knn_metrics_results)
 # sota_knn_metrics_results_T2D = knn_metrics_results
-# # Sauvegarder les résultats dans un fichier
+# # Sauvegarder les resultats dans un fichier
 # save(sota_knn_metrics_results_T2D, file = "sota_knn_metrics_results_T2D.rda")
 #
 # #######################################################################################################################
@@ -474,7 +474,7 @@
 # X <- t(X)
 # set.seed(123)  # Set seed for reproducibility
 #
-# # Vérifier les valeurs manquantes et les imputer si nécessaire
+# # Verifier les valeurs manquantes et les imputer si necessaire
 # if (any(is.na(X))) {
 #   for (j in seq_len(ncol(X))) {
 #     if (anyNA(X[, j])) {
@@ -483,7 +483,7 @@
 #   }
 # }
 #
-# # Initialiser la tibble pour stocker les métriques
+# # Initialiser la tibble pour stocker les metriques
 # logreg_metrics_results <- tibble(
 #   Fold = character(),
 #   Accuracy.empirique = numeric(),
@@ -511,32 +511,32 @@
 #   X_val <- X[index_val, ]
 #   y_val <- y[index_val]
 #
-#   # Entraîner le modèle de régression logistique multinomiale
+#   # Entrainer le modele de regression logistique multinomiale
 #   logreg_model <- cv.glmnet(as.matrix(X_train), y_train, family = "multinomial", alpha = 1)
 #
-#   # Prédiction sur les données d'entraînement
+#   # Prediction sur les donnees d'entrainement
 #   y_train_pred <- predict(logreg_model, newx = as.matrix(X_train), s = "lambda.min", type = "class")
 #   y_train_pred <- factor(y_train_pred, levels = levels(y))
 #
-#   # Prédiction sur les données de validation
+#   # Prediction sur les donnees de validation
 #   y_val_pred <- predict(logreg_model, newx = as.matrix(X_val), s = "lambda.min", type = "class")
 #   y_val_pred <- factor(y_val_pred, levels = levels(y))
 #
-#   # Métriques sur les données d'entraînement
+#   # Metriques sur les donnees d'entrainement
 #   cm_train <- confusionMatrix(y_train_pred, y_train)
 #   accuracy_empirical <- cm_train$overall['Accuracy']
 #   precision_empirical <- mean(cm_train$byClass[, 'Precision'], na.rm = TRUE)
 #   recall_empirical <- mean(cm_train$byClass[, 'Recall'], na.rm = TRUE)
 #   f1_empirical <- mean(cm_train$byClass[, 'F1'], na.rm = TRUE)
 #
-#   # Métriques sur les données de validation
+#   # Metriques sur les donnees de validation
 #   cm_val <- confusionMatrix(y_val_pred, y_val)
 #   accuracy_generalization <- cm_val$overall['Accuracy']
 #   precision_generalization <- mean(cm_val$byClass[, 'Precision'], na.rm = TRUE)
 #   recall_generalization <- mean(cm_val$byClass[, 'Recall'], na.rm = TRUE)
 #   f1_generalization <- mean(cm_val$byClass[, 'F1'], na.rm = TRUE)
 #
-#   # Ajouter les résultats
+#   # Ajouter les resultats
 #   logreg_metrics_results <- logreg_metrics_results %>% add_row(
 #     Fold = paste0("Fold", fold_idx),
 #     Accuracy.empirique = accuracy_empirical,
@@ -552,7 +552,7 @@
 #   )
 # }
 #
-# # Affichage des résultats
+# # Affichage des resultats
 # print(logreg_metrics_results)
 # Sota_RL_T2D <- logreg_metrics_results
 # save(Sota_RL_T2D, file = "Sota_RL_T2D.rda")
@@ -570,19 +570,19 @@
 # library(dplyr)
 # library(tibble)
 #
-# # Exemple X, y (déjà transposé si nécessaire)
-# # X : matrice features (échantillons en lignes, variables en colonnes)
+# # Exemple X, y (deja transpose si necessaire)
+# # X : matrice features (echantillons en lignes, variables en colonnes)
 # # y : vecteur classe multiclasse
 #
 # # S'assurer que y est facteur
 # y <- as.factor(y)
-# X <- t(X)  # Si vos données sont encore en colonnes = échantillons
+# X <- t(X)  # Si vos donnees sont encore en colonnes = echantillons
 #
 # classes <- levels(y)
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 #
-# # Résultats finaux
+# # Resultats finaux
 # results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -610,14 +610,14 @@
 #   score_test  <- matrix(NA, nrow = length(test_idx),  ncol = length(classes))
 #   colnames(score_train) <- colnames(score_test) <- classes
 #
-#   # Entraîner un modèle OvA pour chaque classe
+#   # Entrainer un modele OvA pour chaque classe
 #   for (i in seq_along(classes)) {
 #     current_class <- classes[i]
 #     binary_y_train <- factor(ifelse(y_train == current_class, "Yes", "No"))
 #
 #     rf_model <- randomForest(x = X_train, y = binary_y_train, ntree = 500)
 #
-#     # Prédiction probabiliste
+#     # Prediction probabiliste
 #     prob_train <- predict(rf_model, X_train, type = "prob")[, "Yes"]
 #     prob_test  <- predict(rf_model, X_test,  type = "prob")[, "Yes"]
 #
@@ -625,14 +625,14 @@
 #     score_test[, i]  <- prob_test
 #   }
 #
-#   # Agrégation (maximization)
+#   # Agregation (maximization)
 #   y_pred_train <- apply(score_train, 1, function(row) classes[which.max(row)])
 #   y_pred_test  <- apply(score_test,  1, function(row) classes[which.max(row)])
 #
 #   y_pred_train <- factor(y_pred_train, levels = classes)
 #   y_pred_test  <- factor(y_pred_test,  levels = classes)
 #
-#   # Évaluations
+#   # Evaluations
 #   cm_train <- confusionMatrix(y_pred_train, y_train)
 #   cm_test  <- confusionMatrix(y_pred_test,  y_test)
 #
@@ -649,7 +649,7 @@
 #   )
 # }
 #
-# # Résumé
+# # Resume
 # print(results)
 # ova_RF_T2D <- results
 # save(ova_RF_T2D, file = "ova_RF_T2D.rda")
@@ -666,15 +666,15 @@
 # library(tibble)
 # library(combinat)  # pour combn()
 #
-# # Données
+# # Donnees
 # y <- as.factor(y)
-# X <- t(X)  # Transposer si nécessaire
+# X <- t(X)  # Transposer si necessaire
 #
 # classes <- levels(y)
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 #
-# # Tibble des résultats
+# # Tibble des resultats
 # results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -687,14 +687,14 @@
 #   F1.test = numeric()
 # )
 #
-# # === Fonction de départage ===
+# # === Fonction de departage ===
 # resolve_tie <- function(votes_row, classes) {
 #   max_vote <- max(votes_row)
 #   candidates <- which(votes_row == max_vote)
 #   if (length(candidates) == 1) {
 #     return(classes[candidates])
 #   } else {
-#     # Tie-breaking aléatoire
+#     # Tie-breaking aleatoire
 #     return(sample(classes[candidates], 1))
 #   }
 # }
@@ -709,13 +709,13 @@
 #   X_test <- X[test_idx, ]
 #   y_test <- y[test_idx]
 #
-#   # Génération des paires OvO
+#   # Generation des paires OvO
 #   class_pairs <- combn(classes, 2, simplify = FALSE)
 #   votes_train <- matrix(0, nrow = length(train_idx), ncol = length(classes))
 #   votes_test  <- matrix(0, nrow = length(test_idx),  ncol = length(classes))
 #   colnames(votes_train) <- colnames(votes_test) <- classes
 #
-#   # Entraînement et votes
+#   # Entrainement et votes
 #   for (pair in class_pairs) {
 #     class1 <- pair[1]
 #     class2 <- pair[2]
@@ -744,7 +744,7 @@
 #     }
 #   }
 #
-#   # Agrégation avec départage en cas d'égalité
+#   # Agregation avec departage en cas d'egalite
 #   y_pred_train <- factor(apply(votes_train, 1, resolve_tie, classes = classes), levels = classes)
 #   y_pred_test  <- factor(apply(votes_test, 1, resolve_tie, classes = classes), levels = classes)
 #
@@ -779,24 +779,24 @@
 # library(dplyr)
 # library(tibble)
 #
-# # === Données ===
+# # === Donnees ===
 # y <- as.factor(y)
-# X <- t(X)  # Transposer si nécessaire (échantillons en lignes)
+# X <- t(X)  # Transposer si necessaire (echantillons en lignes)
 # classes <- levels(y)
 #
-# # === Prétraitement ===
+# # === Pretraitement ===
 # zero_var_features <- nearZeroVar(X, saveMetrics = TRUE)
 # X <- X[, !zero_var_features$zeroVar]
 #
 # preProc <- preProcess(X, method = c("center", "scale"))
 # X_scaled <- predict(preProc, X)
 #
-# # === Cross-validation stratifiée ===
+# # === Cross-validation stratifiee ===
 # set.seed(123)
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 #
-# # === Résultats + Modèles ===
+# # === Resultats + Modeles ===
 # results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -809,7 +809,7 @@
 #   F1.test = numeric()
 # )
 #
-# fold_models <- list()  # pour stocker les modèles SVM OvA par fold
+# fold_models <- list()  # pour stocker les modeles SVM OvA par fold
 #
 # # === Cross-validation OvA ===
 # for (fold_idx in seq_along(folds)) {
@@ -869,12 +869,12 @@
 #   fold_models[[fold_idx]] <- ova_fold
 # }
 #
-# # === Résultats Cross-validation ===
+# # === Resultats Cross-validation ===
 # print(results)
 # ova_svm_T2D = results
 # save(ova_svm_T2D, file = "ova_svm_T2D.rda")
 #
-# # === Modèle OvA final sur 100 % des données ===
+# # === Modele OvA final sur 100 % des donnees ===
 # final_ova_svm_model <- list()
 # for (cls in classes) {
 #   y_bin <- factor(ifelse(y == cls, "Yes", "No"))
@@ -890,18 +890,18 @@
 #   final_ova_svm_model[[cls]] <- model
 # }
 #
-# # === Sauvegarde modèle final ===
+# # === Sauvegarde modele final ===
 # save(final_ova_svm_model, preProc, file = "final_ova_svm_model.rda")
 #
 #
-# # Charger modèle final
+# # Charger modele final
 # load("final_ova_svm_model.rda")  # contient final_ova_svm_model et preProc
 #
 # # Nouvelle matrice X_new (features en colonnes)
 # X_new <- t(X_new)  # transpose si besoin
 # X_new_scaled <- predict(preProc, X_new)
 #
-# # Prédiction
+# # Prediction
 # scores_new <- sapply(classes, function(cls) {
 #   attr(predict(final_ova_svm_model[[cls]], X_new_scaled, probability = TRUE), "probabilities")[, "Yes"]
 # })
@@ -922,12 +922,12 @@
 # library(tibble)
 # library(combinat)
 #
-# # === Données ===
+# # === Donnees ===
 # y <- as.factor(y)
 # X <- t(X)  # Transposer si besoin
 # classes <- levels(y)
 #
-# # === Prétraitement ===
+# # === Pretraitement ===
 # zero_var_features <- nearZeroVar(X, saveMetrics = TRUE)
 # X <- X[, !zero_var_features$zeroVar]
 #
@@ -945,7 +945,7 @@
 #   }
 # }
 #
-# # === Cross-validation stratifiée ===
+# # === Cross-validation stratifiee ===
 # set.seed(123)
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
@@ -1037,7 +1037,7 @@
 #   fold_models[[fold_idx]] <- ovo_fold
 # }
 #
-# # === Résultats cross-validation ===
+# # === Resultats cross-validation ===
 # print(results)
 # ovo_svm_balance = results
 # save(ovo_svm_balance, file = "ovo_svm_balance.rda")
@@ -1066,10 +1066,10 @@
 # # Sauvegarde
 # save(final_ovo_svm_model, preProc, file = "final_ovo_svm_tiebreak_model.rda")
 #
-# # Charger modèle
+# # Charger modele
 # load("final_ovo_svm_tiebreak_model.rda")  # contient final_ovo_svm_model et preProc
 #
-# # Nouvelle donnée : X_new (features en colonnes)
+# # Nouvelle donnee : X_new (features en colonnes)
 # X_new <- t(X_new)
 # X_new_scaled <- predict(preProc, X_new)
 #
@@ -1106,7 +1106,7 @@
 # library(dplyr)
 # library(tibble)
 #
-# # === Données ===
+# # === Donnees ===
 # y <- as.factor(y)
 # X <- t(X)
 # classes <- levels(y)
@@ -1129,7 +1129,7 @@
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 #
-# # === Stockage résultats ===
+# # === Stockage resultats ===
 # results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -1195,7 +1195,7 @@
 #   fold_models[[fold_idx]] <- ova_fold
 # }
 #
-# # === Résultats ===
+# # === Resultats ===
 # print(results)
 # ova_RL_T2D = results
 # save(ova_RL_T2D, file = "ova_RL_T2D.rda")
@@ -1210,10 +1210,10 @@
 #
 # save(final_ova_logreg_model, preProc, file = "final_ova_logreg_model.rda")
 #
-# # Charger modèle
+# # Charger modele
 # load("final_ova_logreg_model.rda")
 #
-# # Nouvelle donnée X_new : features en colonnes
+# # Nouvelle donnee X_new : features en colonnes
 # X_new <- t(X_new)
 # X_new_scaled <- predict(preProc, X_new)
 #
@@ -1222,7 +1222,7 @@
 #   predict(final_ova_logreg_model[[cls]], newx = as.matrix(X_new_scaled), s = "lambda.min", type = "response")
 # })
 #
-# # Classe prédite = max(prob)
+# # Classe predite = max(prob)
 # y_pred_new <- apply(scores_new, 1, function(row) classes[which.max(row)])
 # y_pred_new <- factor(y_pred_new, levels = classes)
 #
@@ -1240,7 +1240,7 @@
 # library(tibble)
 # library(combinat)  # Pour combn()
 #
-# # === Données ===
+# # === Donnees ===
 # y <- as.factor(y)
 # X <- t(X)
 # classes <- levels(y)
@@ -1263,18 +1263,18 @@
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 #
-# # === Fonction de départage en cas d’égalité ===
+# # === Fonction de departage en cas d’egalite ===
 # resolve_tie <- function(votes_row, classes) {
 #   max_vote <- max(votes_row)
 #   candidates <- which(votes_row == max_vote)
 #   if (length(candidates) == 1) {
 #     return(classes[candidates])
 #   } else {
-#     return(sample(classes[candidates], 1))  # départage aléatoire
+#     return(sample(classes[candidates], 1))  # departage aleatoire
 #   }
 # }
 #
-# # === Résultats + stockage modèles ===
+# # === Resultats + stockage modeles ===
 # results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -1349,7 +1349,7 @@
 #   fold_models[[fold_idx]] <- ovo_fold
 # }
 #
-# # === Résumé
+# # === Resume
 # print(results)
 # ovo_RL_balance = results
 # save(ovo_RL_balance, file = "ovo_RL_balance.rda")
@@ -1372,10 +1372,10 @@
 #
 # save(final_ovo_logreg_model, preProc, file = "final_ovo_logreg_model.rda")
 #
-# # Charger modèle
+# # Charger modele
 # load("final_ovo_logreg_model.rda")
 #
-# # Nouvelle donnée
+# # Nouvelle donnee
 # X_new <- t(X_new)
 # X_new_scaled <- predict(preProc, X_new)
 #
@@ -1409,10 +1409,10 @@
 # library(dplyr)
 # library(tibble)
 #
-# # Données
+# # Donnees
 # y <- as.factor(y)
 # X <- t(X)
-# colnames(X) <- make.names(colnames(X))  # Pour éviter les noms invalides
+# colnames(X) <- make.names(colnames(X))  # Pour eviter les noms invalides
 #
 # # Normalisation
 # preProc <- preProcess(X, method = c("center", "scale"))
@@ -1424,10 +1424,10 @@
 # folds <- createFolds(y, k = k, list = TRUE)
 # classes <- levels(y)
 #
-# # Stockage des modèles par fold
+# # Stockage des modeles par fold
 # fold_models <- list()
 #
-# # Résultats
+# # Resultats
 # results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -1493,7 +1493,7 @@
 #   fold_models[[fold_idx]] <- ova_models
 # }
 #
-# # Résumé
+# # Resume
 # print(results)
 # ova_dt_T2D = results
 # save(ova_dt_T2D,file = "ova_dt_T2D.rda")
@@ -1538,7 +1538,7 @@
 # library(tibble)
 # library(combinat)  # Pour combn()
 #
-# # Données
+# # Donnees
 # y <- as.factor(y)
 # X <- t(X)
 # set.seed(123)
@@ -1547,7 +1547,7 @@
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 #
-# # Résultats
+# # Resultats
 # ovo_dt_results <- tibble(
 #   Fold = integer(),
 #   Accuracy.train = numeric(),
@@ -1560,14 +1560,14 @@
 #   F1.test = numeric()
 # )
 #
-# # Fonction de départage
+# # Fonction de departage
 # resolve_tie <- function(votes_row, classes) {
 #   max_vote <- max(votes_row)
 #   candidates <- which(votes_row == max_vote)
 #   if (length(candidates) == 1) {
 #     return(classes[candidates])
 #   } else {
-#     return(sample(classes[candidates], 1))  # aléatoire
+#     return(sample(classes[candidates], 1))  # aleatoire
 #   }
 # }
 #
@@ -1581,7 +1581,7 @@
 #   X_test <- as.data.frame(X[test_idx, ])
 #   y_test <- y[test_idx]
 #
-#   # Préparation des matrices de vote
+#   # Preparation des matrices de vote
 #   votes_train <- matrix(0, nrow = length(train_idx), ncol = length(classes))
 #   votes_test  <- matrix(0, nrow = length(test_idx),  ncol = length(classes))
 #   colnames(votes_train) <- colnames(votes_test) <- classes
@@ -1601,7 +1601,7 @@
 #
 #     model <- rpart(y_pair_train ~ ., data = cbind(y_pair_train = y_pair_train, X_pair_train), method = "class")
 #
-#     # Prédiction sur ensemble d'entraînement complet
+#     # Prediction sur ensemble d'entrainement complet
 #     pred_train <- predict(model, X_train, type = "class")
 #     pred_test  <- predict(model, X_test,  type = "class")
 #
@@ -1618,7 +1618,7 @@
 #     }
 #   }
 #
-#   # Résolution finale par vote majoritaire avec tie-breaking
+#   # Resolution finale par vote majoritaire avec tie-breaking
 #   y_pred_train <- factor(apply(votes_train, 1, resolve_tie, classes = classes), levels = classes)
 #   y_pred_test  <- factor(apply(votes_test,  1, resolve_tie, classes = classes), levels = classes)
 #
@@ -1646,7 +1646,7 @@
 #
 #
 #
-# # Créer tous les modèles OvO sur l'ensemble des données pour usage futur
+# # Creer tous les modeles OvO sur l'ensemble des donnees pour usage futur
 # ovo_dt_model <- list()
 #
 # class_pairs <- combn(classes, 2, simplify = FALSE)
@@ -1665,13 +1665,13 @@
 #   ovo_dt_model[[key]] <- model
 # }
 #
-# # Sauvegarde du modèle final + preprocessing
+# # Sauvegarde du modele final + preprocessing
 # save(ovo_dt_model, classes, file = "final_ovo_DT_model.rda")
 #
-# # Charger le modèle
+# # Charger le modele
 # load("final_ovo_DT_model.rda")
 #
-# # Suppose que X_new est un data.frame avec échantillons en lignes et mêmes colonnes que X
+# # Suppose que X_new est un data.frame avec echantillons en lignes et memes colonnes que X
 # X_new <- t(X_new)
 # X_new <- as.data.frame(X_new)
 #
@@ -1693,7 +1693,7 @@
 #   }
 # }
 #
-# # Résolution finale par vote majoritaire avec départage
+# # Resolution finale par vote majoritaire avec departage
 # resolve_tie <- function(votes_row, classes) {
 #   max_vote <- max(votes_row)
 #   candidates <- which(votes_row == max_vote)
@@ -1718,7 +1718,7 @@
 # library(dplyr)
 # library(tibble)
 #
-# # Préparation des données
+# # Preparation des donnees
 # y <- as.factor(y)
 # X <- t(X)
 # set.seed(123)
@@ -1739,7 +1739,7 @@
 # preproc <- preProcess(X, method = c("center", "scale"))
 # X_scaled <- predict(preproc, X)
 #
-# # Définition des folds
+# # Definition des folds
 # folds <- createFolds(y, k = 10, list = TRUE)
 # classes <- levels(y)
 #
@@ -1813,7 +1813,7 @@
 # ova_knn_T2D = results
 # save(ova_knn_T2D, file = "ova_knn_T2D.rda")
 #
-# # === Entraînement final sur 100 % des données ===
+# # === Entrainement final sur 100 % des donnees ===
 # final_knn_model <- list()
 # for (cls in classes) {
 #   y_bin <- factor(ifelse(y == cls, "Yes", "No"))
@@ -1826,8 +1826,8 @@
 # # Sauvegarde
 # save(final_knn_model, preproc, classes, file = "final_ova_KNN_model.rda")
 #
-# # === Prédiction future ===
-# # Suppose que X_new est défini (avec échantillons en colonnes)
+# # === Prediction future ===
+# # Suppose que X_new est defini (avec echantillons en colonnes)
 # # X_new <- t(X_new)
 # # X_new <- X_new[, colnames(X_scaled), drop = FALSE]
 # # X_new_scaled <- predict(preproc, X_new)
@@ -1857,7 +1857,7 @@
 # library(tibble)
 # library(gtools)  # Pour combinations
 #
-# # Données (X en lignes, y facteur)
+# # Donnees (X en lignes, y facteur)
 # y <- as.factor(y)
 # X <- t(X)
 #
@@ -1871,14 +1871,14 @@
 # preProc <- preProcess(X, method = c("center", "scale"))
 # X_scaled <- predict(preProc, X)
 #
-# # Paramètres
+# # Parametres
 # set.seed(123)
 # k <- 10
 # folds <- createFolds(y, k = k, list = TRUE)
 # classes <- levels(y)
 # pairs <- combinations(length(classes), 2, classes)
 #
-# # Résultats initiaux
+# # Resultats initiaux
 # knn_ovo_results <- tibble(
 #   Fold = character(),
 #   Accuracy.empirique = numeric(),
@@ -1926,7 +1926,7 @@
 #     }
 #   }
 #
-#   # Prédiction finale avec départage
+#   # Prediction finale avec departage
 #   predict_vote <- function(votes) {
 #     apply(votes, 1, function(v) {
 #       winners <- names(which(v == max(v)))
@@ -1974,8 +1974,8 @@
 # # Charger
 # load("final_ovo_KNN_model.rda")
 #
-# # Nouvelle donnée
-# X_new <- t(X_new)  # Assurez-vous que les lignes = échantillons
+# # Nouvelle donnee
+# X_new <- t(X_new)  # Assurez-vous que les lignes = echantillons
 # X_new_scaled <- predict(preproc, X_new)
 #
 # # Vote
@@ -1987,7 +1987,7 @@
 #   vote_matrix[, j] <- knn(train = model$X, test = X_new_scaled, cl = model$y, k = 3)
 # }
 #
-# # Vote majoritaire avec départage
+# # Vote majoritaire avec departage
 # y_pred_new <- apply(vote_matrix, 1, function(votes) {
 #   tab <- table(na.omit(votes))
 #   if (length(tab) == 0) return(NA)

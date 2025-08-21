@@ -26,7 +26,7 @@
 #  total_instances_train <- 137
 #  total_instances_test <- 16
 # #
-# # # Fonction pour construire un data.frame à partir des résultats d'un ensemble (train/test)
+# # # Fonction pour construire un data.frame a partir des resultats d'un ensemble (train/test)
 #  build_metrics_df <- function(score_list, total_instances, set_name) {
 # #   # Extraire les scores
 #    acc <- as.numeric(score_list$acc["k_10", ])
@@ -63,7 +63,7 @@
 #    return(df)
 #   }
 # #
-# # # Récupération des scores
+# # # Recuperation des scores
 #  train_scores <- list(
 #     #acc = res_clf_TD2_voting_tie_semi$crossVal$scores$empirical.acc,
 #     acc = Exa$crossVal$scores$empirical.acc["k_8", ],
@@ -79,11 +79,11 @@
 #    f1s = Exa$crossVal$scores$generalization.f1s["k_8", ]
 #  )
 # #
-# # # Générer les deux tableaux
+# # # Generer les deux tableaux
 #  train_df <- build_metrics_df(train_scores, total_instances_train, "Train")
 #  test_df  <- build_metrics_df(test_scores, total_instances_test, "Test")
 # #
-# # # Fusion des résultats
+# # # Fusion des resultats
 #  predo_crc <- rbind(train_df, test_df)
 # #
 # # # Affichage final

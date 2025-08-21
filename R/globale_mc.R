@@ -752,7 +752,7 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
     # Evaluate top-k models by aggregation
     listmod_aggr <- list()
     for (i in seq_along(top_models)) {
-      ##cat("Évaluation du groupe", i, "/", length(top_models), "\n")
+      ##cat("Evaluation du groupe", i, "/", length(top_models), "\n")
       tryCatch({
         mod.res <- evaluateModels_aggregation(
           mod = top_models[[i]], y = y, X = X,
@@ -761,18 +761,16 @@ evaluateModel_mc <- function(mod, X, y, clf, eval.all = FALSE, force.re.evaluati
         )
         listmod_aggr[[i]] <- mod.res
       }, error = function(e) {
-        warning(paste("Erreur à l'index", i, ":", e$message))
+        warning(paste("Error index", i, ":", e$message))
         listmod_aggr[[i]] <- NULL
       })
     }
 
-    # Résultat final
+    # Resultat final
     mod.res <- listmod_aggr
     return(mod.res)
   }
 
-
-  #### Autres cas
 
   # Regression-specific handling if objective is correlation
   if (clf$params$objective == "cor") {
@@ -926,12 +924,12 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
     return(pop.lfolds)
   }
 
-  # Initialisation des listes de résultats
+  # Initialisation des listes de resultats
   res <- list()
   mod_res <- list()
   list_res <- list()
 
-  # Cas 1 : Contrainte désactivée ET mode entraînement
+  # Cas 1 : Contrainte desactivee ET mode entrainement
   if (constraint_factor == "unconstrained" && mode == "train") {
     mod <- pop
     res <- evaluateModel_mc(
@@ -949,7 +947,7 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
     )
 
   } else {
-    # Cas 2 : Autres configurations (ex. mode = "test" ou contraintes activées)
+    # Cas 2 : Autres configurations (ex. mode = "test" ou contraintes activees)
     for (i in seq_along(pop)) {
       mod <- pop[[i]]
 
@@ -971,7 +969,7 @@ evaluatePopulation_mc <- function(X, y, clf, pop, eval.all = FALSE,
     }
   }
 
-  # Nettoyage final : suppression des modèles NULL si demandé
+  # Nettoyage final : suppression des modeles NULL si demande
   if (delete.null.models) {
     res <- cleanPopulation(pop = res, clf = clf)
   }
@@ -1557,9 +1555,9 @@ voting <- function(mod) {
 }
 
 
-# Function to aggregate one-versus-one predictions using majority voting
-#' @title Predomics_aggregation_ovo
-#' @description Function to aggregate one-versus-one predictions using majority voting, incorporating the ability to break ties by selecting the class with the highest weighted score among the tied classes.
+# Function to aggregate one-versus-one predictions using majority voting tie Breaking
+#' @title Majority_Voting_with_Tie_Breaking
+#' @description Function to aggregate one-versus-one predictions using majority voting tie breaking, incorporating the ability to break ties by selecting the class with the highest weighted score among the tied classes.
 #' @param mod: The model object containing predictions and scores.
 #' @return The function returns the model object with aggregated predictions.
 #' @export
@@ -1599,7 +1597,7 @@ Majority_Voting_with_Tie_Breaking <- function(mod) {
     }
   }
 
-  #### Aggrégations
+  ## Aggregations
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -1637,14 +1635,14 @@ Majority_Voting_with_Tie_Breaking <- function(mod) {
 
 }
 
-#' This function performs weighted aggregation of predictions.
-#' @title weighted
-#' @description Function to aggregate one-versus-one predictions using weighted voting.
+#' This function performs maximization ovo aggregation of predictions.
+#' @title maximization_ovo
+#' @description Function to aggregate one-versus-one predictions using maximization ovo.
 #' @param mod: The model object containing predictions and scores.
 #' @return The function returns the model object with aggregated predictions.
 #' @export
 #'
-weighted <- function(mod) {
+maximization_ovo <- function(mod) {
   predictions_list <- list()
   scores_list <- list()
   predictions_list <- lapply(mod, function(x) x$predictions)
@@ -1680,7 +1678,7 @@ weighted <- function(mod) {
     aggregated_vector[i] <- best_class
   }
 
-  #### Aggrégations
+  #### Aggregations
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -1721,289 +1719,6 @@ weighted <- function(mod) {
 
 
 
-
-
-
-#' This function performs weighted aggregation of predictions, weighted by AUC and F1 score.
-#' @title weighted_f1_auc
-#' @description Function to aggregate one-versus-one predictions using weighted voting with AUC and F1 score.
-#' @param mod: The model object containing predictions and scores.
-#' @return The function returns the model object with aggregated predictions.
-#' @export
-#'
-weighted_f1_auc <- function(mod) {
-  predictions_list <- list()
-  scores_list <- list()
-  f1_list <- lapply(mod, function(x) x$f1_)
-  auc_list <- lapply(mod, function(x) x$auc_)
-  predictions_list <- lapply(mod, function(x) x$predictions)
-  scores_list <- lapply(mod, function(x) x$scores_predictions)
-
-  num_predictions <- length(predictions_list)
-  num_samples <- length(predictions_list[[1]])
-
-  aggregated_vector <- character(num_samples)
-
-  # Iterate over each sample
-  for (i in 1:num_samples) {
-    # Extract scores for the current sample and multiply by F1 * AUC
-    weighted_scores <- sapply(seq_along(scores_list), function(j) scores_list[[j]][i] * f1_list[[j]] * auc_list[[j]])
-
-    # Extract predictions for the current sample
-    prediction_ <- sapply(predictions_list, function(prediction_vector) prediction_vector[i])
-
-    # Get unique classes in the predictions
-    classes <- unique(prediction_)
-
-    # Handle empty classes case
-    if (length(classes) == 0) {
-      warning(paste("No classes found for sample", i))
-      next
-    }
-
-    class_scores_sum <- numeric(length(classes))
-
-    # Calculate the sum of scores for each unique class
-    for (j in 1:length(classes)) {
-      class_ <- classes[j]
-      class_scores_sum[j] <- sum(weighted_scores[prediction_ == class_], na.rm = TRUE)
-    }
-
-    # Find the index of the class with the highest sum of scores
-    if (all(is.na(class_scores_sum))) {
-      warning(paste("All scores are NA for sample", i))
-      next
-    }
-
-    best_class_index <- which.max(class_scores_sum)
-
-    # Handle case where best_class_index is empty
-    if (length(best_class_index) == 0) {
-      warning(paste("No best class found for sample", i))
-      next
-    }
-
-    best_class <- classes[best_class_index]
-
-    # Assign the predicted class with the highest sum of scores to the aggregated vector
-    aggregated_vector[i] <- best_class
-  }
-
-  #### Aggregations
-  model <- list()
-  model$learner <- mod[[1]]$learner
-  model$language <- mod[[1]]$language
-  model$objective <- mod[[1]]$objective
-  model$indices_ <- lapply(mod, function(x) x$indices_)
-  model$names_ <- lapply(mod, function(x) x$names_)
-  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
-  model$fit_ <- lapply(mod, function(x) x$fit_)
-  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
-  model$auc_ <- auc_list
-  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
-  model$cor_ <- NA
-  model$aic_ <- NA
-  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
-  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_), na.rm = TRUE)
-  model$eval.sparsity <- mod[[1]]$eval.sparsity
-  model$precision_ <- lapply(mod, function(x) x$precision_)
-  model$recall_ <- lapply(mod, function(x) x$recall_)
-  model$f1_ <- f1_list
-  model$sign_ <- lapply(mod, function(x) x$sign_)
-  model$rsq_ <- lapply(mod, function(x) x$rsq_)
-  model$ser_ <- lapply(mod, function(x) x$ser_)
-  model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- predictions_list
-  model$scores_predictions <- scores_list
-  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
-  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
-  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_vector
-  mod <- list()
-  mod <- model
-  mod$predictions_aggre <- aggregated_vector
-  mod$method <- "weighted_f1_auc"
-  mod$approach <- "ovo"
-  return(mod)
-}
-
-
-
-#' This function performs weighted aggregation of predictions, weighted by Accuracy.
-#' @title weighted_accuracy
-#' @description Function to aggregate one-versus-one predictions using weighted voting with Accuracy.
-#' @param mod: The model object containing predictions and scores.
-#' @return The function returns the model object with aggregated predictions.
-#' @export
-#'
-weighted_accuracy <- function(mod) {
-  predictions_list <- list()
-  scores_list <- list()
-  accuracy_list <- lapply(mod, function(x) x$accuracy_)
-  predictions_list <- lapply(mod, function(x) x$predictions)
-  scores_list <- lapply(mod, function(x) x$scores_predictions)
-
-  num_predictions <- length(predictions_list)
-  num_samples <- length(predictions_list[[1]])
-
-  aggregated_vector <- character(num_samples)
-
-  # Iterate over each sample
-  for (i in 1:num_samples) {
-    # Extract scores for the current sample and multiply by accuracy
-    weighted_scores <- sapply(seq_along(scores_list), function(j) scores_list[[j]][i] * accuracy_list[[j]])
-    # Extract predictions for the current sample
-    prediction_ <- sapply(predictions_list, function(prediction_vector) prediction_vector[i])
-
-    # Get unique classes in the predictions
-    classes <- unique(prediction_)
-    class_scores_sum <- numeric(length(classes))
-
-    # Calculate the sum of scores for each unique class
-    for (j in 1:length(classes)) {
-      class_ <- classes[j]
-      class_scores_sum[j] <- sum(weighted_scores[prediction_ == class_])
-    }
-
-    # Find the index of the class with the highest sum of scores
-    best_class_index <- which.max(class_scores_sum)
-    best_class <- classes[best_class_index]
-
-    # Assign the predicted class with the highest sum of scores to the aggregated vector
-    aggregated_vector[i] <- best_class
-  }
-
-  #### Aggregations
-  model <- list()
-  model$learner <- mod[[1]]$learner
-  model$language <- mod[[1]]$language
-  model$objective <- mod[[1]]$objective
-  model$indices_ <- lapply(mod, function(x) x$indices_)
-  model$names_ <- lapply(mod, function(x) x$names_)
-  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
-  model$fit_ <- lapply(mod, function(x) x$fit_)
-  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
-  model$auc_ <- lapply(mod, function(x) x$auc_)
-  model$accuracy_ <- accuracy_list
-  model$cor_ <- NA
-  model$aic_ <- NA
-  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
-  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
-  model$eval.sparsity <- mod[[1]]$eval.sparsity
-  model$precision_ <- lapply(mod, function(x) x$precision_)
-  model$recall_ <- lapply(mod, function(x) x$recall_)
-  model$f1_ <- lapply(mod, function(x) x$f1_)
-  model$sign_ <- lapply(mod, function(x) x$sign_)
-  model$rsq_ <- lapply(mod, function(x) x$rsq_)
-  model$ser_ <- lapply(mod, function(x) x$ser_)
-  model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- predictions_list
-  model$scores_predictions <- scores_list
-  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
-  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
-  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_vector
-  mod <- list()
-  mod <- model
-  mod$predictions_aggre <- aggregated_vector
-  mod$method <- "weighted_accuracy"
-  mod$approach <- "ovo"
-  return(mod)
-}
-
-
-
-#' Aggregation function of one-versus-all predictions using search and score max.
-#' @title Predomics_aggregation_ova
-#' @description  Function to aggregate one-versus-all predictions using New approach.
-#' @param mod: The model object containing predictions and scores.
-#' @param y: true class.
-#' @return The function returns the model object with aggregated predictions.
-#' @export
-Predomics_aggregation_ova <- function(mod, y) {
-  # Initialize the vector to hold the aggregated predictions with the appropriate length
-  classes_list <- list()
-  score_list <- list()
-  classes_list = lapply(mod, function(x) x$predictions)
-  score_list = lapply(mod, function(x) x$scores_predictions)
-  aggregated_predictions <- character(length = length(classes_list[[1]]))
-
-  # Create a character vector of the unique classes from y
-  y = as.factor(y)
-  names_class <- levels(y)
-
-  names_class <- as.character(names_class)
-
-  # Iterate over each position in the aggregated predictions
-  for (i in seq_along(aggregated_predictions)) {
-    # Extract the classes and scores for the current position from each list
-    current_classes <- sapply(classes_list, function(class_vector) class_vector[i])
-    scores <- sapply(score_list, function(score_vector) score_vector[i])
-
-    # Exclude 'ALL' and retrieve corresponding scores
-    valid_classes_indices <- which(current_classes != "ALL")
-    valid_classes <- current_classes[valid_classes_indices]
-    valid_scores <- scores[valid_classes_indices]
-
-    # If all scores are zero, randomly choose a class from the list of unique classes
-    if (all(scores == 0)) {
-      predicted_class <- sample(names_class, 1)
-    } else if (length(valid_classes) == 1) {
-      # If there is only one valid class, predict that class
-      predicted_class <- valid_classes
-    } else if (length(valid_classes) > 1) {
-      # If there are multiple valid classes, choose the class with the highest score
-      max_score_index <- which.max(valid_scores)
-      predicted_class <- valid_classes[max_score_index]
-    } else {
-      # If there are no valid classes (all were 'ALL'), choose the class from 'ALL' with the highest score
-      max_score <- max(scores)  # first, find the max score from the original scores
-      max_score_indices <- which(scores == max_score)  # then find all the indices with max score
-      predicted_class <- names_class[max_score_indices[1]]  # choose the class for the first index with max score
-    }
-
-    # Fill the aggregation vector at position i with the predicted class
-    aggregated_predictions[i] <- predicted_class
-  }
-
-  #### Aggrégations
-  model <- list()
-  model$learner <- mod[[1]]$learner
-  model$language <- mod[[1]]$language
-  model$objective <- mod[[1]]$objective
-  model$indices_ <- lapply(mod, function(x) x$indices_)
-  model$names_ <- lapply(mod, function(x) x$names_)
-  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
-  model$fit_ <- lapply(mod, function(x) x$fit_)
-  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
-  model$auc_ <- lapply(mod, function(x) x$auc_)
-  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
-  model$cor_<- NA
-  model$aic_<- NA
-  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
-  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
-  model$eval.sparsity <- mod[[1]]$eval.sparsity
-  model$precision_ <- lapply(mod, function(x) x$precision_)
-  model$recall_ <- lapply(mod, function(x) x$recall_)
-  model$f1_ <- lapply(mod, function(x) x$f1_)
-  model$sign_ <- lapply(mod, function(x) x$sign_)
-  model$rsq_ <- lapply(mod, function(x) x$rsq_)
-  model$ser_ <- lapply(mod, function(x) x$ser_)
-  model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- lapply(mod, function(x) x$predictions)
-  model$scores_predictions <-lapply(mod, function(x) x$scores_predictions)
-  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
-  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
-  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_predictions
-  mod <- list()
-  mod <- model
-  # Return the final vector of aggregated predictions
-  mod$method = "Predomics_aggregation_ova"
-  mod$approach = "ova"
-  return(mod)
-}
-
 #' Aggregation function of one-versus-all predictions using maximum score.
 #' @title maximization
 #' @description  Function to aggregate one-versus-all predictions using maximization Aggregation.
@@ -2031,7 +1746,7 @@ maximization <- function(mod, y) {
     aggregated_predictions[i] <- current_classes[max_score_index]
   }
 
-  #### Aggrégations
+  #### Aggregations
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -2069,37 +1784,44 @@ maximization <- function(mod, y) {
 }
 
 
-
-#' Aggregation function of one-versus-all predictions using maximum score, weighted by AUC and F1 score.
-#' @title maximization_accuracy
-#' @description  Function to aggregate one-versus-all predictions using maximization aggregation, weighted by AUC and F1 score.
-#' @param mod: The model object containing predictions and scores.
-#' @param y: True class.
-#' @return  The function returns the model object with aggregated predictions.
+#' @title votingova
+#' @description Function to aggregate one-versus-one or one-versus-all predictions using majority voting.
+#' If there's a tie, a class is randomly selected. If no class is predicted, one is also randomly chosen among all possible.
+#' @param mod List of submodels containing predictions and metadata.
+#' @param y Vector of class labels (true labels or full set of possible classes).
+#' @return A list representing the aggregated model object.
 #' @export
-maximization_accuracy <- function(mod, y) {
-  # Initialize the vector to hold the aggregated predictions with the appropriate length
-  classes_list <- lapply(mod, function(x) x$predictions)
-  score_list <- lapply(mod, function(x) x$scores_predictions)
-  accuracy_list <- lapply(mod, function(x) x$accuracy_) # Get the accuracy of each submodel
+votingova <- function(mod, y) {
+  predictions_list <- lapply(mod, function(x) x$predictions)  # Extract predictions
 
-  aggregated_predictions <- character(length = length(classes_list[[1]]))
-  y <- as.factor(y)
-  current_classes <- levels(y)
+  all_classes <- unique(as.character(y))
+  num_samples <- length(predictions_list[[1]])
+  aggregated_vector <- character(num_samples)
 
-  # Iterate over each position in the aggregated predictions
-  for (i in seq_along(aggregated_predictions)) {
-    # Multiply each score by the corresponding accuracy
-    scores <- sapply(seq_along(score_list), function(j) score_list[[j]][i] * accuracy_list[[j]])
+  set.seed(123)  # Fix seed for reproducibility
 
-    # Find the index of the maximum score
-    max_score_index <- which.max(scores)
+  for (i in 1:num_samples) {
+    votes <- table(sapply(predictions_list, `[`, i))
 
-    # Fill the aggregation vector at position i with the predicted class with the maximum score
-    aggregated_predictions[i] <- current_classes[max_score_index]
+    # Remove votes for "ALL" (OVA: means not predicted)
+    votes <- votes[names(votes) != "ALL"]
+
+    if (length(votes) == 0) {
+      # No class predicted at all: choose randomly from all classes
+      aggregated_vector[i] <- sample(all_classes, 1)
+    } else {
+      max_vote <- max(votes)
+      top_classes <- names(votes)[votes == max_vote]
+
+      if (length(top_classes) == 1) {
+        aggregated_vector[i] <- top_classes
+      } else {
+        aggregated_vector[i] <- sample(top_classes, 1)
+      }
+    }
   }
 
-  #### Aggregations
+  # Reconstruct the model
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -2123,51 +1845,75 @@ maximization_accuracy <- function(mod, y) {
   model$rsq_ <- lapply(mod, function(x) x$rsq_)
   model$ser_ <- lapply(mod, function(x) x$ser_)
   model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- lapply(mod, function(x) x$predictions)
+  model$predictions <- predictions_list
   model$scores_predictions <- lapply(mod, function(x) x$scores_predictions)
   model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
   model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
   model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_predictions
+  model$predictions_aggre <- aggregated_vector
+  model$method <- "votingova"
+  model$approach <- "ova"  # <-- Change ici si besoin
   mod <- list()
-  mod <- model
-  mod$method <- "maximization_accuracy"
-  mod$approach <- "ova"
+  mod <-  model
+
   return(mod)
 }
 
 
-
-#' Aggregation function of one-versus-all predictions using ranking score.
-#' @title ranking
-#' @description Function to aggregate one-versus-all predictions using ranking Aggregation.
-#' @param mod: The model object containing predictions and scores.
-#' @param y: True class.
-#' @return  The function returns the model object with aggregated predictions.
+#' @title Majority_Voting_with_Tie_Breaking_ova
+#' @description Aggregates predictions from one-versus-all (OVA) classifiers using Majority_Voting_with_Tie_Breaking_ova.
+#' In case of a tie between classes (equal number of votes), the class whose associated OVA model
+#' provides the highest prediction score for the current sample is selected.
+#' If no model predicts a class (all vote "ALL"), a class is selected randomly from the full class set.
+#'
+#' @param mod A list of submodels (OVA classifiers), each containing predictions and prediction scores.
+#' @param y A vector of true labels or the complete set of possible classes.
+#'
+#' @return A list representing the aggregated model, including the final predicted classes.
 #' @export
-ranking <- function(mod, y) {
-  # Initializing the vector to store aggregated predictions with appropriate length
-  classes_list <- list()
-  score_list <- list()
-  classes_list <- lapply(mod, function(x) x$predictions)
-  score_list  <- lapply(mod, function(x) x$scores_predictions)
-  aggregated_predictions <- character(length = length(classes_list[[1]]))
-  y = as.factor(y)
-  current_classes <- levels(y)
+Majority_Voting_with_Tie_Breaking_ova <- function(mod, y) {
+  predictions_list <- lapply(mod, function(x) x$predictions)
+  scores_list <- lapply(mod, function(x) x$scores_predictions)
 
-  # Iterating over each position in the aggregated predictions
-  for (i in seq_along(aggregated_predictions)) {
-    # Extract the scores for the current position from each list
-    scores <- sapply(score_list, function(score_vector) score_vector[i])
+  all_classes <- unique(as.character(y))
+  num_samples <- length(predictions_list[[1]])
+  aggregated_vector <- character(num_samples)
 
-    # Ranking the scores and assigning the corresponding rank to each score
-    rank_scores <- rank(-scores, ties.method = "min")
+  set.seed(123)  # Ensure reproducibility
 
-    # Selecting the class corresponding to the highest score
-    best_class_index <- which(rank_scores == 1)
-    aggregated_predictions[i] <- current_classes[best_class_index]
+  for (i in 1:num_samples) {
+    votes <- table(sapply(predictions_list, `[`, i))
+    votes <- votes[names(votes) != "ALL"]
+
+    if (length(votes) == 0) {
+      aggregated_vector[i] <- sample(all_classes, 1)
+    } else {
+      max_vote <- max(votes)
+      top_classes <- names(votes)[votes == max_vote]
+
+      if (length(top_classes) == 1) {
+        aggregated_vector[i] <- top_classes
+      } else {
+        # Search for the submodel with highest score among tied classes
+        best_score <- -Inf
+        best_class <- NA
+
+        for (j in seq_along(mod)) {
+          pred_class <- predictions_list[[j]][i]
+          score <- scores_list[[j]][i]
+
+          if (pred_class %in% top_classes && score > best_score) {
+            best_score <- score
+            best_class <- pred_class
+          }
+        }
+
+        aggregated_vector[i] <- best_class
+      }
+    }
   }
-  #### Aggregations
+
+  # Assemble the final model object
   model <- list()
   model$learner <- mod[[1]]$learner
   model$language <- mod[[1]]$language
@@ -2178,11 +1924,11 @@ ranking <- function(mod, y) {
   model$fit_ <- lapply(mod, function(x) x$fit_)
   model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
   model$auc_ <- lapply(mod, function(x) x$auc_)
-  model$accuracy_<- lapply(mod, function(x) x$accuracy_)
-  model$cor_<- NA
-  model$aic_<- NA
-  model$list_intercept_<- lapply(mod, function(x) x$intercept_)
-  model$intercept_<- mean(sapply(mod, function(x) x$intercept_))
+  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
+  model$cor_ <- NA
+  model$aic_ <- NA
+  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
+  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
   model$eval.sparsity <- mod[[1]]$eval.sparsity
   model$precision_ <- lapply(mod, function(x) x$precision_)
   model$recall_ <- lapply(mod, function(x) x$recall_)
@@ -2191,18 +1937,23 @@ ranking <- function(mod, y) {
   model$rsq_ <- lapply(mod, function(x) x$rsq_)
   model$ser_ <- lapply(mod, function(x) x$ser_)
   model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- lapply(mod, function(x) x$predictions)
-  model$scores_predictions <-lapply(mod, function(x) x$scores_predictions)
+  model$predictions <- predictions_list
+  model$scores_predictions <- scores_list
   model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
   model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
   model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_predictions
+  model$predictions_aggre <- aggregated_vector
+  model$method <- "Majority_Voting_with_Tie_Breaking_ova"
+  model$approach <- "ova"
   mod <- list()
   mod <- model
-  mod$method = "ranking"
-  mod$approach = "ova"
+
   return(mod)
 }
+
+
+
+
 
 
 #' This function evaluates the aggregated model's performance.
@@ -2267,53 +2018,21 @@ evaluateModels_aggregation <- function(mod, y, X, force.re.evaluation = TRUE, cl
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_voting <- voting(mod = mod_predict)
       mod_evaluate <- evaluateModel_aggregation(mod = mod_voting, y = y)
-    } else if (aggregation_ == "weighted") {
+    } else if (aggregation_ == "maximization_ovo") {
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_weighted <- weighted(mod = mod_predict)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted, y = y)
+      mod_maximization_ovo <- maximization_ovo(mod = mod_predict)
+      mod_evaluate <- evaluateModel_aggregation(mod = mod_maximization_ovo, y = y)
     } else if (aggregation_ == "Majority_Voting_with_Tie_Breaking") {
       mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_voting_tie <- Majority_Voting_with_Tie_Breaking(mod = mod_predict)
       mod_evaluate <- evaluateModel_aggregation(mod = mod_voting_tie, y = y)
-    }  else if (aggregation_ == "weighted_f1_auc") {
-      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_weighted_f1_auc <- weighted_f1_auc(mod = mod_predict)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted_f1_auc, y = y)
-    }  else if (aggregation_ == "weighted_accuracy") {
-      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_weighted_accuracy <- weighted_accuracy(mod = mod_predict)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted_accuracy, y = y)
-    }else if (aggregation_ == "weighted_f1") {
-      mod_predict <- predictModel_ovo(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_weighted_f1 <- weighted_f1(mod = mod_predict)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_weighted_f1, y = y)
     }
 
   } else if (approch == "ova") {
-    if (aggregation_ == "Predomics_aggregation_ova") {
-      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_Predomics <- Predomics_aggregation_ova(mod = mod_predict, y = y)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_Predomics, y = y)
-    } else if (aggregation_ == "maximization") {
+    if (aggregation_ == "maximization") {
       mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_maximization <- maximization(mod = mod_predict, y = y)
       mod_evaluate <- evaluateModel_aggregation(mod = mod_maximization, y = y)
-    } else if (aggregation_ == "ranking") {
-      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_ranking <- ranking(mod = mod_predict, y = y)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_ranking, y = y)
-    } else if (aggregation_ == "maximization_accuracy") {
-      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_maximization_accuracy <- maximization_accuracy(mod = mod_predict, y = y)
-      mod_evaluate <- evaluateModel_aggregation(mod = mod_maximization_accuracy , y = y)
-    }else if (aggregation_ == "maximization_f1") {
-      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_maximization_f1 <- maximization_f1(mod = mod_predict, y = y)
-      mod_evaluate <- evaluateModel_aggregation(mod =  mod_maximization_f1 , y = y)
-    } else if (aggregation_ == "maximization_f1_auc") {
-      mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
-      mod_maximization_f1_auc <-  maximization_f1_auc(mod = mod_predict, y = y)
-      mod_evaluate <- evaluateModel_aggregation(mod =  mod_maximization_f1_auc , y = y)
     }else if (aggregation_ == "votingova") {
       mod_predict <- predictModel_ova(mod = mod, y = y, X = X, clf = clf, force.re.evaluation = TRUE)
       mod_votingova <-  votingova(mod = mod_predict, y = y)
@@ -2420,7 +2139,7 @@ populationToDataFrame_mc <- function(
     for (i in 1:length(pop)) {
       list_mod[[i]] <- list()
 
-      # Assigning ‘mod’ elements to sub-models
+      # Assigning mod elements to sub-models
       list_mod[[i]]$learner <- pop[[i]]$learner
       list_mod[[i]]$language <- pop[[i]]$language
       list_mod[[i]]$objective <- pop[[i]]$objective
@@ -2847,31 +2566,31 @@ mergeMeltImportanceCV_mc <- function(list.results, filter.cv.prev = 0.5, min.kfo
     features_present <- rownames(list_X[[numb]])
     features_required <- as.character(cv.res.summary$feature)
 
-    # Identifie les fonctionnalités disponibles et manquantes
+    # Identifie les fonctionnalites disponibles et manquantes
     available_features <- intersect(features_required, features_present)
     missing_features <- setdiff(features_required, features_present)
 
     if (length(available_features) > 0) {
-      # Extraction des données disponibles pour les fonctionnalités présentes
+      # Extraction des donnees disponibles pour les fonctionnalites presentes
       X_subset <- list_X[[numb]][available_features, ]
 
-      # Complète avec NA si des fonctionnalités manquent
+      # Complete avec NA si des fonctionnalites manquent
       if (length(missing_features) > 0) {
-        # Ajouter les fonctionnalités manquantes avec NA
+        # Ajouter les fonctionnalites manquantes avec NA
         missing_rows <- matrix(NA, nrow = length(missing_features), ncol = ncol(list_X[[numb]]))
         rownames(missing_rows) <- missing_features
         colnames(missing_rows) <- colnames(list_X[[numb]])
         X_subset <- rbind(X_subset, missing_rows)
       }
 
-      # Réorganise les lignes pour correspondre à l'ordre des fonctionnalités requises
+      # Reorganise les lignes pour correspondre a l ordre des fonctionnalites requises
       X_ordered <- X_subset[features_required, ]
 
       # Calcul des signes avec getSign
       cv.res.summary$sign <- as.character(getSign(X = X_ordered, y = list_y[[numb]]))
 
     } else {
-      print(paste("Aucune fonctionnalité disponible pour numb =", numb))
+      print(paste("Aucune fonctionnalite disponible pour numb =", numb))
     }
 
     # same for prevalence
@@ -2965,12 +2684,12 @@ mergeMeltImportanceCV_mc <- function(list.results, filter.cv.prev = 0.5, min.kfo
   nbre = length(list_res)
   # Extraire les plots depuis les objets dans list_res
   plots <- lapply(list_res, function(x) x$g)
-  # Vérifier que tous les éléments sont des objets ggplot
+  # Verifier que tous les elements sont des objets ggplot
   if (all(sapply(plots, function(p) inherits(p, "ggplot")))) {
     # Combiner tous les plots en une seule grille
     do.call(grid.arrange, c(plots, ncol = nbre)) # Ajustez ncol selon vos besoins
   } else {
-    print("Certains éléments dans list_res[[i]]$g ne sont pas des objets ggplot.")
+    print("Certains elements dans list_res[[i]]$g ne sont pas des objets ggplot.")
   }
   return(list_res)
 }
@@ -3226,12 +2945,27 @@ getFeaturePrevalence_mc <- function(features, X, y = NULL, prop = TRUE, zero.val
 
 
 
-# this function takes a list of vectors with proportions and transforms it in a melted version
-# class -1 prevalence is multiplied by -1 for the plot
+#' Melt a list of score vectors for plotting
+#'
+#' This function transforms a named list of score vectors (e.g., prevalence scores)
+#' into a melted `data.frame` suitable for plotting. The values corresponding to
+#' class -1 can be inverted (multiplied by -1) for better visualization.
+#'
+#' @param v A named list of numeric vectors. Each vector must have the same length and named elements.
+#' @param prepare.for.graph Logical. If `TRUE`, scores for the group "-1" are multiplied by -1 (default: `TRUE`).
+#' @param topdown Logical. If `TRUE`, the factor levels of the `name` column are reversed (top-down order) based on `names(v$all)` (default: `TRUE`).
+#'
+#' @return A `data.frame` with columns: \code{name} (feature names), \code{score} (numeric values),
+#' and \code{group} (group label from the list `v`).
+#'
+#' @details This function is useful for transforming proportion or importance scores (e.g., feature scores)
+#' into a tidy format for visualization using `ggplot2` or other plotting systems. It assumes that
+#' `v` is a list of named vectors and that one of the entries is named "all" to define factor levels.
+#' @export
 meltScoreList_mc <- function(v=v.prop, prepare.for.graph=TRUE, topdown=TRUE)
 {
 
-  # Vérifier si v est une liste de vecteurs de même taille
+  # Verifier si v est une liste de vecteurs de meme taille
   if (!is.list(v) || any(sapply(v, function(x) !is.vector(x) || length(x) != length(v[[1]])))) {
     stop("v should be a list of vectors of the same size.")
   }
@@ -3242,20 +2976,20 @@ meltScoreList_mc <- function(v=v.prop, prepare.for.graph=TRUE, topdown=TRUE)
   # Initialiser le data frame avec le bon nombre de colonnes et lignes
   v.prop.melt <- data.frame(matrix(NA, nrow = max_length, ncol = 0))
 
-  # Parcourir les éléments de la liste v
+  # Parcourir les elements de la liste v
   for (i in 1:length(v)) {
-    # Créer un data frame temporaire avec les informations actuelles
+    # Creer un data frame temporaire avec les informations actuelles
     temp_df <- data.frame(
       name = names(v[[i]]),
       value = c(v[[i]], rep(NA, max_length - length(v[[i]]))),  # Remplir avec NA pour les valeurs manquantes
       group = rep(names(v)[i], max_length)
     )
 
-    # Ajouter les colonnes du data frame temporaire à v.prop.melt
+    # Ajouter les colonnes du data frame temporaire a v.prop.melt
     v.prop.melt <- cbind(v.prop.melt, temp_df)
   }
 
-  # Afficher le résultat
+  # Afficher le resultat
   ##print(v.prop.melt)
   v.prop.melt <- data.frame(t(v.prop.melt));
   colnames(v.prop.melt) <- c("name","score","group")
@@ -3940,166 +3674,3 @@ digestmc <- function(obj,
 
 
 
-#' @title votingova
-#' @description Function to aggregate one-versus-one or one-versus-all predictions using majority voting.
-#' If there's a tie, a class is randomly selected. If no class is predicted, one is also randomly chosen among all possible.
-#' @param mod List of submodels containing predictions and metadata.
-#' @param y Vector of class labels (true labels or full set of possible classes).
-#' @return A list representing the aggregated model object.
-#' @export
-votingova <- function(mod, y) {
-  predictions_list <- lapply(mod, function(x) x$predictions)  # Extract predictions
-
-  all_classes <- unique(as.character(y))
-  num_samples <- length(predictions_list[[1]])
-  aggregated_vector <- character(num_samples)
-
-  set.seed(123)  # Fix seed for reproducibility
-
-  for (i in 1:num_samples) {
-    votes <- table(sapply(predictions_list, `[`, i))
-
-    # Remove votes for "ALL" (OVA: means not predicted)
-    votes <- votes[names(votes) != "ALL"]
-
-    if (length(votes) == 0) {
-      # No class predicted at all: choose randomly from all classes
-      aggregated_vector[i] <- sample(all_classes, 1)
-    } else {
-      max_vote <- max(votes)
-      top_classes <- names(votes)[votes == max_vote]
-
-      if (length(top_classes) == 1) {
-        aggregated_vector[i] <- top_classes
-      } else {
-        aggregated_vector[i] <- sample(top_classes, 1)
-      }
-    }
-  }
-
-  # Reconstruct the model
-  model <- list()
-  model$learner <- mod[[1]]$learner
-  model$language <- mod[[1]]$language
-  model$objective <- mod[[1]]$objective
-  model$indices_ <- lapply(mod, function(x) x$indices_)
-  model$names_ <- lapply(mod, function(x) x$names_)
-  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
-  model$fit_ <- lapply(mod, function(x) x$fit_)
-  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
-  model$auc_ <- lapply(mod, function(x) x$auc_)
-  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
-  model$cor_ <- NA
-  model$aic_ <- NA
-  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
-  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
-  model$eval.sparsity <- mod[[1]]$eval.sparsity
-  model$precision_ <- lapply(mod, function(x) x$precision_)
-  model$recall_ <- lapply(mod, function(x) x$recall_)
-  model$f1_ <- lapply(mod, function(x) x$f1_)
-  model$sign_ <- lapply(mod, function(x) x$sign_)
-  model$rsq_ <- lapply(mod, function(x) x$rsq_)
-  model$ser_ <- lapply(mod, function(x) x$ser_)
-  model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- predictions_list
-  model$scores_predictions <- lapply(mod, function(x) x$scores_predictions)
-  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
-  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
-  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_vector
-  model$method <- "votingova"
-  model$approach <- "ova"  # <-- Change ici si besoin
-
-  return(model)
-}
-
-
-
-#' @title Majority Voting with Tie-Breaking (OVA)
-#' @description Aggregates predictions from one-versus-all (OVA) classifiers using majority voting.
-#' In case of a tie between classes (equal number of votes), the class whose associated OVA model
-#' provides the highest prediction score for the current sample is selected.
-#' If no model predicts a class (all vote "ALL"), a class is selected randomly from the full class set.
-#'
-#' @param mod A list of submodels (OVA classifiers), each containing predictions and prediction scores.
-#' @param y A vector of true labels or the complete set of possible classes.
-#'
-#' @return A list representing the aggregated model, including the final predicted classes.
-#' @export
-Majority_Voting_with_Tie_Breaking_ova <- function(mod, y) {
-  predictions_list <- lapply(mod, function(x) x$predictions)
-  scores_list <- lapply(mod, function(x) x$scores_predictions)
-
-  all_classes <- unique(as.character(y))
-  num_samples <- length(predictions_list[[1]])
-  aggregated_vector <- character(num_samples)
-
-  set.seed(123)  # Ensure reproducibility
-
-  for (i in 1:num_samples) {
-    votes <- table(sapply(predictions_list, `[`, i))
-    votes <- votes[names(votes) != "ALL"]
-
-    if (length(votes) == 0) {
-      aggregated_vector[i] <- sample(all_classes, 1)
-    } else {
-      max_vote <- max(votes)
-      top_classes <- names(votes)[votes == max_vote]
-
-      if (length(top_classes) == 1) {
-        aggregated_vector[i] <- top_classes
-      } else {
-        # Search for the submodel with highest score among tied classes
-        best_score <- -Inf
-        best_class <- NA
-
-        for (j in seq_along(mod)) {
-          pred_class <- predictions_list[[j]][i]
-          score <- scores_list[[j]][i]
-
-          if (pred_class %in% top_classes && score > best_score) {
-            best_score <- score
-            best_class <- pred_class
-          }
-        }
-
-        aggregated_vector[i] <- best_class
-      }
-    }
-  }
-
-  # Assemble the final model object
-  model <- list()
-  model$learner <- mod[[1]]$learner
-  model$language <- mod[[1]]$language
-  model$objective <- mod[[1]]$objective
-  model$indices_ <- lapply(mod, function(x) x$indices_)
-  model$names_ <- lapply(mod, function(x) x$names_)
-  model$coeffs_ <- lapply(mod, function(x) x$coeffs_)
-  model$fit_ <- lapply(mod, function(x) x$fit_)
-  model$unpenalized_fit_ <- lapply(mod, function(x) x$unpenalized_fit_)
-  model$auc_ <- lapply(mod, function(x) x$auc_)
-  model$accuracy_ <- lapply(mod, function(x) x$accuracy_)
-  model$cor_ <- NA
-  model$aic_ <- NA
-  model$list_intercept_ <- lapply(mod, function(x) x$intercept_)
-  model$intercept_ <- mean(sapply(mod, function(x) x$intercept_))
-  model$eval.sparsity <- mod[[1]]$eval.sparsity
-  model$precision_ <- lapply(mod, function(x) x$precision_)
-  model$recall_ <- lapply(mod, function(x) x$recall_)
-  model$f1_ <- lapply(mod, function(x) x$f1_)
-  model$sign_ <- lapply(mod, function(x) x$sign_)
-  model$rsq_ <- lapply(mod, function(x) x$rsq_)
-  model$ser_ <- lapply(mod, function(x) x$ser_)
-  model$score_ <- lapply(mod, function(x) x$score_)
-  model$predictions <- predictions_list
-  model$scores_predictions <- scores_list
-  model$pos_score_ <- lapply(mod, function(x) x$pos_score_)
-  model$neg_score_ <- lapply(mod, function(x) x$neg_score_)
-  model$confusionMatrix_ <- lapply(mod, function(x) x$confusionMatrix_)
-  model$predictions_aggre <- aggregated_vector
-  model$method <- "Majority_Voting_with_Tie_Breaking_ova"
-  model$approach <- "ova"
-
-  return(model)
-}

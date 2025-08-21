@@ -1,14 +1,58 @@
 Package: mcpredomics
-Title: multiclass predomics
+Title: Interpretable Multiclass Classification of Metagenomic Data
 Version: 0.0.0.9000
 Authors@R: 
-    person("Fabien", "KAMBU", , "juniorkambu9@gmail.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: Multiclass predomics project.
+    person("Fabien", "KAMBU", email = "juniorkambu9@gmail.com",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0006-8233-6529"))
+Description: This package extends the 'predomics' framework to support interpretable 
+    multiclass classification of metagenomic data. It introduces One-vs-All (OvA) and 
+    One-vs-One (OvO) strategies, multiple aggregation methods, and supports visualization 
+    and evaluation of models. The package is especially suited for microbiome data where 
+    accuracy and interpretability are both critical.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+Depends: 
+    R (>= 3.5.0)
+Imports:
+    doRNG,
+    doSNOW,
+    foreach,
+    ggplot2,
+    gtools,
+    reshape2,
+    snow,
+    predomics,
+    stats,
+    graphics,
+    grDevices,
+    utils,
+    pROC,
+    dplyr,
+    RColorBrewer,
+    gridExtra
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    DT,
+    tidyr,
+    tibble,
+    ggpubr,
+    kableExtra,
+    broom.mixed,
+    lme4,
+    readr,
+    stringr,
+    tidyverse,
+    writexl,
+    caret,
+    e1071,
+    glmnet,
+    randomForest,
+    survival
 Config/testthat/edition: 3
+LazyData: false
+VignetteBuilder: knitr

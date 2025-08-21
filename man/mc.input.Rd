@@ -3,13 +3,31 @@
 \docType{data}
 \name{mc.input}
 \alias{mc.input}
-\title{mc.input (frequencies)}
+\title{mc.input}
+\format{
+A list with:
+\describe{
+\item{\code{X}}{A matrix of species abundances (features × samples)}
+\item{\code{y.df}}{A data.frame with the corresponding enterotype labels}
+}
+}
+\usage{
+data(mc.input)
+}
 \description{
-This dataset is a sample size of 894 consisting of 4 enterotypes
-("Rum: 183", "Bact1: 299", "Bact2: 168", "Prev: 244") extracted from the metacardis database.
+Formatted input data for multiclass Predomics analysis, based on bacterial species frequencies.
+}
+\details{
+This dataset includes a sample of 894 individuals classified into four enterotypes:
+\itemize{
+\item \code{Rum}: 183 individuals
+\item \code{Bact1}: 299 individuals
+\item \code{Bact2}: 168 individuals
+\item \code{Prev}: 244 individuals
+}
 }
 \author{
-Edi Prifti, Egeuni Belda .
+Edi Prifti, Eugeni Belda, Fabien Kambu
 }
 \keyword{METACARDIS}
 \keyword{enterotypes,}

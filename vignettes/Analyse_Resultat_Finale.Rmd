@@ -1,0 +1,844 @@
+---
+title: "Analyse des Résultats Finales"
+author: "Fabien"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Analyse des Résultats Finales}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-data, message=FALSE, warning=FALSE}
+utils::data(
+  list = "Analysis_Dataset_Complet_Sota_Predo",
+  package = "mcpredomics",
+  envir = knitr::knit_global()   # << charge dans l'env global de knitr
+)
+stopifnot(exists("Analysis_Dataset_Complet_Sota_Predo", envir = knitr::knit_global()))
+```
+
+```{r warning=FALSE}
+# Chargement des bibliothèques nécessaires
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(lme4)
+library(broom.mixed)
+library(tidyverse)
+```
+
+
+
+
+# Comparative Evaluation of Predomics Variants and State-of-the-Art Methods on Multiclass Microbiome Data
+
+This plot, generated using ggplot2, visualizes the test accuracy results obtained from our dataframe comparing the Predomics variants (One-vs-All and One-vs-One strategies) against the state-of-the-art (SOTA) methods. Each point represents the mean accuracy under 10-fold cross-validation, grouped by dataset, method, binarization strategy, and constraint level. The error bars indicate the standard deviation, allowing for a robust comparison of performance across configurations.
+
+```{r warning=FALSE, fig.height=12, fig.width=18, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+
+
+# Display the column names to understand the structure of the dataset
+colnames(Analysis_Dataset_Complet_Sota_Predo)
+
+# Filter out rows where the binarization strategy is set to "NO"
+df_filtereds <- Analysis_Dataset_Complet_Sota_Predo  %>%
+  filter(Binarisation != "NO")
+
+# From the filtered data, keep only the test set results,
+# then group by dataset, method, constraint level, approach, and binarization strategy
+# Compute the mean and standard deviation of accuracy for each group
+# Finally, convert the constraint factor to an ordered factor for proper plotting
+df_all <- df_filtereds %>%
+  filter(Set == "Test") %>%
+  group_by(Dataset, Methods, Constraint_factor, Approach, Binarisation) %>%
+  summarise(
+    mean_acc = mean(Accuracy, na.rm = TRUE),     # average test accuracy
+    sd_acc = sd(Accuracy, na.rm = TRUE),         # standard deviation of test accuracy
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Constraint_factor = factor(Constraint_factor,
+      levels = c("None", "Unconstrained", "Semi_Constrained", "Full_Constrained"))
+  )
+
+# Plot the mean accuracy ± SD per method, for each dataset and combination of approach + binarization
+ggplot(df_all, aes(x = Methods, y = mean_acc,
+                   color = Constraint_factor)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +   # plot mean points
+  geom_errorbar(aes(ymin = mean_acc - sd_acc, ymax = mean_acc + sd_acc),
+                position = position_dodge(width = 0.6), width = 0.2) +  # add error bars
+  facet_grid(Dataset ~ Approach + Binarisation,                     # create subplots by dataset, approach, and binarization
+             scales = "free_x", space = "free_x") +
+  labs(
+    title = "Comparison of Methods: Test Accuracy under 10-Fold Cross-Validation – Predomics vs SOTA",
+    x = "Method",
+    y = "Accuracy (mean ± SD)",
+    color = "Constraints"
+  ) +
+  theme_bw() +   # use a clean black-and-white theme
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),         # rotate x-axis labels
+    strip.background = element_rect(fill = "grey95"),          # style subplot labels
+    legend.position = "bottom"                                 # place legend at the bottom
+  )
+
+
+```
+
+
+
+#Comparison of Methods: Test Accuracy under 10-Fold Cross-Validation – Predomics vs SOTA
+
+This plot displays the mean Recall and its standard deviation (± SD) for various models evaluated on test data across multiple datasets. Only experiments involving a defined binarization strategy (excluding "NO") are included. The results are grouped by dataset, model type (Predomics variants and SOTA), constraint levels (None, Unconstrained, Semi_Constrained, Full_Constrained), and binarization approach (e.g., OvA, OvO). For each configuration, the mean Recall is shown with error bars representing variability across folds. This visualization facilitates the comparison of model sensitivity across multiple experimental settings, providing insights into how well each method identifies positive cases under constrained and unconstrained scenarios.
+
+
+```{r warning=FALSE, fig.height=12, fig.width=18, message=FALSE, warning=FALSE, paged.print=FALSE}
+# Filter out rows where the binarization strategy is set to "NO"
+df_filtereds <- Analysis_Dataset_Complet_Sota_Predo  %>%
+  filter(Binarisation != "NO")
+
+# From the filtered data, keep only the test set results,
+# then group by dataset, method, constraint level, approach, and binarization strategy
+# Compute the mean and standard deviation of Recall for each group
+# Finally, convert the constraint factor to an ordered factor for consistent plotting
+df_all <- df_filtereds %>%
+  filter(Set == "Test") %>%
+  group_by(Dataset, Methods, Constraint_factor, Approach, Binarisation) %>%
+  summarise(
+    mean_rec = mean(Recall, na.rm = TRUE),       # average test Recall
+    sd_rec = sd(Recall, na.rm = TRUE),           # standard deviation of Recall
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Constraint_factor = factor(Constraint_factor,
+      levels = c("None", "Unconstrained", "Semi_Constrained", "Full_Constrained"))
+  )
+
+# Plot the mean Recall ± SD per method, for each dataset and combination of approach + binarization
+ggplot(df_all, aes(x = Methods, y = mean_rec,
+                   color = Constraint_factor)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +   # plot mean Recall points
+  geom_errorbar(aes(ymin = mean_rec - sd_rec, ymax = mean_rec + sd_rec),
+                position = position_dodge(width = 0.6), width = 0.2) +  # add error bars
+  facet_grid(Dataset ~ Approach + Binarisation,                     # create subplots by dataset, approach, and binarization
+             scales = "free_x", space = "free_x") +
+  labs(
+    title = "Comparison of Methods: Test Recall under 10-Fold Cross-Validation – Predomics vs SOTA",
+    x = "Method",
+    y = "Recall (mean ± SD)",
+    color = "Constraints"
+  ) +
+  theme_bw() +   # use a clean black-and-white theme
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),         # rotate x-axis labels
+    strip.background = element_rect(fill = "grey95"),          # style subplot labels
+    legend.position = "bottom"                                 # place legend at the bottom
+  )
+
+```
+
+
+
+#Comparison of Methods: Test Precision under 10-Fold Cross-Validation – Predomics vs SOTA
+
+This figure presents the average test Precision and its standard deviation (± SD) across different datasets, comparing various Predomics configurations (e.g., OvA, OvO) and baseline SOTA models. Only models with an explicit binarization strategy are considered. The results are grouped by dataset, modeling approach, and constraint level. Each dot represents the mean precision obtained over 10-fold cross-validation, with error bars reflecting variability across folds. This visualization helps assess the models' ability to avoid false positives and reliably identify only relevant classes under different constraint regimes and aggregation strategies.
+
+```{r warning=FALSE, fig.height=12, fig.width=18, message=FALSE, warning=FALSE, paged.print=FALSE}
+# Load the dataset containing performance results
+data("Analysis_Dataset_Complet_Sota_Predo")
+
+# Filter to keep only experiments where binarization was applied
+df_filtereds <- Analysis_Dataset_Complet_Sota_Predo %>%
+  filter(Binarisation != "NO")
+
+# Select only test set results and compute mean and standard deviation of Precision
+df_all <- df_filtereds %>%
+  filter(Set == "Test") %>%
+  group_by(Dataset, Methods, Constraint_factor, Approach, Binarisation) %>%
+  summarise(
+    mean_prec = mean(Precision, na.rm = TRUE),
+    sd_prec = sd(Precision, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Constraint_factor = factor(
+      Constraint_factor,
+      levels = c("None", "Unconstrained", "Semi_Constrained", "Full_Constrained")
+    )
+  )
+
+# Plot mean Precision ± SD using ggplot2
+ggplot(df_all, aes(x = Methods, y = mean_prec, color = Constraint_factor)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbar(aes(ymin = mean_prec - sd_prec, ymax = mean_prec + sd_prec),
+                position = position_dodge(width = 0.6), width = 0.2) +
+  facet_grid(Dataset ~ Approach + Binarisation,
+             scales = "free_x", space = "free_x") +
+  labs(
+    title = "Comparison of Methods: Test Precision under 10-Fold Cross-Validation – Predomics vs SOTA",
+    x = "Method",
+    y = "Precision (mean ± SD)",
+    color = "Constraints"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(fill = "grey95"),
+    legend.position = "bottom"
+  )
+
+```
+
+
+#Comparison of Methods: Test Accuracy under 10-Fold Cross-Validation – Predomics vs SOTA
+
+This figure illustrates the F1-score performance (mean ± SD) of the different models evaluated in the test sets. The F1-score, which balances precision and recall, provides a reliable measure of model robustness in multiclass settings. The results are stratified by dataset, binarization strategy, modeling approach (OvA or OvO), and constraint level applied to Predomics. Each point reflects the mean F1-score over 10 cross-validation folds, with error bars indicating the variability. This visualization is particularly useful to assess how well each method balances false positives and false negatives under different modeling strategies.
+
+```{r warning=FALSE, fig.height=12, fig.width=18, message=FALSE, warning=FALSE, paged.print=FALSE}
+# Load the dataset containing performance results
+data("Analysis_Dataset_Complet_Sota_Predo")
+
+# Filter to include only experiments with binarization applied
+df_filtereds <- Analysis_Dataset_Complet_Sota_Predo %>%
+  filter(Binarisation != "NO")
+
+# Select only test results and calculate mean and standard deviation of F1-score
+df_all <- df_filtereds %>%
+  filter(Set == "Test") %>%
+  group_by(Dataset, Methods, Constraint_factor, Approach, Binarisation) %>%
+  summarise(
+    mean_f1 = mean(F1, na.rm = TRUE),
+    sd_f1 = sd(F1, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Constraint_factor = factor(
+      Constraint_factor,
+      levels = c("None", "Unconstrained", "Semi_Constrained", "Full_Constrained")
+    )
+  )
+
+# Create the plot of F1-score (mean ± SD)
+ggplot(df_all, aes(x = Methods, y = mean_f1, color = Constraint_factor)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbar(aes(ymin = mean_f1 - sd_f1, ymax = mean_f1 + sd_f1),
+                position = position_dodge(width = 0.6), width = 0.2) +
+  facet_grid(Dataset ~ Approach + Binarisation,
+             scales = "free_x", space = "free_x") +
+  labs(
+    title = "Comparison of Methods: Test Accuracy under 10-Fold Cross-Validation – Predomics vs SOTA",
+    x = "Method",
+    y = "F1-score (mean ± SD)",
+    color = "Constraints"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(fill = "grey95"),
+    legend.position = "bottom"
+  )
+
+```
+
+
+
+
+
+#Mixed-Effects Linear Model
+
+To account for both fixed and random sources of variability in performance results, we employ a Mixed-Effects Linear Model (MLM). This statistical model is well-suited for repeated measurements or hierarchical data structures, such as cross-validation folds nested within datasets. In our context, fixed effects represent the primary factors of interest (e.g., method, constraint, binarization strategy), while random effects capture the variability associated with folds or datasets. The MLM provides a robust framework for statistically comparing methods across diverse experimental settings, while accounting for non-independence in the data.
+
+## Modèle 1. Comparaison OVO vs OVA Predomics
+
+### Forest Plot of Predomics Accuracy under OVA and OVO Strategies across Terbeam and Terga1 Approaches
+
+```{r warning=FALSE, fig.height= 6, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# 1. Filter relevant Predomics configurations
+# Only keep Test set results for OVA and OVO binarization strategies,
+# and restrict to standard methods used in both.
+df_predomics_1 <- Analysis_Dataset_Complet_Sota_Predo %>%
+  filter(
+    Set == "Test",
+    Binarisation %in% c("OVA", "OVO"),
+    Methods %in% c("Voting", "Voting_with_Tie_Breaking", "Maximization")
+  )
+
+# 2. Fit a mixed-effects linear model with Accuracy as outcome
+# Fixed effects: Binarisation strategy and Approach (Terbeam vs Terga1)
+# Random effects: Dataset and Fold (to account for repeated measures)
+mod.binarisation <- lmer(
+  Accuracy ~ Binarisation + Approach + (1 | Dataset) + (1 | Fold),
+  data = df_predomics_1
+)
+
+# 3. Display the summary of the model
+summary(mod.binarisation)
+
+# 4. Extract fixed effects estimates
+coefs <- tidy(mod.binarisation, effects = "fixed")
+
+# 5. Construct reference configuration: OVA + Terbeam
+base <- coefs %>%
+  filter(term == "(Intercept)") %>%
+  transmute(
+    Condition = "OVA + Terbeam",
+    Estimate = estimate,
+    Std_Error = std.error
+  )
+
+# 6. Compute derived configuration: OVO + Terbeam
+ovo_terbeam <- coefs %>%
+  filter(term == "BinarisationOVO") %>%
+  transmute(
+    Condition = "OVO + Terbeam",
+    Estimate = base$Estimate + estimate,
+    Std_Error = sqrt(std.error^2 + base$Std_Error^2)
+  )
+
+# 7. Compute derived configuration: OVA + Terga1
+ova_terga1 <- coefs %>%
+  filter(term == "ApproachTerga1 Predomics") %>%
+  transmute(
+    Condition = "OVA + Terga1",
+    Estimate = base$Estimate + estimate,
+    Std_Error = sqrt(std.error^2 + base$Std_Error^2)
+  )
+
+# 8. Compute derived configuration: OVO + Terga1
+ovo_terga1 <- tibble(
+  Condition = "OVO + Terga1",
+  Estimate = base$Estimate +
+    coefs$estimate[coefs$term == "BinarisationOVO"] +
+    coefs$estimate[coefs$term == "ApproachTerga1 Predomics"],
+  Std_Error = sqrt(
+    base$Std_Error^2 +
+      coefs$std.error[coefs$term == "BinarisationOVO"]^2 +
+      coefs$std.error[coefs$term == "ApproachTerga1 Predomics"]^2
+  )
+)
+
+# 9. Combine all configurations and compute confidence intervals
+df_plot1 <- bind_rows(base, ovo_terbeam, ova_terga1, ovo_terga1) %>%
+  mutate(
+    Lower = Estimate - 1.96 * Std_Error,
+    Upper = Estimate + 1.96 * Std_Error
+  )
+
+# 10. Generate a forest plot to visualize model estimates
+ggplot(df_plot1, aes(x = Estimate, y = reorder(Condition, Estimate))) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.2) +
+  geom_vline(xintercept = base$Estimate, linetype = "dashed", color = "gray") +
+  labs(
+    title = "Forest Plot of OVA/OVO × Terbeam/Terga1 Configurations",
+    x = "Estimated Accuracy (95% Confidence Interval)",
+    y = "Configuration"
+  ) +
+  theme_minimal()
+
+```
+
+### Interpretation of the Mixed-Effects Model Comparing OVA vs OVO and Terbeam vs Terga1 Approaches
+
+The mixed-effects linear model evaluates the influence of binarization strategy (OVA vs OVO) and multiclassification approach (Terbeam vs Terga1 Predomics) on the test accuracy of the Predomics models, accounting for variability across datasets and cross-validation folds. The model includes random intercepts for both the Dataset and Fold grouping factors, with a larger variance attributed to Dataset (SD = 0.0946) compared to Fold (SD = 0.017), suggesting that accuracy varies more across datasets than across folds.
+
+The fixed effects reveal significant and interpretable results:
+
+The intercept represents the mean accuracy under the reference configuration, i.e., OVA binarization with the Terbeam approach. Its estimated accuracy is 0.523, with a standard error of 0.048, indicating a reliable baseline performance.
+
+The BinarisationOVO coefficient is +0.063 (SE = 0.0058), suggesting that switching from OVA to OVO increases the accuracy significantly. This positive and highly significant effect (t = 10.86) implies that OVO binarization consistently outperforms OVA in terms of accuracy across datasets.
+
+Conversely, the ApproachTerga1 Predomics coefficient is −0.067 (SE = 0.0058), showing that replacing Terbeam with Terga1 leads to a significant drop in accuracy. The negative sign and strong t-value (−11.64) highlight that Terbeam remains the superior aggregation method in this context.
+
+Overall, the model confirms that the OVO binarization strategy significantly improves accuracy, while the Terga1 approach underperforms compared to Terbeam. The narrow residual variance (SD = 0.110) and well-scaled residuals (between −3.28 and +3.08) indicate a well-fitted model. These findings support the robustness of the extended Predomics model under multiclass settings, while also emphasizing the impact of design choices on performance.
+
+
+
+## Modele 2. Check Best Constrained
+
+### Forest Plot of Accuracy According to Constraint Levels (OVO + Terbeam Strategy)
+
+```{r warning=FALSE, fig.height= 6, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# 0. Subset the dataset: keep only rows with OVO binarisation and Terbeam approach
+df_ovo_terbeam <- df_predomics_1 %>%
+  filter(Binarisation == "OVO", Approach == "Terbeam Predomics")
+
+# 1. Fit a linear mixed-effects model
+# Accuracy is modeled as a function of Constraint_factor with random intercepts for Dataset and Fold
+mod.constraint <- lmer(Accuracy ~ Constraint_factor + (1 | Dataset) + (1 | Fold), 
+                       data = df_ovo_terbeam)
+
+# 2. Display the model summary (fixed and random effects)
+summary(mod.constraint)
+
+# 3. Extract fixed effects estimates and standard errors
+coefs <- tidy(mod.constraint, effects = "fixed")
+
+# 4. Reference configuration: Full-Constrained (Intercept term)
+full <- coefs %>% filter(term == "(Intercept)") %>%
+  transmute(
+    Condition = "Full-Constrained",
+    Estimate = estimate,
+    Std_Error = std.error
+  )
+
+# 5. Semi-Constrained: compute estimate and propagated standard error
+semi <- coefs %>% filter(term == "Constraint_factorSemi_Constrained") %>%
+  transmute(
+    Condition = "Semi-Constrained",
+    Estimate = full$Estimate + estimate,
+    Std_Error = sqrt(full$Std_Error^2 + std.error^2)
+  )
+
+# 6. Unconstrained: compute estimate and propagated standard error
+unco <- coefs %>% filter(term == "Constraint_factorUnconstrained") %>%
+  transmute(
+    Condition = "Unconstrained",
+    Estimate = full$Estimate + estimate,
+    Std_Error = sqrt(full$Std_Error^2 + std.error^2)
+  )
+
+# 7. Combine all three constraint configurations and calculate 95% confidence intervals
+df_plot2 <- bind_rows(full, semi, unco) %>%
+  mutate(
+    Lower = Estimate - 1.96 * Std_Error,
+    Upper = Estimate + 1.96 * Std_Error
+  )
+
+# 8. Plot a forest plot to visualize estimated accuracy with confidence intervals
+ggplot(df_plot2, aes(x = Estimate, y = reorder(Condition, Estimate))) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.2) +
+  geom_vline(xintercept = full$Estimate, linetype = "dashed", color = "gray") +
+  labs(
+    title = "Forest Plot: Accuracy by Constraint Factor (OVO + Terbeam)",
+    x = "Estimated Accuracy (95% CI)",
+    y = "Constraint Level"
+  ) +
+  theme_minimal()
+
+
+```
+###Interpretation of Model 2 Results: Impact of Constraint Levels on Accuracy (OVO + Terbeam)
+
+The second linear mixed-effects model evaluates the effect of different model constraint levels (Full-Constrained, Semi-Constrained, Unconstrained) on the test accuracy of the Predomics classifier under the OVO + Terbeam configuration.
+
+Random Effects:
+The variance attributed to dataset-level variation is relatively notable (SD ≈ 0.066), indicating that performance varies across datasets. In contrast, variation across folds is minimal (SD ≈ 0.014), suggesting that the cross-validation partitions contribute little to the variability of the results. The residual standard deviation (≈ 0.093) reflects within-configuration noise.
+
+Fixed Effects:
+
+The intercept (Estimate = 0.4919) corresponds to the mean accuracy under the Full-Constrained condition (used as reference).
+
+The Semi-Constrained configuration yields a significant improvement of +0.156 (p < 0.001), resulting in an estimated accuracy of ≈ 0.648. This suggests that relaxing some constraints leads to a meaningful performance gain.
+
+The Unconstrained model also improves accuracy by +0.127 (p < 0.001), reaching an estimated ≈ 0.619. However, this is slightly lower than the Semi-Constrained counterpart, indicating that while fully removing constraints helps, keeping some level of structure (semi-constrained) provides the best results.
+
+Conclusion:
+This model strongly supports the use of semi-constrained Predomics models for multiclass microbiome classification, particularly under the OVO + Terbeam configuration. The results emphasize that optimal regularization (neither too strict nor too loose) enhances model performance by balancing flexibility and generalization.
+
+
+
+## Modele 3 : Best Method Predomics
+###Comparison of Predomics Aggregation Methods (OVO + Terbeam) Code and Explanation
+
+```{r warning=FALSE, fig.height= 6, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Filter the dataset to retain only the methods of interest (Voting, Voting with Tie Breaking, Maximization)
+df_methods <- df_ovo_terbeam %>%
+  filter(Methods %in% c("Voting", "Voting_with_Tie_Breaking", "Maximization"))
+
+# Fit a linear mixed-effects model to evaluate the effect of aggregation method on Accuracy
+mod.methods <- lmer(Accuracy ~ Methods + (1 | Dataset) + (1 | Fold), data = df_methods)
+
+# View model summary (fixed and random effects)
+summary(mod.methods)
+
+# Extract fixed effects coefficients
+coefs <- tidy(mod.methods, effects = "fixed")
+
+# Reference condition: Maximization (Intercept term)
+ref <- coefs %>% filter(term == "(Intercept)") %>%
+  transmute(
+    Condition = "Maximization",
+    Estimate = estimate,
+    Std_Error = std.error
+  )
+
+# Voting method effect
+voting <- coefs %>% filter(term == "MethodsVoting") %>%
+  transmute(
+    Condition = "Voting",
+    Estimate = ref$Estimate + estimate,
+    Std_Error = sqrt(ref$Std_Error^2 + std.error^2)
+  )
+
+# Voting with Tie Breaking method effect
+vtb <- coefs %>% filter(term == "MethodsVoting_with_Tie_Breaking") %>%
+  transmute(
+    Condition = "Voting_with_Tie_Breaking",
+    Estimate = ref$Estimate + estimate,
+    Std_Error = sqrt(ref$Std_Error^2 + std.error^2)
+  )
+
+# Combine all methods and compute 95% confidence intervals
+df_plot3 <- bind_rows(ref, voting, vtb) %>%
+  mutate(
+    Lower = Estimate - 1.96 * Std_Error,
+    Upper = Estimate + 1.96 * Std_Error
+  )
+
+# Forest plot to visualize estimated Accuracy by aggregation method
+ggplot(df_plot3, aes(x = Estimate, y = reorder(Condition, Estimate))) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.2) +
+  geom_vline(xintercept = ref$Estimate, linetype = "dashed", color = "gray") +
+  labs(
+    title = "Forest Plot: Accuracy by Aggregation Method (OVO + Terbeam)",
+    x = "Estimated Accuracy (95% CI)",
+    y = "Method"
+  ) +
+  theme_minimal()
+
+
+```
+### Interpretation of Aggregation Methods Effect on Accuracy (Model 3 – OVO + Terbeam)
+
+This linear mixed-effects model evaluates the influence of different aggregation methods (Maximization, Voting, and Voting with Tie Breaking) on test accuracy in the OVO + Terbeam configuration of Predomics.
+
+Model Fit and Variance Explained
+
+The REML criterion at convergence is -511.5, which reflects the model's log-likelihood penalized for the fixed effects.
+
+Random effects indicate:
+
+Very small variability across folds: variance = 0.0000815 (Std.Dev ≈ 0.009).
+
+Moderate variability across datasets: variance = 0.004337 (Std.Dev ≈ 0.066).
+
+The largest source of variation comes from residual (within-group) error: variance = 0.01297 (Std.Dev ≈ 0.114), showing that other unexplained factors affect accuracy.
+
+Fixed Effects
+
+Reference method: Maximization (Intercept = 0.557), which serves as the baseline.
+
+Voting increases the accuracy by +0.041, and the t-value = 2.777, suggesting a statistically significant improvement (typically p < 0.01).
+
+Voting with Tie Breaking shows a slightly higher improvement: +0.047, with a t-value = 3.207, also statistically significant.
+
+Correlations Between Effects
+
+Moderate negative correlations between the intercept and the effects (-0.212), and a strong correlation (0.500) between Voting and Voting with Tie Breaking, which is expected as both are variants of aggregation strategies.
+
+Conclusion
+
+This model suggests that both Voting and Voting with Tie Breaking methods yield significantly better accuracy than the baseline Maximization method. Among them, Voting with Tie Breaking performs slightly better, although the difference between the two voting methods is modest. These results support the use of more refined aggregation strategies in multiclass Predomics modeling.
+
+
+
+## Modèle 4:  Comparaison OVA et OVO SOTA
+
+### Comparing Binarisation Strategies (OVA vs OVO) in SOTA Models
+
+```{r warning=FALSE, fig.height= 6, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# 1. Filter the dataset to include only SOTA models, with OVA or OVO binarisation, and only test set results
+df_sota_ova_ovo_test <- Analysis_Dataset_Complet_Sota_Predo %>%
+  filter(
+    Approach == "Sota",                 # Keep only SOTA models
+    Binarisation %in% c("OVA", "OVO"),  # Compare OVA vs OVO
+    Set == "Test"                       # Use only test results for model evaluation
+  )
+
+# 2. Fit a linear mixed-effects model
+# Accuracy is predicted from Binarisation strategy, accounting for random effects across datasets
+model_sota_binarisation <- lmer(
+  Accuracy ~ Binarisation + (1 | Dataset),
+  data = df_sota_ova_ovo_test
+)
+
+# 3. Display model summary to assess fixed and random effects
+summary(model_sota_binarisation)
+
+```
+### Interpretation of Model 4: OVA vs OVO in SOTA Models
+
+This linear mixed-effects model assesses whether the binarisation strategy (OVA vs OVO) significantly affects test accuracy in SOTA models, while accounting for variability between datasets.
+
+Model Overview
+
+Fixed effects:
+
+The intercept represents the mean accuracy for the OVA strategy (used as the reference level).
+
+Estimated accuracy = 0.537
+
+This estimate is statistically significant (t = 7.36), suggesting that under OVA, test accuracy is reliably above zero.
+
+The coefficient for BinarisationOVO is -0.004, indicating that the OVO strategy leads to a slight decrease in accuracy compared to OVA.
+
+However, this difference is not statistically significant (t = -0.33), as the effect is very small and the standard error is relatively large (0.0125).
+
+In other words, OVA and OVO perform similarly in SOTA models.
+
+Random effects:
+
+Variability across datasets is moderate (standard deviation ≈ 0.145), which justifies including (1 | Dataset) as a random effect.
+
+Residual variability is also non-negligible (≈ 0.137), suggesting some unexplained variation remains.
+
+Conclusion
+
+There is no significant difference between the OVA and OVO binarisation strategies in terms of test accuracy within SOTA models. Accuracy remains around 53.7%, and changing the binarisation scheme does not meaningfully impact the performance of SOTA classifiers on these datasets.
+
+
+## Modèle 5: Best Sota with OVO
+
+### Best Performing SOTA Method Using OVO Strategy
+
+```{r}
+# 1. Filter the data: keep only SOTA methods with OVO binarisation on the Test set
+df_sota_ovo_test <- Analysis_Dataset_Complet_Sota_Predo %>%
+  filter(Approach == "Sota",
+         Binarisation == "OVO",
+         Set == "Test")
+
+# 2. Fit the linear mixed-effects model with Method as fixed effect
+# and Dataset as a random intercept
+model_sota_ovo <- lmer(Accuracy ~ Methods + (1 | Dataset), data = df_sota_ovo_test)
+
+# 3. Display model summary
+summary(model_sota_ovo)
+
+# 4. Extract fixed effects
+coefs <- tidy(model_sota_ovo, effects = "fixed")
+intercept <- coefs$estimate[coefs$term == "(Intercept)"]
+
+# 5. Automatically detect the reference method (alphabetical order used by lmer)
+ref_method_name <- df_sota_ovo_test %>%
+  pull(Methods) %>%
+  unique() %>%
+  sort() %>%
+  .[1]
+
+# 6. Build row for reference method
+ref_method <- tibble(
+  Method = ref_method_name,
+  Estimate = intercept,
+  Std_Error = coefs$std.error[1],
+  Lower = intercept - 1.96 * coefs$std.error[1],
+  Upper = intercept + 1.96 * coefs$std.error[1]
+)
+
+# 7. Compute estimates for other methods (add to intercept)
+df_methods_ovo <- coefs %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    Method = gsub("Methods", "", term),
+    Estimate = estimate + intercept,
+    Lower = Estimate - 1.96 * std.error,
+    Upper = Estimate + 1.96 * std.error
+  ) %>%
+  select(Method, Estimate, std.error, Lower, Upper) %>%
+  rename(Std_Error = std.error)
+
+# 8. Combine reference method with other methods
+df_methods_ovo <- bind_rows(ref_method, df_methods_ovo) %>%
+  arrange(desc(Estimate))  # Order from best to worst
+
+# 9. Print the results table
+print(df_methods_ovo)
+
+# 10. Visualize using a forest plot
+ggplot(df_methods_ovo, aes(x = Estimate, y = reorder(Method, Estimate))) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.2) +
+  geom_vline(xintercept = intercept, linetype = "dashed", color = "gray") +
+  labs(
+    title = "Accuracy by Method (SOTA - OVO, Test Set)",
+    x = "Estimated Accuracy (95% Confidence Interval)",
+    y = "Method"
+  ) +
+  theme_minimal()
+
+```
+### Interprétation du modèle 5 : Performance des méthodes SOTA avec OVO
+
+Ce modèle linéaire mixte visait à comparer les performances d'accuracy des différentes méthodes SOTA utilisées avec la stratégie de binarisation One-vs-One (OVO), en tenant compte de la variabilité entre les jeux de données par l'inclusion d’un effet aléatoire sur la variable Dataset.
+
+L'intercept du modèle représente la moyenne d’accuracy de la méthode de référence, qui est ici Decision Tree, avec une estimation de 0.557 et un écart-type de 0.073. Cette valeur indique qu’en moyenne, la méthode Decision Tree atteint une précision d’environ 55,7 % sur l’ensemble des jeux de données considérés.
+
+En comparaison, la méthode K-Nearest Neighbors (KNN) montre une baisse marquée de performance, avec une différence estimée à -0.221 par rapport à Decision Tree. Ce résultat est fortement significatif, avec une valeur t de -9.976, indiquant que KNN est nettement moins performant dans ce contexte.
+
+À l’inverse, la méthode Random Forest présente une amélioration significative de l’accuracy par rapport à Decision Tree, avec une augmentation estimée à +0.054 et une valeur t de 2.451. Cela suggère que Random Forest est la méthode la plus performante parmi les approches SOTA évaluées sous la stratégie OVO.
+
+Les méthodes Logistic Regression et Support Vector Machine (SVM) présentent des estimations légèrement positives par rapport à Decision Tree (+0.023 et +0.010 respectivement), mais ces différences ne sont pas statistiquement significatives (valeurs t proches de 1 ou inférieures), ce qui implique que leurs performances ne diffèrent pas de manière fiable de celles de la méthode de référence.
+
+En résumé, Random Forest se distingue comme la meilleure méthode SOTA sous OVO, avec une amélioration significative de la précision, tandis que KNN est significativement moins performant. Les autres méthodes n’affichent pas de différences statistiquement significatives avec Decision Tree.
+
+
+## Modèle 6 Predomics vs Sota
+
+### Comparison between Predomics and SOTA (Random Forest under OVO)
+
+```{r}
+# Load necessary packages
+library(lme4)
+library(broom.mixed)
+
+# Step 1: Filter Predomics data (OVO + Voting_with_Tie_Breaking, Test set)
+df_predomics <- df_ovo_terbeam %>%
+  filter(Methods == "Voting_with_Tie_Breaking", Set == "Test") %>%
+  mutate(Method_Group = "Predomics")
+
+# Step 2: Filter Random Forest (SOTA, OVO, Test set)
+df_rf <- df_filtereds %>%
+  filter(Approach == "Sota",
+         Binarisation == "OVO",
+         Set == "Test",
+         Methods == "Random Forest") %>%
+  mutate(Method_Group = "Random Forest (OVO)")
+
+# Step 3: Merge both datasets
+df_comparaison <- bind_rows(df_predomics, df_rf)
+
+# Step 4: Fit the linear mixed-effects model
+model_comparaison <- lmer(Accuracy ~ Method_Group + (1 | Dataset), data = df_comparaison)
+
+# Step 5: Display full summary of the model (REML, fixed and random effects)
+summary(model_comparaison)
+
+# Step 6: Extract fixed effects for plot
+coefs <- tidy(model_comparaison, effects = "fixed")
+
+# Reference: Intercept = Predomics
+intercept <- coefs$estimate[coefs$term == "(Intercept)"]
+std_err <- coefs$std.error[coefs$term == "(Intercept)"]
+
+predomics <- tibble(
+  Condition = "Predomics",
+  Estimate = intercept,
+  Std_Error = std_err,
+  Lower = intercept - 1.96 * std_err,
+  Upper = intercept + 1.96 * std_err
+)
+
+# Random Forest (OVO)
+rf_offset <- coefs$estimate[coefs$term == "Method_GroupRandom Forest (OVO)"]
+rf_se <- coefs$std.error[coefs$term == "Method_GroupRandom Forest (OVO)"]
+
+random_forest <- tibble(
+  Condition = "Random Forest",
+  Estimate = intercept + rf_offset,
+  Std_Error = sqrt(std_err^2 + rf_se^2),
+  Lower = (intercept + rf_offset) - 1.96 * sqrt(std_err^2 + rf_se^2),
+  Upper = (intercept + rf_offset) + 1.96 * sqrt(std_err^2 + rf_se^2)
+)
+
+# Step 7: Combine both results
+df_plot6 <- bind_rows(predomics, random_forest)
+
+# Step 8: Forest plot
+ggplot(df_plot6, aes(x = Estimate, y = reorder(Condition, Estimate))) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.2) +
+  geom_vline(xintercept = predomics$Estimate, linetype = "dashed", color = "gray") +
+  labs(
+    title = "Forest Plot: Predomics vs. Random Forest",
+    x = "Estimated Accuracy (95% Confidence Interval)",
+    y = "Model"
+  ) +
+  theme_minimal()
+
+```
+
+### Interpretation of the Results
+
+The linear mixed-effects model was built to compare the classification accuracy of two models: Predomics (using the Voting_with_Tie_Breaking strategy in an OVO configuration) and Random Forest (OVO), which represents a state-of-the-art baseline. The model includes a random intercept to account for variability across datasets.
+
+The intercept, which corresponds to the estimated accuracy of the reference method (Predomics), is approximately 0.604. This means that, on average, Predomics achieves an accuracy of 60.4% on the test set. The estimated effect of using Random Forest instead of Predomics is a small increase of about 0.007, suggesting that Random Forest performs slightly better than Predomics. However, this difference is not statistically significant, as indicated by the very low t-value of approximately 0.33.
+
+In terms of variance components, the variability attributable to the dataset factor (random effect) is moderate, with a standard deviation of about 0.091. The residual variability within datasets is somewhat larger, with a standard deviation of approximately 0.117. This suggests that the main source of variability in model accuracy comes from differences within datasets rather than between them.
+
+Overall, these results indicate that Predomics and Random Forest perform similarly in terms of accuracy. The observed difference is minimal and not statistically meaningful, reinforcing the conclusion that Predomics is competitive with established methods like Random Forest in multiclass classification using the OVO strategy.
+
+
+##Combined Forest Plots of All Mixed Models
+
+The following plot summarizes the estimated accuracies and their confidence intervals across four key mixed-effects models. Each panel corresponds to a specific modeling question—comparing binarization strategies and approaches (Model 1), constraint levels (Model 2), aggregation methods (Model 3), and the comparison between Predomics and Random Forest as a state-of-the-art benchmark (Model 6). This visualization allows a compact comparison of the performance patterns and confidence bounds for each tested configuration.
+
+
+```{r warning=FALSE, fig.height= 8, fig.width=12, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Add panel labels to each model dataframe
+df_plot1$Panel <- "Model 1: Binarization & Approach"
+df_plot2$Panel <- "Model 2: Structural Constraints"
+df_plot3$Panel <- "Model 3: Aggregation Methods"
+df_plot6$Panel <- "Model 6: Predomics vs. SOTA"
+
+# Combine the four datasets into a single dataframe
+df_all <- bind_rows(df_plot1, df_plot2, df_plot3, df_plot6)
+
+# Create forest plots with facets
+ggplot(df_all, aes(x = Estimate, y = reorder(Condition, Estimate))) +
+  geom_point(size = 3) +  # point estimate
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.2) +  # confidence interval
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray") +  # vertical reference line
+  facet_wrap(~ Panel, scales = "free_y") +  # one facet per model
+  labs(
+    title = "Forest Plots of Estimated Accuracy by Modeling Strategy",
+    x = "Estimated Accuracy (95% CI)",
+    y = "Configuration"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 9),
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

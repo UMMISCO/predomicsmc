@@ -1,0 +1,523 @@
+---
+title: "My Vignette"
+author: "Fabien KAMBU MBUANGI"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{My Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!requireNamespace("pROC", quietly = TRUE)) knitr::knit_exit()
+```
+
+# The mcpredomics package is a supervised learning method for interpretable
+# multiclass classification of metagenomic data. This method is derived 
+# from one of the genetic algorithm-based heuristics in the predomics package.
+# More details: https://github.com/predomics/predomicspkg
+
+# Installation Instructions
+
+## Step 1: Install dependencies
+install.packages(c("doSNOW", "foreach", "snow", "doRNG", "gtools",
+                   "glmnet", "pROC", "viridis", "kernlab", "randomForest"))
+
+# Ensure BiocManager is installed
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+
+# Install BioQC (a Bioconductor package)
+BiocManager::install("BioQC")
+
+# Optionally install additional packages
+install.packages(c("testthat", "roxygen2", "predomics", "mcpredomics"))
+
+
+
+# Introduction
+
+The mcpredomics package is designed to streamline the development, evaluation, and visualization of machine learning models in a multiclass context. It provides a comprehensive suite of functions to assist users in every stage of the modeling process, from visualizing model characteristics to assessing their performance and managing associated populations. This documentation serves as a guide to introduce the package’s functionality and provide users with the tools they need for effective implementation.
+
+## Visualization Functions
+
+The package includes a variety of general-purpose visualization functions to explore models, their performance metrics, and the underlying populations. These functions allow users to gain valuable insights into their data and models with ease.
+The implemented functions include:
+printy_mc
+printModel_mc
+printPopulation_mc
+printModelCollection_mc
+printExperiment_mc
+printClassifier_mc
+plotAUC_mc
+plotPrevalence_mc
+plotAbundanceByClass_mc
+mergeMeltImportanceCV_mc
+plotFeatureModelCoeffs_mc
+makeFeatureAnnot_mc
+plotModel_mc
+To learn more about the functionality of each visualization tool, use the ?? command followed by the function name. For example, ??printy_mc provides detailed information about the printy_mc function.
+
+## Binary Sub-Model Evaluation
+
+To support the evaluation of binary sub-models, we have implemented several global functions that provide insights into accuracy, AUC, regression metrics, feature importance, and more. These tools are crucial for assessing the quality and relevance of individual sub-models within the multiclass framework.
+The following functions are available:
+getSign_mc,
+evaluateAccuracy_mc,
+evaluateAUC_mc,
+evaluateAdditionnalMetrics_mc,
+evaluateModelRegression_mc,
+evaluateFit_mc,
+evaluateModel_mc,
+evaluatePopulation_mc,
+listOfSparseVecToListOfModels_mc,
+evaluateFeatureImportanceInPopulation_mc,
+generate_combinations_with_factors.
+For a detailed description of any of these functions, you can use the ?? command. For instance, ??evaluateAccuracy_mc provides a comprehensive overview of the evaluateAccuracy_mc function.
+
+## Multiclass Predictions and Aggregation Methods
+
+The package supports multiclass modeling using one-versus-all (OVA) and one-versus-one (OVO) approaches. Additionally, it provides multiple methods for aggregating predictions from these approaches, as well as tools for evaluating the aggregated models.
+The available functions are:
+Prediction: predictModel_ova, predictModel_ovo,
+Aggregation: voting, Predomics_aggregation_ovo, weighted, Predomics_aggregation_ova, maximization, ranking
+Evaluation: evaluateModel_aggregation, evaluateModels_aggregation.
+Each function serves a unique role, whether it involves generating predictions, combining results, or assessing model performance. For more details, use the ?? command, such as ??predictModel_ova for the predictModel_ova function.
+
+## Multiclass Algorithm Implementations
+
+We have extended the terBeam and terga1 algorithms to handle multiclass problems, introducing a set of specialized functions for model generation, feature combination management, and evolution optimization. These tools are designed to create scalable and efficient multiclass models.
+The implemented functions include:
+terBeam_mc, terBeam_fit_mc
+generateAllSingleFeatureModel_mc, generateAllCombinations_mc
+countEachFeatureApperance_mc, getFeatures2Keep_mc
+terga1_mc, terga1_mc_fit
+evolve_mc
+You can explore the purpose and functionality of each function using the ?? command. For example, ??terBeam_fit_mc will provide a detailed explanation of the terBeam_fit_mc function.
+
+## Core Functionalities
+
+To ensure flexibility and efficiency in training, testing, and validating multiclass models, we have implemented the following core functions:
+fit_mc: Fits models to the provided dataset.
+runClassifier_mc: Executes the classifier to generate predictions.
+runCrossval_mc: Runs cross-validation to evaluate model performance.
+These foundational functions make it easier to integrate multiclass workflows into your projects. For detailed information on any of these functions, use the ?? command, such as ??runClassifier_mc for the runClassifier_mc function.
+
+
+
+# Experimental Phase
+
+## Loading libraries
+
+```{r warning=FALSE}
+# Package multi class predomics
+library(mcpredomics)
+# Package predomics
+library(predomics)
+# Visualization library for creating complex plots
+library(ggplot2) 
+# Arranges multiple ggplot objects on a single page
+library(gridExtra) 
+# ROC curve analysis and AUC calculation
+# Reshaping and melting data frames
+library(reshape2) 
+# Implementation of the Random Forest algorithm for classification and regression
+library(randomForest) 
+# Comprehensive library for classification and regression training
+library(caret) 
+# Various R programming tools and functions, including data manipulation
+library(gtools) 
+# Adding statistical comparisons and publication-ready visualizations
+library(ggpubr) 
+# Data manipulation and transformation (part of the tidyverse)
+library(dplyr) 
+# Tidying messy data by gathering and spreading
+library(tidyr) 
+# Enhanced data frames with row names as a column (tibble format)
+library(tibble) 
+# Dynamic report generation and displaying results in tables
+library(knitr) 
+# Creating aesthetically pleasing and customizable HTML tables
+library(kableExtra) 
+# Interactive tables for data visualization and exploration
+library(DT) 
+# Functions for statistical learning, including SVM and Naive Bayes
+library(e1071) 
+# Lasso and ridge regression via generalized linear models
+library(glmnet) 
+# Reading data from files (including CSV and text files)
+library(readr) 
+# String manipulation and regular expression functions
+library(stringr) 
+# package Excel
+library(writexl)
+
+
+```
+
+
+
+
+
+## Dataset
+
+We experimented with three datasets. The first one was drawn from the MetaCardis project and consists of four enterotype groups: **Bacteroidetes1**, **Bacteroidetes2**, **Prevotella**, and **Ruminococcus**. To do this, we created an initial balanced dataset by randomly extracting the same number of samples from each group. Additionally, we used the original unbalanced dataset. 
+
+Next, we experimented with two other datasets: 
+1. A three-class dataset (**Adenoma**, **Colorectal Cancer**, **Control**) from the study by **Qiang Feng et al.**
+2. A three-class dataset (**T2D**, **IGT**, and **Control**) from the study by **Fredrik H. Karlsson**.
+
+
+### Balance the dataset Metacardis.
+
+```{r}
+##data("mc.input", package = "mcpredomics")
+##set.seed(123)
+##yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+
+# Filter null values
+##X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+##X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
+
+##set.seed(42)
+##y = as.vector(yvec)
+##X = X_general
+
+# Determine the number of samples per class
+##nombre_echantillons_par_classe <- min(table(y))
+
+# Function to balance classes and maintain order
+##equilibrer_classes <- function(y, X, nombre_echantillons_par_classe, seed = 123) {
+  ##classes <- unique(y)
+  ##indices_equilibres <- integer(0)
+  
+  ##for (classe in classes) {
+    ##indices_classe <- which(y == classe)
+    ##set.seed(seed)
+    ##indices_equilibres <- c(indices_equilibres, sample(indices_classe, nombre_echantillons_par_classe))
+  ##}
+
+  # Sort balanced indices to maintain original order
+  ##indices_equilibres <- sort(indices_equilibres)
+  ##return(list(y = y[indices_equilibres], X = X[, indices_equilibres]))
+##}
+
+# Get balanced data
+##donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
+##y_equilibre <- donnees_equilibrees$y
+##X_equilibre <- donnees_equilibrees$X
+
+# Check distribution after balancing
+##set.seed(42)
+##indices_division <- createDataPartition(y_equilibre, p = 0.8, list = FALSE)
+
+# Split balanced data into 80% for training and 20% for testing
+##y <- as.vector(y_equilibre[indices_division])
+##y.test <- as.vector(y_equilibre[-indices_division])
+##X <- X_equilibre[, indices_division, drop = FALSE]
+##X.test <- X_equilibre[, -indices_division, drop = FALSE]
+
+##table(y)
+##dim(X)
+
+```
+
+
+### Original unbalanced dataset Metacardis
+
+```{r}
+data("mc.input", package = "mcpredomics")
+
+set.seed(123)
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+
+# Filter null values
+X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
+
+set.seed(42)
+y = as.vector(yvec)
+X = X_general
+# Check distribution after balancing
+set.seed(42)
+indices_division <- createDataPartition(y, p = 0.8, list = FALSE)
+
+# Split balanced data into 80% for training and 20% for testing
+y <- as.vector(y[indices_division])
+y.test <- as.vector(y[-indices_division])
+X <- X[, indices_division, drop = FALSE]
+X.test <- X[, -indices_division, drop = FALSE]
+
+table(y)
+dim(X)
+```
+
+Load Other Datasets
+
+```{r}
+# Load the file
+##data("predomics.inputs.ExperimentHubMulticlass", package = "mcpredomics")
+##lapply(predomics.inputs.ExperimentHubMulticlass, function(x){summary(colSums(x[["X"]]))})
+```
+
+
+### Dataset Colorectal cancer
+
+
+```{r}
+# Extract data
+##data1 <- predomics.inputs.ExperimentHubMulticlass$FengQ_2015
+##df <- data1$y.df
+##y <- df$study_condition
+##X <- data1$X
+##table(y)
+##dim(X)
+
+```
+
+
+
+### T2D
+
+```{r}
+##data1 <- predomics.inputs.ExperimentHubMulticlass$KarlssonFH_2013
+##df <- data1$y.df
+##y <- df$study_condition
+##X <- data1$X
+##table(y)
+##dim(X)
+```
+
+
+
+## Heuristics
+
+Heuristics: We have integrated the possibility of calling multiclass functions while incorporating two heuristics from Predomics: TerGa1, based on genetic algorithms, and TerBeam, which performs beam search. This led to the development of the multiclass versions TerGa1 Multiclass and TerBeam Multiclass, applied in our package.  
+
+### terbeam_mc
+
+```{r}
+##clf <- terBeam_mc(sparsity = c(4,5,6,7,8,9,10), 
+                                ##   max.nb.features = 1000,
+                                ##   seed = 1,
+                                ##   nCores = 1,
+                                ##   evalToFit = "accuracy_",
+                                ##   objective = "auc",
+                               ##    experiment.id = "terBeam_mc",
+                              ##     experiment.save = "nothing")
+  
+                      
+ ## printy(clf)  
+```
+
+
+
+
+
+
+## Running experiment
+
+Launching the experiment using the TerBeam_MC heuristic, with the Predomics Aggregation method "One Versus All", following the One Versus All approach. This experiment is launched by setting the parameter `constrained` to `false`, meaning that each binary submodel will use its own variables for model construction.
+
+
+##"unconstrained" , #fully_constrained,  semi_constrained
+```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
+##runit = TRUE
+##if(runit)
+##{
+##res_clf_mc_enterotype_Majority_Voting_With_Tie_Breaking_ovo <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Majority_Voting_with_Tie_Breaking", nfolds = 10, constraint_factor = "semi_constrained"); 
+##save(res_clf_mc_enterotype , clf, file ="res_clf_mc_enterotype.rda", compression_level = 9)
+##}
+
+
+```
+
+
+
+
+
+
+### Family of Best Models (FBM)
+
+A family of best models is defined as the set of models returned by the predomics algorithm, whose accuracy is within a given window of the best model's accuracy. This window is defined by computing a significance threshold assuming that accuracy follows a binomial distribution (p<0.05). 
+
+
+```{r}
+# Convert the model collection into a population of models scrambled by model size
+##data("Analysis_Dataset_Complet_Sota_Predo", package = "mcpredomics")
+##pop <- modelCollectionToPopulation(Analysis_Dataset_Complet_Sota_Predo$classifier$models)
+##printy_mc(pop)
+# Function to create boxplot for a given data frame
+##create_boxplot <- function(data, title) {
+  # Melt the dataframe for ggplot
+ ## data.melt <- melt(data, id.vars = c("accuracy_", "eval.sparsity"))
+  
+  # Create ggplot
+ ## plot <- ggplot(data = data.melt, aes(y = accuracy_, x = eval.sparsity)) +
+  ##  geom_boxplot(notch = FALSE, outlier.shape = NA, position = position_dodge(width = 0.9), alpha = 0.3) +
+   ## geom_point(aes(color = eval.sparsity), position = position_jitterdodge(dodge.width = 0.9), size = 1, alpha = 0.5) +
+   ## ylim(c(0, 1)) +
+   ## xlab("Model Parsimony") +
+   ## ggtitle(title) +
+   ## theme_bw() +
+   ## theme(legend.position = "bottom", legend.direction = "horizontal") +
+   ## guides(colour = "none")
+  
+  ##return(plot)
+##}
+
+# Convert the population to a data frame
+##pop.df <- populationToDataFrame_mc(pop)
+
+# Plotting for the original population (single figure)
+##pop.dff <- as.data.frame(pop.df[[1]])  # Convert the first submodel to a data frame
+##g.before <- create_boxplot(pop.dff, title = "Original Population")
+#print(g.before)  # Display the plot
+
+# Select the best population models
+##fbm <- selectBestPopulation(pop)
+#printy_mc(fbm)
+
+# Convert the best population models to a data frame
+##fbm.df <- populationToDataFrame_mc(fbm)
+
+# Plotting for the selected best models (single figure)
+##fbm.dff <- as.data.frame(fbm.df[[1]])  # Convert the first submodel to a data frame
+##g.after <- create_boxplot(fbm.dff, title = "FBM")
+##print(g.after)  # Display the plot
+```
+
+###Analyzing the FBM
+
+The analysis of the family of best models (FBM) can be very insightful for discovering the most important variables in the prediction process. Let's start by examining the usage of variables in the FBM models. For this, we run the ?makeFeatureAnnot_mc function to obtain the feature distribution in the model matrix, which is a list of pop.noz elements. The models in the FBM are ranked by accuracy, and this order will be preserved in the coefficient dataframe. There are 20 features found in the FBM models. The figure below shows that some of these features are very prevalent in the FBM, making them likely important. The abundance and prevalence distribution of these features can be explored with ?plotAbundanceByClass_mc and ?plotPrevalence_mc, respectively. Gray stars on the right side of the graphics indicate significant differences between the prediction groups.
+
+
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=8, fig.width=43}
+##fa <- makeFeatureAnnot_mc(pop = fbm, 
+                    ##   X = X, 
+                     ##  y = y, 
+                     ##  clf = clf,
+                      ## approch = "ovo")
+##plot_distribution <- plotFeatureModelCoeffs_mc(feat.model.coeffs = fa, y, approch = "ovo")
+##plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "ovo")
+##plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ovo")
+```
+
+
+### Feature importance
+
+Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
+
+```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=8, fig.width=43}
+
+
+  ##feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam =  Analysis_Dataset_Complet_Sota_Predo),
+                                        ##filter.cv.prev = 0,
+                                        ##min.kfold.nb = FALSE,
+                                        ##learner.grep.pattern = "*",
+                                        #nb.top.features = 50,
+                                        ##feature.selection = fa,
+                                        ##scaled.importance = TRUE,
+                                        ##make.plot = TRUE,
+                                        ##cv.prevalence = FALSE)
+
+
+
+  ##feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = Analysis_Dataset_Complet_Sota_Predo),
+                                       ## filter.cv.prev = 0,
+                                        ##min.kfold.nb = FALSE,
+                                        ##learner.grep.pattern = "*",
+                                       ## nb.top.features = 148,
+                                        #feature.selection = rownames(fa$pop.noz),
+                                        ##scaled.importance = TRUE,
+                                        ##make.plot = TRUE,
+                                        ##cv.prevalence = FALSE)
+```
+
+
+
+### Visualizing the best model
+
+The best-learned model can be visualized simply by printing it along with a summary of information on performance and model size. Furthermore, we can further explore the model by visualizing it using the barcode plot ?plotModel_mc. Finally, the importance of each feature can also be displayed using the same function, as illustrated in the figure below.
+
+```{r best model, fig.height=28, fig.width=70, warning=FALSE}
+
+
+
+# Obtenir le meilleur modèle
+##best.model <- fbm[[1]]
+
+# Visualiser les infos (facultatif)
+##printy_mc(best.model)
+
+# Générer les graphiques
+##plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ovo")
+##plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
+
+# Fonction utilitaire pour améliorer la lisibilité
+##adjust_plot_theme <- function(plot) {
+ ## plot + theme(
+    ##text = element_text(size = 16),              # Texte global
+    ##axis.title = element_text(size = 20),        # Titre des axes
+    ##axis.text = element_text(size = 14),         # Texte des axes
+    ##legend.title = element_text(size = 16),
+    ##legend.text = element_text(size = 14),
+    ##plot.title = element_text(size = 20, face = "bold"),
+    ##strip.text = element_text(size = 16)
+  ##)
+##}
+
+# Appliquer le thème à chaque plot
+##plots1 <- lapply(plots1, adjust_plot_theme)
+##plots2 <- lapply(plots2, adjust_plot_theme)
+
+#  Enregistrer en PDF avec bonne lisibilité
+##pdf("model_visualization_plots2.pdf", width = 70, height = 28)  # A0 ~ 1189 × 841 mm
+##grid.arrange(grobs = c(plots1, plots2), ncol = 3)
+##dev.off()
+##cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\n")
+
+#️ Affichage direct dans RStudio (avec meilleures polices)
+##grid.arrange(grobs = c(plots1, plots2), ncol = 3)
+
+
+```
+
+##"unconstrained" , #fully_constrained,  semi_constrained
+```{r}
+  ##best.model.test <- evaluateModel_mc(
+   ## mod = fbm[[1]],
+   ## X = X,
+    ##y = y,
+    ##clf = clf,
+    ##eval.all = TRUE,
+    ##force.re.evaluation = TRUE,
+    ##aggregation_ = "Majority_Voting_with_Tie_Breaking",
+    ##constraint_factor = "semi_constrained",
+    ##mode = "test",
+    ##approch = "ovo"
+  ##)
+
+```
+
+
+
+
+### Visualizing model performance AUC
+
+```{r roc analyses, fig.height=7, fig.width=7, message=FALSE, warning=FALSE, paged.print=FALSE}
+##tmp <- plotAUC_mc(scores = best.model.test$score_, y = y, percent = TRUE, approch = "ovo"); rm(tmp)
+
+
+```
+
+
+
+
+
+
+
+

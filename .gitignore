@@ -5,3 +5,6 @@
 .RData
 .Ruserdata
 >>>>>>> origin/main
+inst/doc
+/doc/
+/Meta/
