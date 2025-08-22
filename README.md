@@ -1,35 +1,101 @@
+mcpredomics
+================
+
+- <a href="#mcpredomics" id="toc-mcpredomics">mcpredomics</a>
+  - <a href="#installation" id="toc-installation">Installation</a>
+- <a href="#install-bioqc-from-bioconductor"
+  id="toc-install-bioqc-from-bioconductor">Install BioQC from
+  Bioconductor</a>
+- <a href="#install-predomics-required-dependency"
+  id="toc-install-predomics-required-dependency">Install predomics
+  (required dependency)</a>
+- <a href="#install-mcpredomics-from-github"
+  id="toc-install-mcpredomics-from-github">Install mcpredomics from
+  GitHub</a>
+  - <a href="#package-file-presentation"
+    id="toc-package-file-presentation">Package File Presentation</a>
+
 # mcpredomics
 
 <!-- badges: start -->
-[![License: GPL-3](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+[![License:
+GPL-3](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 <!-- badges: end -->
 
-`mcpredomics` is an R package for interpretable multiclass classification of metagenomic data.  
-It extends the [`predomics`](https://github.com/predomics/predomicspkg) framework by adapting its genetic algorithm-based heuristics to multiclass problems using One-vs-One (OvO) and One-vs-All (OvA) strategies.
+`mcpredomics` is an R package for interpretable multiclass
+classification of metagenomic data.  
+It extends the [`predomics`](https://github.com/predomics/predomicspkg)
+framework by adapting its genetic algorithm-based heuristics to
+multiclass problems using One-vs-One (OvO) and One-vs-All (OvA)
+strategies.
 
-This package is particularly suited for microbiome classification tasks where both **accuracy** and **interpretability** are critical.  
-It provides reproducible methods and visualization tools to compare multiple strategies, constraints, and model structures.
+This package is particularly suited for microbiome classification tasks
+where both **accuracy** and **interpretability** are critical.  
+It provides reproducible methods and visualization tools to compare
+multiple strategies, constraints, and model structures.
 
-> **Note:** Although the package is named `mcpredomics`, the development repository is named [`predomicsmc`](https://github.com/UMMISCO/predomicsmc).
+> **Note:** Although the package is named `mcpredomics`, the development
+> repository is named
+> [`predomicsmc`](https://github.com/UMMISCO/predomicsmc).
 
----
+------------------------------------------------------------------------
 
 ## Installation
 
 To install the development version of `mcpredomics` from GitHub:
 
-```r
-# Install required dependencies
-install.packages(c("doSNOW", "foreach", "snow", "doRNG", "gtools", 
-                   "glmnet", "pROC", "viridis", "kernlab", "randomForest"))
+\`\`\`r \# Install required dependencies install.packages(c(“doSNOW”,
+“foreach”, “snow”, “doRNG”, “gtools”, “glmnet”, “pROC”, “viridis”,
+“kernlab”, “randomForest”))
 
 # Install BioQC from Bioconductor
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-BiocManager::install("BioQC")
+
+if (!requireNamespace(“BiocManager”, quietly = TRUE))
+install.packages(“BiocManager”) BiocManager::install(“BioQC”)
 
 # Install predomics (required dependency)
-install.packages("predomics")
+
+install.packages(“predomics”)
 
 # Install mcpredomics from GitHub
-devtools::install_github("UMMISCO/predomicsmc")
+
+devtools::install_github(“UMMISCO/predomicsmc”)
+
+## Package File Presentation
+
+The package is organized into several main folders and files:
+
+- vignettes/ Contains tutorials and statistical analyses:
+  - `Analyse_Resultat_Finale.Rmd`: Includes all statistical summaries of
+    our experiments, as well as statistical analyses performed with
+    linear mixed-effects models.  
+  - `my_vignette.Rmd`: Demonstrates how to launch an experiment,
+    including an example using the colorectal cancer dataset.  
+  - Additionally, this folder contains four Excel files with descriptive
+    statistics of experimental performances for the following datasets:
+    Enterotypes, Balanced Enterotypes, CRC, and T2D.
+- data/  
+  Contains packaged datasets and experiment results:
+  - `mc.input.rda`: The Enterotype dataset.  
+  - A collection of other multiclass datasets, whose details are
+    described in `my_vignette.Rmd`.  
+  - A dataframe storing all tested experimental results.
+- R/  
+  Contains the main functions of the package:
+  - `globale_mc.R`: Core multiclass functions, aggregation methods, and
+    evaluation utilities.  
+  - `global_visuel.R`: Visualization functions (e.g., `plotModel_mc`).  
+  - `terBeam_mc.R`: Implementation of the multiclass extension of the
+    terBeam classifier.  
+  - `terga1_mc.R`: Implementation of the multiclass extension of the
+    terga1 classifier.  
+  - `terbeam_lib_mc.R`: Support library functions for the multiclass
+    terBeam classifier.  
+  - `predomics_mc.R`: Contains the multiclass version of `fit()`, the
+    classifier execution, and multiclass cross-validation procedures.  
+  - `sota_analyse.R`: Implements baseline (SOTA) methods, both in native
+    form and with OvA/OvO binarization. These functions are commented by
+    default and can be uncommented if needed.
+- archives/ A draft folder used to store example scripts that were
+  considered useful to keep for reference.

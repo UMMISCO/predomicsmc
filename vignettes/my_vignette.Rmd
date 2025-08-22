@@ -450,7 +450,7 @@ In this example, we rely on the multiclass terBeam heuristic combined with the s
 
 
 ```{r}
-clf <- terBeam_mc(sparsity = c(5,6,7,8,9), 
+clf <- terBeam_mc(sparsity = c(6,7,8,9), 
                                 max.nb.features = 1000,
                                 seed = 1,
                                 nCores = 1,
