@@ -2,6 +2,7 @@
 
 export(Majority_Voting_with_Tie_Breaking)
 export(Majority_Voting_with_Tie_Breaking_ova)
+export(build_experiment_metrics)
 export(build_model_annotation_heatmap_data)
 export(computeCardEnrichment_mc)
 export(decompose_y_levels)

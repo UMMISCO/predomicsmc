@@ -318,7 +318,7 @@ Here we present how to use the MetaCardis dataset with class balance. You simply
 ```
 
 
-### Original unbalanced dataset Metacardis
+### Imbalanced Enterotype Dataset
 
 Please uncomment this code if needed.
 
@@ -493,6 +493,7 @@ In this study, we illustrate the proposed framework using the configuration that
 - the `semi_constrained` constraint factor,
 - the `Majority_Voting_with_Tie_Breaking` aggregation strategy,
 - and the `One-vs-One (OvO)` multiclass decomposition approach.
+- Imbalanced Enterotype Dataset
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
@@ -521,7 +522,7 @@ This strategy allows the identification of multiple sparse and interpretable can
 # Load result object
 # =========================================================
 
-load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_imbalance_2026.rda")
+load(file.path(getwd(), "res_clf_mc_imbalance_2026.rda"))
 
 # =========================================================
 # Convert model collection into a population of models
@@ -807,97 +808,89 @@ print(predo_imbalance_semi_VTB_terbeam_df)
 ```{r warning=FALSE, fig.height=8, fig.width=10}
 
 # =========================================================
+# Libraries
+# =========================================================
+
+library(dplyr)
+library(lme4)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(ggplot2)
+library(ggh4x)
+library(patchwork)
+library(scales)
+
+# =========================================================
 # Load the complete experimental dataframe
 # =========================================================
 
-load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/Analysis_Dataset_Complet_Sota_vs_Predo.rda")
+load(file.path(getwd(), "Analysis_Dataset_Complet_Sota_vs_Predo.rda"))
+
 # =========================================================
 # Filter dataframe for Predomics hyperparameter analysis
 # =========================================================
-#
-# Keep only:
-# - multiclass settings (exclude "NO")
-# - Predomics approaches only
-# - test performances only
-#
-# =========================================================
+
 df_all <- Analysis_Dataset_Complet_Sota_vs_Predo %>%
-  filter(
+  dplyr::filter(
     Binarisation != "NO",
     Approach != "Sota",
     Set == "Test"
   )
+
 # =========================================================
 # Dataset ordering
 # =========================================================
-#
-# Define a consistent ordering of datasets for:
-# - statistical reporting
-# - plotting
-# - reproducibility
-#
-# =========================================================
+
 ds_order <- c(
   "Imbalanced Enterotype",
   "Balanced Enterotype",
   "Colorectal cancer",
   "T2D"
 )
+
 df_all$Dataset <- factor(
   df_all$Dataset,
   levels = ds_order
 )
+
 # =========================================================
 # Mixed-effects model
 # =========================================================
-#
-# Fixed effects:
-# - Approach
-# - Binarisation
-# - Their interaction
-#
-# Random effects:
-# - Dataset variability
-# - Cross-validation fold variability
-#
-# =========================================================
-m_all <- lmer(
+
+m_all <- lme4::lmer(
   Accuracy ~ Approach * Binarisation +
     (1 | Dataset) +
     (1 | Fold),
   data = df_all
 )
+
 # =========================================================
-# Estimated marginal means (EMMs)
-# =========================================================
-#
-# Compute adjusted mean accuracies for each approach
-# within each binarisation strategy.
-#
+# Estimated marginal means
 # =========================================================
 
-em_all <- emmeans(
+em_all <- emmeans::emmeans(
   m_all,
   ~ Approach | Binarisation
 )
 
 em_all_df <- as.data.frame(em_all)
+
 # =========================================================
 # Pairwise comparisons between approaches
 # =========================================================
-#
-# Compute pairwise contrasts and confidence intervals
-# within each binarisation strategy.
-#
-# =========================================================
+
 prs <- pairs(
   em_all,
   by = "Binarisation"
 )
+
 prs_df <- as.data.frame(prs)
+
 prs_ci <- as.data.frame(
   confint(prs)
 )
+
 pairs_all <- merge(
   prs_df,
   prs_ci[, c(
@@ -909,48 +902,43 @@ pairs_all <- merge(
   by = c("contrast", "Binarisation"),
   all.x = TRUE
 )
+
 # =========================================================
 # Statistical significance annotations
 # =========================================================
-#
-# Create:
-# - significance categories
-# - significance symbols
-#
-# =========================================================
+
 pairs_all$p.value.cat <- ifelse(
   pairs_all$p.value < 0.05,
   "pvalue<0.05",
   "NS"
 )
+
 pairs_all$sig_symb <- cut(
   pairs_all$p.value,
   breaks = c(-Inf, 0.001, 0.01, 0.05, Inf),
   labels = c("***", "**", "*", "NS"),
   right = TRUE
 )
+
 cols_pv <- c(
-  "pvalue<0.05" = muted("green"),
-  "NS" = muted("red")
+  "pvalue<0.05" = scales::muted("green"),
+  "NS" = scales::muted("red")
 )
+
 # =========================================================
-# Compact letter display (CLD)
+# Compact letter display
 # =========================================================
-#
-# Groups approaches that are not significantly different.
-#
-# =========================================================
+
 cld_tbl <- tryCatch(
   {
     as.data.frame(
-      cld(
+      multcomp::cld(
         em_all,
         by = "Binarisation"
       )
     )
   },
   error = function(e) {
-    
     warning(
       paste(
         "CLD not computed.",
@@ -960,9 +948,11 @@ cld_tbl <- tryCatch(
     NULL
   }
 )
+
 # =========================================================
 # Merge CLD annotations with EMM dataframe
 # =========================================================
+
 if (!is.null(cld_tbl)) {
   
   cld_tbl$.group <- gsub(
@@ -972,7 +962,7 @@ if (!is.null(cld_tbl)) {
   )
   
   em_all_df <- em_all_df %>%
-    left_join(
+    dplyr::left_join(
       cld_tbl %>%
         dplyr::select(
           Approach,
@@ -985,17 +975,14 @@ if (!is.null(cld_tbl)) {
       )
     )
 }
+
 # =========================================================
 # Define Predomics family categories
 # =========================================================
-#
-# Used for plot coloring and interpretation.
-#
-# =========================================================
+
 em_all_df <- em_all_df %>%
-  mutate(
-    Family = case_when(
-      
+  dplyr::mutate(
+    Family = dplyr::case_when(
       grepl(
         "^Terbeam",
         as.character(Approach)
@@ -1009,36 +996,40 @@ em_all_df <- em_all_df %>%
       TRUE ~ NA_character_
     )
   )
+
 # =========================================================
 # Define family colors
 # =========================================================
+
 col_family <- c(
-  "Predomics Terbeam" = muted("blue"),
-  "Predomics Terga1" = muted("red")
+  "Predomics Terbeam" = scales::muted("blue"),
+  "Predomics Terga1" = scales::muted("red")
 )
 
 present_levels <- intersect(
   names(col_family),
   unique(em_all_df$Family)
 )
+
 # =========================================================
 # Panel 1:
 # Estimated marginal means + confidence intervals
 # =========================================================
-p1 <- ggplot(
+
+p1 <- ggplot2::ggplot(
   em_all_df,
-  aes(
+  ggplot2::aes(
     x = Approach,
     y = emmean,
     colour = Family
   )
 ) +
-  geom_point(
+  ggplot2::geom_point(
     size = 4,
     na.rm = TRUE
   ) +
-  geom_errorbar(
-    aes(
+  ggplot2::geom_errorbar(
+    ggplot2::aes(
       ymin = lower.CL,
       ymax = upper.CL
     ),
@@ -1046,57 +1037,59 @@ p1 <- ggplot(
     na.rm = TRUE
   ) +
   {
-    if (!is.null(cld_tbl))
-      geom_text(
-        aes(label = .group),
+    if (!is.null(cld_tbl)) {
+      ggplot2::geom_text(
+        ggplot2::aes(label = .group),
         vjust = -0.8,
         size = 5,
         colour = "black",
         show.legend = FALSE
       )
-    else NULL
+    } else {
+      NULL
+    }
   } +
-  scale_color_manual(
+  ggplot2::scale_color_manual(
     values = col_family,
     breaks = present_levels,
     labels = present_levels,
     na.translate = FALSE,
     drop = FALSE
   ) +
-  scale_y_continuous(
+  ggplot2::scale_y_continuous(
     limits = c(0, 1),
-    expand = expansion(
+    expand = ggplot2::expansion(
       mult = c(0, 0.08)
     )
   ) +
-  facet_nested(
+  ggh4x::facet_nested(
     . ~ Binarisation
   ) +
-  labs(
+  ggplot2::labs(
     title = NULL,
     y = "Estimated mean Accuracy (EMMs)",
     x = NULL,
     colour = NULL
   ) +
-  theme_bw(base_size = 18) +
-  theme(
+  ggplot2::theme_bw(base_size = 18) +
+  ggplot2::theme(
     legend.position = "top",
     legend.direction = "horizontal",
     legend.box = "vertical",
-    legend.title = element_blank(),
-    legend.text = element_text(size = 16),
+    legend.title = ggplot2::element_blank(),
+    legend.text = ggplot2::element_text(size = 16),
     legend.margin = ggplot2::margin(b = 4),
-    axis.text.x = element_text(
+    axis.text.x = ggplot2::element_text(
       angle = 45,
       hjust = 1,
       size = 14
     ),
-    axis.text.y = element_text(size = 16),
-    axis.title.y = element_text(
+    axis.text.y = ggplot2::element_text(size = 16),
+    axis.title.y = ggplot2::element_text(
       size = 18,
       face = "bold"
     ),
-    strip.text.x = element_text(
+    strip.text.x = ggplot2::element_text(
       size = 16,
       face = "bold"
     ),
@@ -1106,54 +1099,53 @@ p1 <- ggplot(
       b = 0,
       l = 5
     ),
-    panel.spacing.y = unit(4, "pt")
+    panel.spacing.y = grid::unit(4, "pt")
   ) +
-  
-  guides(
-    colour = guide_legend(
+  ggplot2::guides(
+    colour = ggplot2::guide_legend(
       nrow = 1,
       byrow = TRUE
     )
   )
+
 # =========================================================
 # Panel 2:
 # Pairwise contrasts + confidence intervals
 # =========================================================
-p2 <- ggplot(
+
+p2 <- ggplot2::ggplot(
   pairs_all,
-  aes(
+  ggplot2::aes(
     x = contrast,
     y = estimate
   )
 ) +
-  geom_point(
-    aes(colour = p.value.cat),
+  ggplot2::geom_point(
+    ggplot2::aes(colour = p.value.cat),
     size = 5
   ) +
-  geom_errorbar(
-    aes(
+  ggplot2::geom_errorbar(
+    ggplot2::aes(
       colour = p.value.cat,
       ymin = lower.CL,
       ymax = upper.CL
     ),
     width = .25
   ) +
-  geom_text(
-    aes(label = sig_symb),
+  ggplot2::geom_text(
+    ggplot2::aes(label = sig_symb),
     nudge_y = 0.02,
     size = 5,
     show.legend = FALSE
   ) +
-  geom_hline(
+  ggplot2::geom_hline(
     yintercept = 0,
     linetype = "dashed"
   ) +
-  
-  facet_nested(
+  ggh4x::facet_nested(
     . ~ Binarisation
   ) +
-  
-  scale_color_manual(
+  ggplot2::scale_color_manual(
     values = cols_pv,
     drop = FALSE,
     name = "Significance",
@@ -1162,32 +1154,28 @@ p2 <- ggplot(
       "NS" = "Not significant"
     )
   ) +
-  
-  coord_flip() +
-  
-  labs(
+  ggplot2::coord_flip() +
+  ggplot2::labs(
     title = NULL,
     y = "Contrast estimate (EMMs differences)",
     x = NULL
   ) +
-  
-  theme_bw(base_size = 18) +
-  
-  theme(
+  ggplot2::theme_bw(base_size = 18) +
+  ggplot2::theme(
     legend.position = "bottom",
-    legend.title = element_blank(),
-    legend.text = element_text(size = 16),
-    axis.text.x = element_text(
+    legend.title = ggplot2::element_blank(),
+    legend.text = ggplot2::element_text(size = 16),
+    axis.text.x = ggplot2::element_text(
       angle = 45,
       hjust = 1,
       size = 14
     ),
-    axis.text.y = element_text(size = 16),
-    axis.title.y = element_text(
+    axis.text.y = ggplot2::element_text(size = 16),
+    axis.title.y = ggplot2::element_text(
       size = 18,
       face = "bold"
     ),
-    strip.text.x = element_text(
+    strip.text.x = ggplot2::element_text(
       size = 16,
       face = "bold"
     ),
@@ -1204,14 +1192,32 @@ p2 <- ggplot(
 # =========================================================
 
 fig_all <- p1 + p2 +
-  plot_layout(
+  patchwork::plot_layout(
     nrow = 2,
     heights = c(1, 1)
   )
+
 # =========================================================
 # Display final figure
 # =========================================================
+
 print(fig_all)
+
+# =========================================================
+# Save final figure
+# =========================================================
+
+ggplot2::ggsave(
+  filename = file.path(
+    getwd(),
+    "Predomics_EMMs_pairwise_contrasts.pdf"
+  ),
+  plot = fig_all,
+  width = 16,
+  height = 14,
+  units = "in",
+  dpi = 300
+)
 ```
 
 
@@ -2312,15 +2318,31 @@ print(fig_methods)
 
 
 ```{r fig.heigth=14, fig.width=16, warning=FALSE}
-# One PDF figure is exported per dataset.
+# =========================================================
+# Libraries
+# =========================================================
+
+library(dplyr)
+library(tidyr)
+library(lme4)
+library(emmeans)
+library(ggplot2)
+library(ggh4x)
+library(patchwork)
+library(scales)
+
+# =========================================================
+# Load the complete experimental dataframe
+# =========================================================
+
+load(file.path(getwd(), "Analysis_Dataset_Complet_Sota_vs_Predo.rda"))
+
 # =========================================================
 # Define output directory
 # =========================================================
-#
-# Figures are exported into the current working directory.
-#
-# =========================================================
+
 out_dir <- getwd()
+
 # =========================================================
 # Define datasets to analyze
 # =========================================================
@@ -2331,48 +2353,46 @@ datasets <- c(
   "Colorectal cancer",
   "T2D"
 )
+
 # =========================================================
 # Identify SOTA methods present in the global dataframe
 # =========================================================
+
 sotamethods <- unique(
   Analysis_Dataset_Complet_Sota_vs_Predo$Methods[
     Analysis_Dataset_Complet_Sota_vs_Predo$Approach == "Sota"
   ]
 )
+
 # =========================================================
 # Define significance colors
 # =========================================================
+
 cols_sig <- c(
-  "pvalue<0.05" = muted("green"),
-  "NS" = muted("red")
+  "pvalue<0.05" = scales::muted("green"),
+  "NS" = scales::muted("red")
 )
+
 # =========================================================
 # Main loop: one analysis and one PDF per dataset
 # =========================================================
+
 for (ds in datasets) {
+  
   message("=== Dataset: ", ds, " ===")
+  
   # =======================================================
   # Filter data for the current dataset
   # =======================================================
-  #
-  # Keep only:
-  # - current dataset
-  # - test-set performances
-  # - OVA and OVO binarisation strategies
-  # - SOTA methods
-  # - Predomics methods using:
-  #   * Semi_Constrained configuration
-  #   * Voting_with_Tie_Breaking aggregation
-  #
-  # =======================================================
+  
   ijdf <- Analysis_Dataset_Complet_Sota_vs_Predo %>%
-    filter(
+    dplyr::filter(
       Dataset == ds,
       Set == "Test",
       Binarisation %in% c("OVA", "OVO"),
       Binarisation != "NO"
     ) %>%
-    filter(
+    dplyr::filter(
       (Approach == "Sota") |
         (
           Approach %in% c(
@@ -2383,27 +2403,22 @@ for (ds in datasets) {
             Methods == "Voting_with_Tie_Breaking"
         )
     ) %>%
-    mutate(
-      
-      # Unified method labels for plotting
-      
-      Methods_plot = case_when(
-        Approach == "Sota" ~ Methods,
+    dplyr::mutate(
+      Methods_plot = dplyr::case_when(
+        Approach == "Sota" ~ as.character(Methods),
         Approach == "Terbeam Predomics" ~
           "Predomics Terbeam SC VotingWTB",
         Approach == "Terga1 Predomics" ~
           "Predomics Terga1 SC VotingWTB",
-        TRUE ~ Methods
+        TRUE ~ as.character(Methods)
       ),
-      
-      # Method family used for plot coloring
-      
-      Heuristic = case_when(
+      Heuristic = dplyr::case_when(
         Methods_plot == "Predomics Terbeam SC VotingWTB" ~ "Terbeam",
         Methods_plot == "Predomics Terga1 SC VotingWTB" ~ "Terga1",
         TRUE ~ "SOTA"
       )
     )
+  
   # =======================================================
   # Safety check: ensure enough rows are available
   # =======================================================
@@ -2412,17 +2427,13 @@ for (ds in datasets) {
     warning("Not enough rows for dataset: ", ds)
     next
   }
+  
   # =======================================================
   # Prepare plotting factors
   # =======================================================
   
-  ijdf$Methods_plot <- as.character(
-    ijdf$Methods_plot
-  )
-  
-  ijdf$Methods_plot <- factor(
-    ijdf$Methods_plot
-  )
+  ijdf$Methods_plot <- as.character(ijdf$Methods_plot)
+  ijdf$Methods_plot <- factor(ijdf$Methods_plot)
   
   ijdf$Heuristic <- factor(
     ijdf$Heuristic,
@@ -2432,6 +2443,7 @@ for (ds in datasets) {
       "Terga1"
     )
   )
+  
   # =======================================================
   # Safety check: at least two methods are required
   # =======================================================
@@ -2443,21 +2455,12 @@ for (ds in datasets) {
     )
     next
   }
+  
   # =======================================================
   # Mixed-effects model for the current dataset
   # =======================================================
-  #
-  # Fixed effects:
-  # - Methods_plot
-  # - Binarisation
-  # - Their interaction
-  #
-  # Random effect:
-  # - Cross-validation fold
-  #
-  # =======================================================
   
-  m <- lmer(
+  m <- lme4::lmer(
     Accuracy ~ Methods_plot * Binarisation +
       (1 | Fold),
     data = ijdf
@@ -2466,20 +2469,15 @@ for (ds in datasets) {
   # =======================================================
   # Estimated marginal means
   # =======================================================
-  #
-  # Compute adjusted mean accuracy for each method within
-  # each binarisation strategy.
-  #
-  # =======================================================
   
-  em <- emmeans(
+  em <- emmeans::emmeans(
     m,
     ~ Methods_plot | Binarisation
   )
   
   em_df <- as.data.frame(em) %>%
-    mutate(
-      Heuristic = case_when(
+    dplyr::mutate(
+      Heuristic = dplyr::case_when(
         Methods_plot == "Predomics Terbeam SC VotingWTB" ~ "Terbeam",
         Methods_plot == "Predomics Terga1 SC VotingWTB" ~ "Terga1",
         TRUE ~ "SOTA"
@@ -2497,29 +2495,17 @@ for (ds in datasets) {
   # =======================================================
   # Build Predomics-vs-SOTA contrasts
   # =======================================================
-  #
-  # Contrasts are defined as:
-  #
-  # Predomics - SOTA
-  #
-  # Therefore:
-  # - positive estimate: Predomics > SOTA
-  # - negative estimate: Predomics < SOTA
-  #
-  # =======================================================
   
-  all_levels <- levels(
-    ijdf$Methods_plot
-  )
+  all_levels <- levels(ijdf$Methods_plot)
   
   pres_tbl <- ijdf %>%
-    mutate(
+    dplyr::mutate(
       Methods_plot = factor(
         Methods_plot,
         levels = all_levels
       )
     ) %>%
-    count(
+    dplyr::count(
       Binarisation,
       Methods_plot
     ) %>%
@@ -2558,7 +2544,6 @@ for (ds in datasets) {
     
     v
   }
-  
   
   # =======================================================
   # Create all valid Predomics-vs-SOTA contrasts
@@ -2612,7 +2597,6 @@ for (ds in datasets) {
       }
     }
     
-    
     # -----------------------------------------------------
     # Terga1 Predomics contrasts
     # -----------------------------------------------------
@@ -2652,7 +2636,6 @@ for (ds in datasets) {
     }
   }
   
-  
   # =======================================================
   # Safety check: ensure at least one contrast exists
   # =======================================================
@@ -2665,12 +2648,11 @@ for (ds in datasets) {
     next
   }
   
-  
   # =======================================================
   # Apply contrasts within each binarisation strategy
   # =======================================================
   
-  ct <- contrast(
+  ct <- emmeans::contrast(
     em,
     method = contrast_list,
     by = "Binarisation"
@@ -2696,18 +2678,12 @@ for (ds in datasets) {
     ),
     all.x = TRUE
   ) %>%
-    mutate(
-      
-      # Significance category
-      
+    dplyr::mutate(
       p.value.cat = ifelse(
         p.value < 0.05,
         "pvalue<0.05",
         "NS"
       ),
-      
-      # Significance symbol
-      
       sig_symb = cut(
         p.value,
         breaks = c(
@@ -2725,10 +2701,7 @@ for (ds in datasets) {
         ),
         right = TRUE
       ),
-      
-      # Predomics variant involved in the contrast
-      
-      Predomics_variant = case_when(
+      Predomics_variant = dplyr::case_when(
         grepl("^Predomics Terbeam", contrast) ~ "Terbeam",
         grepl("^Predomics Terga1", contrast) ~ "Terga1",
         TRUE ~ "Other"
@@ -2743,41 +2716,35 @@ for (ds in datasets) {
     )
   )
   
-  
   # =======================================================
   # Panel 1:
   # Estimated marginal means of accuracy
   # =======================================================
   
-  p1 <- ggplot(
+  p1 <- ggplot2::ggplot(
     em_df,
-    aes(
+    ggplot2::aes(
       x = Methods_plot,
       y = emmean,
       colour = Heuristic
     )
   ) +
-    
-    geom_point(size = 3) +
-    
-    geom_errorbar(
-      aes(
+    ggplot2::geom_point(size = 3) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(
         ymin = lower.CL,
         ymax = upper.CL
       ),
       width = .2
     ) +
-    
-    scale_x_discrete(
+    ggplot2::scale_x_discrete(
       position = "top"
     ) +
-    
-    facet_nested(
+    ggh4x::facet_nested(
       . ~ Binarisation,
       switch = "x"
     ) +
-    
-    labs(
+    ggplot2::labs(
       title = paste0(
         ds,
         " – EMMs (Test only)"
@@ -2786,88 +2753,74 @@ for (ds in datasets) {
       y = "Estimated mean Accuracy (EMMs)",
       colour = NULL
     ) +
-    
-    theme_bw(base_size = 16) +
-    
-    theme(
-      axis.text.x = element_text(
+    ggplot2::theme_bw(base_size = 16) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(
         angle = 45,
         hjust = 0
       ),
-      plot.title = element_text(
+      plot.title = ggplot2::element_text(
         face = "bold"
       ),
       legend.position = "top"
     )
-  
   
   # =======================================================
   # Panel 2:
   # Predomics-vs-SOTA contrasts
   # =======================================================
   
-  p2 <- ggplot(
+  p2 <- ggplot2::ggplot(
     pairs_all,
-    aes(
+    ggplot2::aes(
       x = contrast,
       y = estimate,
       colour = p.value.cat
     )
   ) +
-    
-    geom_point(size = 3) +
-    
-    geom_errorbar(
-      aes(
+    ggplot2::geom_point(size = 3) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(
         ymin = lower.CL,
         ymax = upper.CL
       ),
       width = .2
     ) +
-    
-    geom_text(
-      aes(label = sig_symb),
+    ggplot2::geom_text(
+      ggplot2::aes(label = sig_symb),
       nudge_y = 0.02,
       size = 4,
       show.legend = FALSE
     ) +
-    
-    geom_hline(
+    ggplot2::geom_hline(
       yintercept = 0,
       linetype = "dashed"
     ) +
-    
-    facet_nested(
+    ggh4x::facet_nested(
       Predomics_variant ~ Binarisation,
       scales = "free_y",
       space = "free_y"
     ) +
-    
-    scale_color_manual(
+    ggplot2::scale_color_manual(
       values = cols_sig,
       name = NULL
     ) +
-    
-    coord_flip() +
-    
-    labs(
+    ggplot2::coord_flip() +
+    ggplot2::labs(
       title = paste0(
         ds,
-        " – Contrasts (Test only): Predomics − each SOTA method"
+        " – Contrasts (Test only): Predomics - each SOTA method"
       ),
       x = NULL,
       y = "Contrast estimate (95% CI)"
     ) +
-    
-    theme_bw(base_size = 16) +
-    
-    theme(
+    ggplot2::theme_bw(base_size = 16) +
+    ggplot2::theme(
       legend.position = "bottom",
-      plot.title = element_text(
+      plot.title = ggplot2::element_text(
         face = "bold"
       )
     )
-  
   
   # =======================================================
   # Assemble final figure
@@ -2875,13 +2828,11 @@ for (ds in datasets) {
   
   fig <- p1 / p2
   
-  
   # =======================================================
   # Display final figure
   # =======================================================
   
   print(fig)
-  
   
   # =======================================================
   # Export PDF for the current dataset
@@ -2900,7 +2851,7 @@ for (ds in datasets) {
     )
   )
   
-  ggsave(
+  ggplot2::ggsave(
     filename = file_ds,
     plot = fig,
     width = 16,
@@ -2961,9 +2912,20 @@ for (ds in datasets) {
 ##
 
 ```{r fig.width=14, fig.heigth = 12, warning=TRUE}
-full_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mda_complete.annot_full_constraint_T2D.rda"
-semi_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mda_complete.annot_semi_constraint_T2D.rda"
-unco_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mda_complete.annot_unconstraint_T2D.rda"
+full_path <- file.path(
+  getwd(),
+  "mda_complete.annot_full_constraint_T2D.rda"
+)
+
+semi_path <- file.path(
+  getwd(),
+  "mda_complete.annot_semi_constraint_T2D.rda"
+)
+
+unco_path <- file.path(
+  getwd(),
+  "mda_complete.annot_unconstraint_T2D.rda"
+)
 
 stopifnot(file.exists(path.expand(full_path)))
 stopifnot(file.exists(path.expand(semi_path)))
@@ -3276,7 +3238,10 @@ save(
   alldf3,
   alldf23,
   p_top,
-  file = "~/Documents/multiclasse_predomics/mcpredomics/vignettes/T2D_interpretability_analysis_workspace.rda",
+  file = file.path(
+    getwd(),
+    "T2D_interpretability_analysis_workspace.rda"
+  ),
   compress = "xz"
 )
 ```
@@ -3370,15 +3335,13 @@ save(
 
 ```{r fig.width=18, fig.height=12, warning=FALSE}
 ## 1) File paths and validation
-## ----------------------------
+full_path <- file.path(getwd(), "data_contraint1.rda")
+semi_path <- file.path(getwd(), "data_semicontraint3.rda")
+unco_path <- file.path(getwd(), "data_uncontraint2.rda")
 
-full_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/data_contraint1.rda"
-semi_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/data_semicontraint3.rda"
-unco_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/data_uncontraint2.rda"
-
-stopifnot(file.exists(path.expand(full_path)))
-stopifnot(file.exists(path.expand(semi_path)))
-stopifnot(file.exists(path.expand(unco_path)))
+stopifnot(file.exists(full_path))
+stopifnot(file.exists(semi_path))
+stopifnot(file.exists(unco_path))
 
 
 ## ----------------------------
@@ -3606,7 +3569,7 @@ print(p_top)
 ## ----------------------------
 
 ggsave(
-  filename = "~/Documents/multiclasse_predomics/mcpredomics/vignettes/enterotypes_heatmap.pdf",
+  filename = file.path(getwd(), "enterotypes_heatmap.pdf"),
   plot = p_top,
   device = "pdf",
   width = 16,
@@ -3658,13 +3621,19 @@ ggsave(
 
 ```{r fig.width=16, fig.height=12, warning=FALSE}
 
-full_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mod_annot_crc_full.rda"
-semi_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mod_annot_crc_semi.rda"
-unco_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mod_annot_crc_unco.rda"
+## ------------------------------------------------------------
+## 1) File paths and validation
+## ------------------------------------------------------------
 
-stopifnot(file.exists(path.expand(full_path)))
-stopifnot(file.exists(path.expand(semi_path)))
-stopifnot(file.exists(path.expand(unco_path)))
+full_path <- file.path(getwd(), "mod_annot_crc_full.rda")
+
+semi_path <- file.path(getwd(), "mod_annot_crc_semi.rda")
+
+unco_path <- file.path(getwd(), "mod_annot_crc_unco.rda")
+
+stopifnot(file.exists(full_path))
+stopifnot(file.exists(semi_path))
+stopifnot(file.exists(unco_path))
 
 
 ## ------------------------------------------------------------
@@ -3940,7 +3909,7 @@ p_top <- ggplot(alldf23, aes(x = model, y = species)) +
 
 print(p_top)
 ggsave(
-  filename = "~/Documents/multiclasse_predomics/mcpredomics/vignettes/crc_heatmap.pdf",
+  filename = file.path(getwd(), "crc_heatmap.pdf"),
   plot = p_top,
   device = "pdf",
   width = 16,
@@ -3976,10 +3945,10 @@ The loaded `.rda` files contain all results generated from the cross-validation 
 
 
 ```{r pressure, echo=FALSE}
-load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_CRC_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_T2D_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_balance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_imbalance_2026.rda")
+load(file.path(getwd(), "res_clf_mc_CRC_2026.rda"))
+load(file.path(getwd(), "res_clf_mc_T2D_2026.rda"))
+load(file.path(getwd(), "res_clf_mc_balance_2026.rda"))
+load(file.path(getwd(), "res_clf_mc_imbalance_2026.rda"))
 ```
 
 
@@ -4145,7 +4114,10 @@ print(p)
 # Save as PDF
 # =========================================================
 ggsave(
-  filename = "confusion_matrices_4_datasets_cv10_article.pdf",
+  filename = file.path(
+    getwd(),
+    "confusion_matrices_4_datasets_cv10_article.pdf"
+  ),
   plot = p,
   width = 22,
   height = 14,
@@ -4184,18 +4156,29 @@ The `.rda` files contain the complete experimental outputs generated during the 
 - and all information required for comparative analyses and visualization.
 
 ```{r}
-load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_CRC_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_T2D_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_balance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_CRC_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_imbalance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_balance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_T2D_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_imbalance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_balance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_CRC_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_imbalance_2026.rda")
-load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_T2D_2026.rda")
+load(file.path(getwd(), "res_LOGIT_ovo_CRC_2026.rda"))
+
+load(file.path(getwd(), "res_LOGIT_ovo_T2D_2026.rda"))
+
+load(file.path(getwd(), "res_RF_ovo_balance_2026.rda"))
+
+load(file.path(getwd(), "res_RF_ovo_CRC_2026.rda"))
+
+load(file.path(getwd(), "res_LOGIT_ovo_imbalance_2026.rda"))
+
+load(file.path(getwd(), "res_LOGIT_ovo_balance_2026.rda"))
+
+load(file.path(getwd(), "res_RF_ovo_T2D_2026.rda"))
+
+load(file.path(getwd(), "res_RF_ovo_imbalance_2026.rda"))
+
+load(file.path(getwd(), "res_SVM_ovo_balance_2026.rda"))
+
+load(file.path(getwd(), "res_SVM_ovo_CRC_2026.rda"))
+
+load(file.path(getwd(), "res_SVM_ovo_imbalance_2026.rda"))
+
+load(file.path(getwd(), "res_SVM_ovo_T2D_2026.rda"))
 ```
 
 
@@ -5258,13 +5241,14 @@ print(final_enterotype_balance_plot)
 # across 10-fold cross-validation for four datasets
 # =========================================================
 
+library(dplyr)
 library(pROC)
 library(PRROC)
-
 
 # =========================================================
 # 1. Compute AUROC and AUPRC for one binary classifier
 # =========================================================
+
 compute_binary_auc_metrics <- function(y_true, y_score) {
   
   keep_idx <- which(!is.na(y_true) & !is.na(y_score))
@@ -5306,6 +5290,7 @@ compute_binary_auc_metrics <- function(y_true, y_score) {
 # =========================================================
 # 2. Extract the two classes of one OvO submodel
 # =========================================================
+
 get_ovo_classes_from_confmat <- function(confmat) {
   return(rownames(confmat))
 }
@@ -5313,6 +5298,7 @@ get_ovo_classes_from_confmat <- function(confmat) {
 # =========================================================
 # 3. Compute AUROC and AUPRC for one fold
 # =========================================================
+
 compute_fold_binary_metrics <- function(res_object, fold_id, dataset_name) {
   
   fold_test <- res_object$crossVal$best_fold_test[[fold_id]]
@@ -5396,6 +5382,7 @@ compute_fold_binary_metrics <- function(res_object, fold_id, dataset_name) {
 # =========================================================
 # 4. Compute AUROC and AUPRC across all folds
 # =========================================================
+
 compute_all_folds_binary_metrics <- function(res_object, dataset_name) {
   
   n_folds <- length(res_object$crossVal$best_fold_test)
@@ -5409,7 +5396,10 @@ compute_all_folds_binary_metrics <- function(res_object, dataset_name) {
       dataset_name = dataset_name
     )
     
-    all_results <- rbind(all_results, fold_results)
+    all_results <- rbind(
+      all_results,
+      fold_results
+    )
   }
   
   return(all_results)
@@ -5418,24 +5408,30 @@ compute_all_folds_binary_metrics <- function(res_object, dataset_name) {
 # =========================================================
 # 5. Summarize AUROC and AUPRC results
 # =========================================================
+
 summarize_binary_metrics <- function(all_results) {
   
   submodel_summary <- all_results %>%
-    group_by(dataset, submodel, class_pos, class_neg) %>%
-    summarise(
+    dplyr::group_by(
+      dataset,
+      submodel,
+      class_pos,
+      class_neg
+    ) %>%
+    dplyr::summarise(
       mean_auroc = mean(auroc, na.rm = TRUE),
       mean_auprc = mean(auprc, na.rm = TRUE),
       .groups = "drop"
     )
   
   global_summary <- all_results %>%
-    group_by(dataset) %>%
-    summarise(
+    dplyr::group_by(dataset) %>%
+    dplyr::summarise(
       mean_auroc = mean(auroc, na.rm = TRUE),
       sd_auroc = sd(auroc, na.rm = TRUE),
       mean_auprc = mean(auprc, na.rm = TRUE),
       sd_auprc = sd(auprc, na.rm = TRUE),
-      n_results = n(),
+      n_results = dplyr::n(),
       .groups = "drop"
     )
   
@@ -5448,6 +5444,7 @@ summarize_binary_metrics <- function(all_results) {
 # =========================================================
 # 6. Run analysis for the four Predomics datasets
 # =========================================================
+
 all_metrics_crc <- compute_all_folds_binary_metrics(
   res_object = res_clf_mc_CRC_2026,
   dataset_name = "CRC"
@@ -5471,7 +5468,8 @@ all_metrics_imbalance <- compute_all_folds_binary_metrics(
 # =========================================================
 # 7. Merge all results
 # =========================================================
-all_metrics_predomics <- bind_rows(
+
+all_metrics_predomics <- dplyr::bind_rows(
   all_metrics_crc,
   all_metrics_t2d,
   all_metrics_balance,
@@ -5481,6 +5479,7 @@ all_metrics_predomics <- bind_rows(
 # =========================================================
 # 8. Summarize all results
 # =========================================================
+
 summary_metrics_predomics <- summarize_binary_metrics(
   all_metrics_predomics
 )
@@ -5490,16 +5489,54 @@ print(summary_metrics_predomics$submodel_summary)
 
 cat("\n=== Global mean AUROC/AUPRC by dataset ===\n")
 print(summary_metrics_predomics$global_summary)
+
 # =========================================================
-# Final article-ready table
+# 9. Final article-ready table
 # =========================================================
+
 final_auc_table_predomics <- summary_metrics_predomics$global_summary %>%
-  mutate(
-    AUROC = paste0(round(mean_auroc, 3), " ± ", round(sd_auroc, 3)),
-    AUPRC = paste0(round(mean_auprc, 3), " ± ", round(sd_auprc, 3))
+  dplyr::mutate(
+    AUROC = paste0(
+      round(mean_auroc, 3),
+      " ± ",
+      round(sd_auroc, 3)
+    ),
+    AUPRC = paste0(
+      round(mean_auprc, 3),
+      " ± ",
+      round(sd_auprc, 3)
+    )
   ) %>%
-  select(dataset, AUROC, AUPRC)
+  dplyr::select(
+    dataset,
+    AUROC,
+    AUPRC
+  )
 
 print(final_auc_table_predomics)
+
+# =========================================================
+# 10. Optional: save final tables
+# =========================================================
+
+save(
+  all_metrics_predomics,
+  summary_metrics_predomics,
+  final_auc_table_predomics,
+  file = file.path(
+    getwd(),
+    "predomics_auroc_auprc_results.rda"
+  ),
+  compress = "xz"
+)
+
+write.csv(
+  final_auc_table_predomics,
+  file = file.path(
+    getwd(),
+    "predomics_auroc_auprc_article_table.csv"
+  ),
+  row.names = FALSE
+)
 ```
 
