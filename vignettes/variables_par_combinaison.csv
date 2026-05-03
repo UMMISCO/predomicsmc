@@ -1,0 +1,7 @@
+"combo","feature","sign","coeff","importance"
+"Bact2 vs Prev","CAG00036",NA,1,0.567750020080843
+"Bact2 vs Rum","CAG00273",NA,-1,0.549277727236873
+"Bact2 vs Bact1","CAG00721",NA,1,0.464687557735861
+"Prev vs Rum","CAG00036",NA,-1,0.567750020080843
+"Prev vs Bact1","CAG00008",NA,-1,0.536164201234966
+"Rum vs Bact1","CAG03248",NA,-1,0.445327453908161

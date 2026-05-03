@@ -1,0 +1,254 @@
+---
+title: "heapmapp"
+author: "Fabien"
+date: "2025-12-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)   # for str_wrap()
+
+## ===========================
+## 0) Order OVO combinations and build readable labels
+## ===========================
+best.model = fbm[[1]]
+combi <- generate_combinations_with_factors(y, X, approch = "ovo")
+
+classes <- sort(unique(as.character(y)))
+l_y <- lapply(combi$list_y, function(v) sort(as.character(unique(v))))
+ord <- order(
+  sapply(l_y, function(v) match(v[1], classes)),
+  sapply(l_y, function(v) match(v[2], classes))
+)
+
+combi$list_y <- l_y[ord]
+if (!is.null(combi$list_X)) combi$list_X <- combi$list_X[ord]
+
+comb_labels <- sapply(combi$list_y, function(v) paste(v, collapse = " vs "))
+
+## ===========================
+## 1) Long data: MDA and COEFFS aligned to the same order
+## ===========================
+
+## Safety checks (ensure best.model lists have at least as many elements)
+stopifnot(
+  length(best.model$mda.cv_)   >= length(comb_labels),
+  length(best.model$coeffs_)   >= length(comb_labels)
+)
+
+mda_list   <- best.model$mda.cv_[ord]
+coeff_list <- best.model$coeffs_[ord]
+
+## ---- MDA -> long data frame ----
+mda_long <- lapply(seq_along(mda_list), function(i){
+  v <- mda_list[[i]]
+  if (is.null(v) || length(v) == 0) return(NULL)
+
+  data.frame(
+    model       = comb_labels[i],
+    feature     = names(v),
+    importance  = as.numeric(v),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+}) %>% bind_rows()
+
+## ---- COEFFS -> long (sign −1 / +1) ----
+coef_long <- lapply(seq_along(coeff_list), function(i){
+  v <- coeff_list[[i]]
+  if (is.null(v) || length(v) == 0) return(NULL)
+
+  data.frame(
+    model       = comb_labels[i],
+    feature     = names(v),
+    coefficient = as.numeric(v),  # -1 / +1
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+}) %>% bind_rows()
+
+## Complete the MDA grid (features missing in a submodel → importance = 0)
+all_features <- sort(unique(mda_long$feature))
+mda_complete <- tidyr::complete(
+  mda_long,
+  model   = factor(model, levels = comb_labels),  # fix column order
+  feature = all_features,
+  fill    = list(importance = 0)
+)
+
+## Join the sign; map −1 → "Class A", +1 → "Class B"
+mda_complete <- mda_complete %>%
+  left_join(coef_long, by = c("model","feature")) %>%
+  mutate(
+    sign_label = case_when(
+      is.na(coefficient) ~ NA_character_,
+      coefficient < 0    ~ "Class A",
+      TRUE               ~ "Class B"
+    ),
+    sign_label = factor(sign_label, levels = c("Class A","Class B"))
+  )
+
+## Order features by their maximum importance (top first)
+feat_order <- mda_complete %>%
+  group_by(feature) %>%
+  summarise(max_imp = max(importance), .groups = "drop") %>%
+  arrange(desc(max_imp)) %>%
+  pull(feature)
+
+mda_complete <- mda_complete %>%
+  mutate(
+    feature = factor(feature, levels = rev(feat_order)),
+    model   = factor(model,   levels = comb_labels)
+  )
+
+## (Optionnel) Si tu veux supprimer les features jamais importantes:
+## feat_max <- mda_complete %>%
+##   group_by(feature) %>%
+##   summarise(max_imp = max(importance), .groups = "drop")
+## mda_complete <- mda_complete %>%
+##   inner_join(feat_max, by = "feature") %>%
+##   dplyr::filter(max_imp > 0) %>%
+##   select(-max_imp)
+
+## ===========================
+## 2) Taxonomic annotations + facet by phylum
+## ===========================
+df.annot <- read.table(
+  "taxo_hs_9_9_igc_1436_CAG_sup_500_gtdb_214_long.tsv",
+  sep = "\t", header = TRUE, quote = "", comment.char = ""
+)
+
+## Keep row order from mda_complete and add taxonomy
+mda_complete.annot <- mda_complete %>%
+  dplyr::left_join(df.annot, by = c("feature" = "cag_name"))
+
+## ---- Fix missing phylum / species ----
+mda_complete.annot <- mda_complete.annot %>%
+  mutate(
+    ## if phylum is NA or empty -> "unclassified"
+    phylum = ifelse(is.na(phylum) | phylum == "", "unclassified", phylum),
+    ## clean species: if NA/empty/"unclassified" -> "unclassified"
+    species_clean = ifelse(
+      is.na(species) | species == "" | species == "unclassified",
+      "unclassified",
+      as.character(species)
+    )
+  )
+
+## Order phyla (so the first one starts at the top, no empty band)
+phylum_order <- mda_complete.annot %>%
+  distinct(phylum) %>%
+  arrange(phylum) %>%
+  pull(phylum)
+
+mda_complete.annot <- mda_complete.annot %>%
+  mutate(
+    phylum = factor(phylum, levels = phylum_order)
+  )
+
+## One label per feature (feature: species or feature: unclassified)
+feature_labels_df <- mda_complete.annot %>%
+  select(feature, species_clean) %>%
+  distinct() %>%
+  mutate(
+    feature    = as.character(feature),
+    label_full = ifelse(
+      species_clean == "unclassified",
+      paste0(feature, ": unclassified"),
+      paste(feature, species_clean, sep = ": ")
+    )
+  )
+
+## Y-axis label function (multi-line)
+feature_labeller <- function(x) {
+  tmp <- feature_labels_df[match(x, feature_labels_df$feature), ]
+  stringr::str_wrap(tmp$label_full, width = 35)
+}
+
+## ===========================
+## 3) Single heatmap (best model signatures across OVO submodels)
+## ===========================
+p_top <- ggplot(mda_complete.annot, aes(x = model, y = feature)) +
+  geom_tile(aes(fill = importance), color = "grey90", linewidth = 0.3) +
+  geom_point(
+    aes(color = sign_label),
+    size = 3.8, stroke = 0, shape = 16,
+    na.rm = TRUE
+  ) +
+  scale_fill_gradient(low = "white", high = "steelblue", name = "MDA | CV") +
+  scale_color_manual(
+    name   = "Sign",
+    values = c("Class A" = "firebrick1", "Class B" = "deepskyblue1"),
+    breaks = c("Class A","Class B"),
+    labels = c("Class A","Class B"),
+    drop   = TRUE
+  ) +
+  labs(title = "", x = NULL, y = NULL) +
+  facet_grid(
+    phylum ~ .,
+    scales = "free_y",   # free only in y
+    space  = "free_y"    # height of each phylum according to number of rows
+  ) +
+  scale_y_discrete(labels = feature_labeller) +
+  theme_minimal(base_size = 20) +
+  theme(
+    panel.grid   = element_blank(),
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 16),
+    axis.text.y  = element_text(size = 16),
+    plot.title   = element_text(face = "bold", size = 22),
+    plot.margin  = ggplot2::margin(t = 10, r = 25, b = 10, l = 30),
+    strip.text.y = element_text(angle = 0, size = 18, face = "bold"),
+    legend.position = "right",
+    legend.text     = element_text(size = 16),
+    legend.title    = element_text(size = 18, face = "bold")
+  )
+
+print(p_top)
+
+## ===========================
+## 4) Auto PDF size (same logic, un peu compact)
+## ===========================
+n_rows  <- dplyr::n_distinct(mda_complete.annot$feature)
+n_phyla <- dplyr::n_distinct(mda_complete.annot$phylum)
+
+#pdf_width  <- 20
+#pdf_height <- max(7.5, 5 + 0.12 * n_rows + 0.5 * (n_phyla - 1))
+pdf_width  <- 25
+pdf_height <- max(
+  10,                                # min height
+  6 + 0.18 * n_rows + 0.7 * (n_phyla - 1)  # more space per row + per phylum
+)
+
+if (requireNamespace("Cairo", quietly = TRUE)) {
+  ggsave(
+    filename = "heatmap_mda_cv_sign_best_model.pdf",
+    plot     = p_top,
+    device   = Cairo::cairo_pdf,
+    width    = pdf_width,
+    height   = pdf_height
+  )
+} else {
+  ggsave(
+    filename = "heatmap_mda_cv_sign_best_model.pdf",
+    plot     = p_top,
+    device   = "pdf",
+    width    = pdf_width,
+    height   = pdf_height
+  )
+}
+```
+
+

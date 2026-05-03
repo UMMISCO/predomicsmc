@@ -1,0 +1,7 @@
+"combo","feature","coeff","sign_num","sign_label","sign_color","importance","k","learner","language"
+"Bact2 vs Bact1","CAG00721",1,NA,NA,NA,0.464687557735861,4,"terBeam_mc","terinter"
+"Bact2 vs Prev","CAG00036",1,NA,NA,NA,0.567750020080843,4,"terBeam_mc","terinter"
+"Bact2 vs Rum","CAG00273",-1,NA,NA,NA,0.549277727236873,4,"terBeam_mc","terinter"
+"Prev vs Bact1","CAG00008",-1,NA,NA,NA,0.536164201234966,4,"terBeam_mc","terinter"
+"Prev vs Rum","CAG00036",-1,NA,NA,NA,0.567750020080843,4,"terBeam_mc","terinter"
+"Rum vs Bact1","CAG03248",-1,NA,NA,NA,0.445327453908161,4,"terBeam_mc","terinter"

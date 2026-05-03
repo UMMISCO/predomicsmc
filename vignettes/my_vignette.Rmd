@@ -140,48 +140,52 @@ These foundational functions make it easier to integrate multiclass workflows in
 ## Loading libraries
 
 ```{r warning=FALSE}
-# Package multi class predomics
-library(mcpredomics)
-# Package predomics
-library(predomics)
-# Visualization library for creating complex plots
-library(ggplot2) 
-# Arranges multiple ggplot objects on a single page
-library(gridExtra) 
-# ROC curve analysis and AUC calculation
-# Reshaping and melting data frames
-library(reshape2) 
-# Implementation of the Random Forest algorithm for classification and regression
-library(randomForest) 
-# Comprehensive library for classification and regression training
-library(caret) 
-# Various R programming tools and functions, including data manipulation
-library(gtools) 
-# Adding statistical comparisons and publication-ready visualizations
-library(ggpubr) 
-# Data manipulation and transformation (part of the tidyverse)
-library(dplyr) 
-# Tidying messy data by gathering and spreading
-library(tidyr) 
-# Enhanced data frames with row names as a column (tibble format)
-library(tibble) 
-# Dynamic report generation and displaying results in tables
-library(knitr) 
-# Creating aesthetically pleasing and customizable HTML tables
-library(kableExtra) 
-# Interactive tables for data visualization and exploration
-library(DT) 
-# Functions for statistical learning, including SVM and Naive Bayes
-library(e1071) 
-# Lasso and ridge regression via generalized linear models
-library(glmnet) 
-# Reading data from files (including CSV and text files)
-library(readr) 
-# String manipulation and regular expression functions
-library(stringr) 
-# package Excel
-library(writexl)
+# =========================================================
+# Required libraries
+# =========================================================
 
+# Multiclass Predomics package
+library(mcpredomics)
+
+# Original Predomics package
+library(predomics)
+
+# Data visualization
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(patchwork)
+library(ggh4x)
+library(scales)
+
+# Data manipulation and transformation
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(reshape2)
+library(readr)
+library(stringr)
+library(gtools)
+
+# Machine learning and statistical modeling
+library(caret)
+library(randomForest)
+library(e1071)
+library(glmnet)
+
+# Statistical analysis
+library(lme4)
+library(emmeans)
+library(car)
+library(pROC)
+
+# Reporting and table generation
+library(knitr)
+library(kableExtra)
+library(DT)
+
+# Excel export
+library(writexl)
 
 ```
 
@@ -210,15 +214,15 @@ Here we present how to use the MetaCardis dataset with class balance. You simply
 # # --------------------------------------------
 # 
 # # mcpredomics provides the 'mc.input' demo object
-# data("mc.input", package = "mcpredomics")
+ data("mc.input", package = "mcpredomics")
 # 
 # # 'createDataPartition' is provided by the 'caret' package
 # # If you don't want to attach the package, replace the call by caret::createDataPartition(...)
-# suppressPackageStartupMessages({
-#   if (!requireNamespace("caret", quietly = TRUE)) {
-#     stop("The 'caret' package is required for createDataPartition. Please install it: install.packages('caret')")
-#   }
-# })
+ suppressPackageStartupMessages({
+   if (!requireNamespace("caret", quietly = TRUE)) {
+     stop("The 'caret' package is required for createDataPartition. Please install it: install.packages('caret')")
+   }
+ })
 # 
 # # 'filterNoSignal' is expected to be available (e.g., from predomics/mcpredomics)
 # # Make sure the package exposing this function is loaded if needed.
@@ -228,30 +232,30 @@ Here we present how to use the MetaCardis dataset with class balance. You simply
 # # Build response vector aligned with X
 # # --------------------------------------------
 # 
-# set.seed(123)  # For reproducibility of any random steps above
-# yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+ set.seed(123)  # For reproducibility of any random steps above
+ yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
 # 
 # # --------------------------------------------
 # # Basic filtering on features
 # # --------------------------------------------
 # 
 # # Remove features with all-zero column sums
-# X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+ X_general <- mc.input$X[, colSums(mc.input$X) != 0]
 # 
 # # Remove no-signal features (threshold set to "auto")
-# X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
+ X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
 # 
 # # Final working copies
-# set.seed(42)  # Reproducibility for the balancing step
-# y <- as.vector(yvec)
-# X <- X_general
+ set.seed(42)  # Reproducibility for the balancing step
+ y <- as.vector(yvec)
+ X <- X_general
 # 
 # # --------------------------------------------
 # # Determine the target sample count per class
 # # --------------------------------------------
 # 
 # # Minimum class size; we will sample this many instances from each class
-# nombre_echantillons_par_classe <- min(table(y))
+ nombre_echantillons_par_classe <- min(table(y))
 # 
 # # --------------------------------------------
 # # Helper to balance classes while preserving original order
@@ -259,56 +263,56 @@ Here we present how to use the MetaCardis dataset with class balance. You simply
 # 
 # # Balances the dataset by randomly sampling the same number of indices
 # # from each class, then sorts indices to keep original column order.
-# equilibrer_classes <- function(y, X, nombre_echantillons_par_classe, seed = 123) {
+ equilibrer_classes <- function(y, X, nombre_echantillons_par_classe, seed = 123) {
 #   # Identify unique classes
-#   classes <- unique(y)
-#   indices_equilibres <- integer(0)
+   classes <- unique(y)
+   indices_equilibres <- integer(0)
 #   
 #   # Sample an equal number of indices for each class
-#   for (classe in classes) {
-#     indices_classe <- which(y == classe)
-#     set.seed(seed)  # Keep reproducible sampling within each class
-#     indices_equilibres <- c(indices_equilibres, sample(indices_classe, nombre_echantillons_par_classe))
-#   }
+   for (classe in classes) {
+     indices_classe <- which(y == classe)
+     set.seed(seed)  # Keep reproducible sampling within each class
+     indices_equilibres <- c(indices_equilibres, sample(indices_classe, nombre_echantillons_par_classe))
+   }
 #   
 #   # Sort to preserve original order (important for aligned X columns)
-#   indices_equilibres <- sort(indices_equilibres)
-#   return(list(y = y[indices_equilibres], X = X[, indices_equilibres, drop = FALSE]))
-# }
+   indices_equilibres <- sort(indices_equilibres)
+   return(list(y = y[indices_equilibres], X = X[, indices_equilibres, drop = FALSE]))
+ }
 # 
 # # --------------------------------------------
 # # Build the balanced dataset
 # # --------------------------------------------
 # 
-# donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
-# y_equilibre <- donnees_equilibrees$y
-# X_equilibre <- donnees_equilibrees$X
+ donnees_equilibrees <- equilibrer_classes(y, X, nombre_echantillons_par_classe)
+ y_equilibre <- donnees_equilibrees$y
+ X_equilibre <- donnees_equilibrees$X
 # 
 # # --------------------------------------------
 # # Train/test split (80/20) on the balanced data
 # # --------------------------------------------
 # 
 # # Stratified split to keep class proportions in train/test
-# set.seed(42)
-# indices_division <- caret::createDataPartition(y_equilibre, p = 0.8, list = FALSE)
+ set.seed(42)
+ indices_division <- caret::createDataPartition(y_equilibre, p = 0.8, list = FALSE)
 # 
 # # Training split
-# y <- as.vector(y_equilibre[indices_division])
-# X <- X_equilibre[, indices_division, drop = FALSE]
+ y <- as.vector(y_equilibre[indices_division])
+ X <- X_equilibre[, indices_division, drop = FALSE]
 # 
 # # Test split
-# y.test <- as.vector(y_equilibre[-indices_division])
-# X.test <- X_equilibre[, -indices_division, drop = FALSE]
+ y.test <- as.vector(y_equilibre[-indices_division])
+ X.test <- X_equilibre[, -indices_division, drop = FALSE]
 # 
 # # --------------------------------------------
 # # Quick sanity checks
 # # --------------------------------------------
 # 
 # # Class distribution in training set
-# print(table(y))
+ print(table(y))
 # 
 # # Dimensions of training feature matrix
-# print(dim(X))
+ print(dim(X))
 
 
 ```
@@ -322,64 +326,64 @@ Please uncomment this code if needed.
 # # --------------------------------------------
 # # Load the demo dataset provided in mcpredomics
 # # --------------------------------------------
-# data("mc.input", package = "mcpredomics")
-# 
-# # --------------------------------------------
-# # Set a seed for reproducibility
-# # --------------------------------------------
-# set.seed(123)
-# 
-# # Extract the response vector (Enterotype labels) 
-# # Ensure that columns of X and rows of y are properly aligned
-# yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
-# 
-# # --------------------------------------------
-# # Filter features (columns) 
-# # - Remove features with zero total abundance across all samples
-# # - Apply filterNoSignal to remove uninformative features
-# # --------------------------------------------
-# X_general <- mc.input$X[, colSums(mc.input$X) != 0]
-# X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
-# 
-# # --------------------------------------------
-# # Prepare working dataset
-# # --------------------------------------------
-# set.seed(42)      # Reset seed for reproducibility
-# y <- as.vector(yvec)     # Response vector
-# X <- X_general           # Filtered feature matrix
-# 
-# # --------------------------------------------
-# # Create a stratified partition (80% training / 20% testing)
-# # The function createDataPartition from caret ensures class balance
-# # --------------------------------------------
-# set.seed(42)
-# indices_division <- createDataPartition(y, p = 0.8, list = FALSE)
-# 
-# # --------------------------------------------
-# # Split the data
-# # --------------------------------------------
-# # Training set
-# y <- as.vector(y[indices_division])
-# X <- X[, indices_division, drop = FALSE]
-# 
-# # Test set
-# y.test <- as.vector(y[-indices_division])
-# X.test <- X[, -indices_division, drop = FALSE]
-# 
-# # --------------------------------------------
-# # Quick checks: 
-# # - Class distribution in the training set
-# # - Dimensions of the training feature matrix
-# # --------------------------------------------
-# table(y)
-# dim(X)
+data("mc.input", package = "mcpredomics")
+
+# --------------------------------------------
+# Set a seed for reproducibility
+# --------------------------------------------
+set.seed(123)
+
+# Extract the response vector (Enterotype labels)
+# Ensure that columns of X and rows of y are properly aligned
+yvec <- mc.input$y$Enterotype[match(colnames(mc.input$X), rownames(mc.input$y))]
+
+# --------------------------------------------
+# Filter features (columns)
+# - Remove features with zero total abundance across all samples
+# - Apply filterNoSignal to remove uninformative features
+# --------------------------------------------
+X_general <- mc.input$X[, colSums(mc.input$X) != 0]
+X_general <- filterNoSignal(X = X_general, side = 1, threshold = "auto", verbose = FALSE)
+
+# --------------------------------------------
+# Prepare working dataset
+# --------------------------------------------
+set.seed(42)      # Reset seed for reproducibility
+y <- as.vector(yvec)     # Response vector
+X <- X_general           # Filtered feature matrix
+
+# --------------------------------------------
+# Create a stratified partition (80% training / 20% testing)
+# The function createDataPartition from caret ensures class balance
+# --------------------------------------------
+set.seed(42)
+indices_division <- createDataPartition(y, p = 0.8, list = FALSE)
+
+# --------------------------------------------
+# Split the data
+# --------------------------------------------
+# Training set
+y <- as.vector(y[indices_division])
+X <- X[, indices_division, drop = FALSE]
+
+# Test set
+y.test <- as.vector(y[-indices_division])
+X.test <- X[, -indices_division, drop = FALSE]
+
+# --------------------------------------------
+# Quick checks:
+# - Class distribution in the training set
+# - Dimensions of the training feature matrix
+# --------------------------------------------
+table(y)
+dim(X)
 
 ```
 
 ### Load Other Datasets
 
 ```{r}
-# Load the file
+## Load the file
 data("predomics.inputs.ExperimentHubMulticlass", package = "mcpredomics")
 lapply(predomics.inputs.ExperimentHubMulticlass, function(x){summary(colSums(x[["X"]]))})
 ```
@@ -394,21 +398,21 @@ Please uncomment this code if needed.
 # # --------------------------------------------
 # 
 # # Load the KarlssonFH_2013 dataset from ExperimentHubMulticlass
-# data1 <- predomics.inputs.ExperimentHubMulticlass$KarlssonFH_2013
+ data1 <- predomics.inputs.ExperimentHubMulticlass$KarlssonFH_2013
 # 
 # # Extract metadata (phenotypes/labels)
-# df <- data1$y.df
-# y <- df$study_condition   # Response vector: study conditions
+ df <- data1$y.df
+ y <- df$study_condition   # Response vector: study conditions
 # 
 # # Extract abundance/features matrix
-# X <- data1$X
+ X <- data1$X
 # 
 # # --------------------------------------------
 # # Quick sanity checks
 # # --------------------------------------------
 # 
-# table(y)   # Show distribution of classes
-# dim(X)     # Show dimensions of feature matrix
+ table(y)   # Show distribution of classes
+ dim(X)     # Show dimensions of feature matrix
 
 ```
 
@@ -450,7 +454,7 @@ In this example, we rely on the multiclass terBeam heuristic combined with the s
 
 
 ```{r}
-clf <- terBeam_mc(sparsity = c(6,7,8,9), 
+clf <- terBeam_mc(sparsity = c(4,9), 
                                 max.nb.features = 1000,
                                 seed = 1,
                                 nCores = 1,
@@ -467,195 +471,5035 @@ clf <- terBeam_mc(sparsity = c(6,7,8,9),
 
 ### Running experiment
 
-Three different constraint factors are implemented: unconstrained, fully_constrained, and semi_constrained. In this phase, we use the semi_constrained factor combined with the optimal aggregation method: Majority_Voting_with_Tie_Breaking.
+Three different constraint factors are implemented in our multiclass Predomics framework:
+
+- `unconstrained`,
+- `fully_constrained`,
+- `semi_constrained`.
+
+In addition, several aggregation strategies are available for combining the binary OvA/OvO submodels into a final multiclass prediction, including:
+
+- `maximization`,
+- `voting`,
+- `Majority_Voting_with_Tie_Breaking`.
+
+All these aggregation methods can be executed using both multiclass decomposition strategies:
+
+- `One-vs-All (OvA)`,
+- `One-vs-One (OvO)`.
+
+In this study, we illustrate the proposed framework using the configuration that provided the best overall compromise between predictive performance and interpretability, namely:
+
+- the `semi_constrained` constraint factor,
+- the `Majority_Voting_with_Tie_Breaking` aggregation strategy,
+- and the `One-vs-One (OvO)` multiclass decomposition approach.
 
 ```{r running experiment, echo=TRUE, fig.width=5, warning=FALSE}
 runit = TRUE
 if(runit)
 {
-res_clf_mc <- fit_mc(X = X, y = y, clf = clf,approch="ovo", cross.validate = TRUE,aggregation_ = "Majority_Voting_with_Tie_Breaking", nfolds = 10, constraint_factor = "semi_constrained"); 
-save(res_clf_mc , clf, file ="res_clf_mc.rda", compression_level = 9)
+res_clf_mc_imbalance_2026 <- fit_mc(X = X, y = y, clf = clf,approch="ova", cross.validate = TRUE,aggregation_ = "Majority_Voting_with_Tie_Breaking", nfolds = 10, constraint_factor = "semi_constrained"); 
+save(res_clf_mc_imbalance_2026 , clf, file ="res_clf_mc_imbalance_2026.rda", compression_level = 9)
 }
 
 
 ```
-
-
-
 
 
 
 ### Family of Best Models (FBM)
 
-A family of best models is defined as the set of models returned by the predomics algorithm, whose accuracy is within a given window of the best model's accuracy. This window is defined by computing a significance threshold assuming that accuracy follows a binomial distribution (p<0.05). 
+A family of best models (FBM) is defined as the subset of models returned by the Predomics optimization process whose predictive performances remain statistically comparable to the best-performing model.
+
+The selection threshold is computed using a significance interval assuming that model accuracy follows a binomial distribution (p < 0.05). 
+
+This strategy allows the identification of multiple sparse and interpretable candidate models that achieve near-optimal predictive performance while potentially involving different combinations of microbial features.
 
 
 ```{r}
-# Convert the model collection into a population of models scrambled by model size
+# =========================================================
+# Load result object
+# =========================================================
 
-pop <- modelCollectionToPopulation(res_clf_mc$classifier$models)
-printy_mc(pop)
-# Function to create boxplot for a given data frame
-create_boxplot <- function(data, title) {
-  # Melt the dataframe for ggplot
-  data.melt <- melt(data, id.vars = c("accuracy_", "eval.sparsity"))
-  
-  # Create ggplot
-  plot <- ggplot(data = data.melt, aes(y = accuracy_, x = eval.sparsity)) +
-    geom_boxplot(notch = FALSE, outlier.shape = NA, position = position_dodge(width = 0.9), alpha = 0.3) +
-    geom_point(aes(color = eval.sparsity), position = position_jitterdodge(dodge.width = 0.9), size = 1, alpha = 0.5) +
-    ylim(c(0, 1)) +
-    xlab("Model Parsimony") +
-    ggtitle(title) +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.direction = "horizontal") +
-    guides(colour = "none")
-  
-  return(plot)
-}
+load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_imbalance_2026.rda")
 
-# Convert the population to a data frame
-pop.df <- populationToDataFrame_mc(pop)
+# =========================================================
+# Convert model collection into a population of models
+# =========================================================
 
-# Plotting for the original population (single figure)
-pop.dff <- as.data.frame(pop.df[[1]])  # Convert the first submodel to a data frame
-g.before <- create_boxplot(pop.dff, title = "Original Population")
-#print(g.before)  # Display the plot
+pop <- modelCollectionToPopulation(
+  res_clf_mc_imbalance_2026$classifier$models
+)
 
-# Select the best population models
+# =========================================================
+# Select the best family of models
+# =========================================================
+
 fbm <- selectBestPopulation(pop)
-printy_mc(fbm)
 
-# Convert the best population models to a data frame
-fbm.df <- populationToDataFrame_mc(fbm)
-
-# Plotting for the selected best models (single figure)
-fbm.dff <- as.data.frame(fbm.df[[1]])  # Convert the first submodel to a data frame
-g.after <- create_boxplot(fbm.dff, title = "FBM")
-print(g.after)  # Display the plot
-```
-
-###Analyzing the FBM
-
-The analysis of the family of best models (FBM) can be very insightful for discovering the most important variables in the prediction process. Let's start by examining the usage of variables in the FBM models. For this, we run the ?makeFeatureAnnot_mc function to obtain the feature distribution in the model matrix, which is a list of pop.noz elements. The models in the FBM are ranked by accuracy, and this order will be preserved in the coefficient dataframe. There are 20 features found in the FBM models. The figure below shows that some of these features are very prevalent in the FBM, making them likely important. The abundance and prevalence distribution of these features can be explored with ?plotAbundanceByClass_mc and ?plotPrevalence_mc, respectively. Gray stars on the right side of the graphics indicate significant differences between the prediction groups.
-
-
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=8, fig.width=43}
-fa <- makeFeatureAnnot_mc(pop = fbm, 
-                          X = X, 
-                          y = y, 
-                          clf = clf,
-                          approch = "ovo")
-plot_distribution <- plotFeatureModelCoeffs_mc(feat.model.coeffs = fa, y, approch = "ovo")
-plots_abundance <- plotAbundanceByClass_mc(features = fa, X, y, approch = "ovo")
-plots_prevalence <- plotPrevalence_mc(features = fa, X = X, y = y, approch = "ovo")
-```
-
-
-### Feature importance
-
-Finally, we can explore the feature importance using mean decrease accuracy information computed during the cross-validation process. It is worth noting that the order of variables based on the prevalence in FBM, is concordant with the order of mean decrease accuracy (i.e. importance) in the cross-validation. But when we look at the variables based on their importance indipendetly on the empirical learning FBM, the picture changes somewhow. There are some important variables that were not selected in the FBM of the whole dataset. It is thus important to explore the cross validation importance.
-
-```{r warning=FALSE, paged.print=FALSE, message=FALSE,fig.height=8, fig.width=43}
-
-feat1.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam =  res_clf_mc),
-                                         filter.cv.prev = 0,
-                                         min.kfold.nb = FALSE,
-                                         learner.grep.pattern = "*",
-                                         #nb.top.features = 50,
-                                         feature.selection = fa,
-                                         scaled.importance = TRUE,
-                                         make.plot = TRUE,
-                                         cv.prevalence = FALSE)
-
-
-feat2.import <- mergeMeltImportanceCV_mc(list.results = list(terBeam = res_clf_mc),
-                                         filter.cv.prev = 0,
-                                         min.kfold.nb = FALSE,
-                                         learner.grep.pattern = "*",
-                                         nb.top.features = 148,
-                                         #feature.selection = rownames(fa$pop.noz),
-                                         scaled.importance = TRUE,
-                                         make.plot = TRUE,
-                                         cv.prevalence = FALSE)
-```
-
-
-
-### Visualizing the best model
-
-The best-learned model can be visualized simply by printing it along with a summary of information on performance and model size. Furthermore, we can further explore the model by visualizing it using the barcode plot ?plotModel_mc. Finally, the importance of each feature can also be displayed using the same function, as illustrated in the figure below.
-
-```{r best model, fig.height=28, fig.width=70, warning=FALSE}
-
-# --------------------------------------------
-# Get the best model (first element of fbm)
-# --------------------------------------------
+# =========================================================
+# fbm now contains the best model family
+# =========================================================
 best.model <- fbm[[1]]
+printy_mc(fbm)
+```
 
-# --------------------------------------------
-# Print model information (optional)
-# --------------------------------------------
-printy_mc(best.model)
+### Construction of Annotated Heatmap Data
 
-# --------------------------------------------
-# Generate plots for model visualization
-# - plots1: basic coefficients visualization
-# - plots2: importance-based visualization
-# --------------------------------------------
-plots1 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, approch = "ovo")
-plots2 <- plotModel_mc(best.model, X, y, sort.features = FALSE, feature.name = TRUE, importance = TRUE, approch = "ovo")
+This step builds an annotated dataframe used to visualize the interpretability patterns of the selected multiclass Predomics model. 
 
-# --------------------------------------------
-# Utility function to improve plot readability
-# --------------------------------------------
-adjust_plot_theme <- function(plot) {
-  plot + theme(
-    text = element_text(size = 16),              # Global text
-    axis.title = element_text(size = 20),        # Axis titles
-    axis.text = element_text(size = 14),         # Axis labels
-    legend.title = element_text(size = 16),      # Legend title
-    legend.text = element_text(size = 14),       # Legend text
-    plot.title = element_text(size = 20, face = "bold"), # Plot title
-    strip.text = element_text(size = 16)         # Facet labels
+The function extracts the variables selected in each OvO binary submodel, associates them with their coefficient signs, and links them to taxonomic annotations (species and phylum levels). 
+
+The resulting dataframe is structured for downstream visualization using heatmaps, enabling the identification of discriminative microbial signatures across binary comparisons.
+
+
+
+```{r}
+mod_annot_imbalance_Semi_VTB_ovo <- build_model_annotation_heatmap_data(
+  y = y,
+  X = X,
+  best_model = best.model,
+  taxo_file = "taxo_hs_9_9_igc_1436_CAG_sup_500_gtdb_214_long.tsv",
+  approach = "ovo"
+)
+```
+
+
+### Heatmap Visualization of Selected Features Across OvO Submodels
+
+The heatmap displays the distribution of selected microbial features across OvO binary submodels obtained from the multiclass Predomics framework.
+
+Each row corresponds to an annotated microbial feature, while each column represents a binary OvO comparison. 
+
+Tile intensity reflects feature importance or selection presence within a given submodel, whereas point colors indicate the direction of association derived from the model coefficients:
+- red points correspond to features associated with Class A,
+- blue points correspond to features associated with Class B.
+
+Features are grouped according to their phylum-level taxonomy in order to facilitate biological interpretation and highlight taxonomic patterns shared across binary classifiers.
+
+```{r fig.heigth= 12, fig.width=14}
+ggplot(mod_annot_imbalance_Semi_VTB_ovo, aes(x = model, y = feature.annot)) +
+  geom_tile(aes(fill = importance), color = "grey90", linewidth = 0.3) +
+  geom_point(
+    aes(color = sign_label),
+    size = 2.8,
+    stroke = 0,
+    shape = 16,
+    na.rm = TRUE
+  ) +
+  scale_fill_gradient(
+    low = "white",
+    high = "steelblue",
+    name = "MDA | CV"
+  ) +
+  scale_color_manual(
+    name = "Sign",
+    values = c(
+      "Class A" = "firebrick1",
+      "Class B" = "deepskyblue1"
+    ),
+    breaks = c("Class A", "Class B"),
+    labels = c("Class A", "Class B"),
+    drop = TRUE
+  ) +
+  labs(
+    title = "",
+    x = NULL,
+    y = NULL
+  ) +
+  facet_grid(phylum ~ ., scales = "free", space = "free") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 9),
+    strip.text.y = element_text(angle = 0),
+    legend.position = "right"
   )
+```
+
+
+
+### Build performance metrics dataframe
+# =========================================================
+#
+# Description:
+# This step constructs a structured dataframe containing
+# cross-validation performance metrics obtained from the
+# multiclass Predomics framework.
+#
+# The dataframe includes:
+# - Accuracy
+# - Recall
+# - Precision
+# - F1-score
+# - Estimated TP, FP, FN
+# - Error rate
+#
+# for both:
+# - training sets
+# - test sets
+#
+# across all cross-validation folds.
+#
+# In addition, the dataframe stores experiment metadata:
+# - dataset name
+# - sparsity level
+# - constraint configuration
+# - aggregation strategy
+# - binarisation strategy
+# - learning approach
+#
+# This structure facilitates:
+# - statistical analysis
+# - visualization
+# - comparison between methods
+# - reproducibility of experiments
+#
+# Each experiment-specific dataframe was individually
+# generated and saved in order to preserve the complete
+# performance information associated with a given
+# experimental configuration.
+#
+# This includes:
+# - Predomics models
+# - state-of-the-art (SOTA) approaches
+# - multiple datasets
+# - different constraint levels
+# - several aggregation strategies
+# - OvO and OvA binarisation schemes
+#
+# After generating all individual experiment dataframes,
+# they were merged into a single comprehensive dataframe
+# gathering the complete set of experimental results = (Analysis_Dataset_Complet_Sota_vs_Predo)
+#
+# This global dataframe was subsequently used for:
+# - statistical comparisons,
+# - mixed-effects modeling,
+# - global performance analyses,
+# - visualization of experimental trends,
+# - and interpretation of multiclass classification
+#   performances across all evaluated methods.
+#
+# =========================================================
+
+```{r}
+predo_imbalance_semi_VTB_terbeam_df <- build_experiment_metrics(
+  
+  # =====================================================
+  # Result object containing CV performance metrics
+  # =====================================================
+  res_obj = res_clf_mc_imbalance_2026,
+  # =====================================================
+  # Best sparsity level selected during optimization
+  #
+  # Here:
+  # k_9 corresponds to the best model using
+  # 9 selected variables/features
+  # =====================================================
+  k_name = "k_9",
+  # =====================================================
+  # Number of training instances
+  #
+  # Approximately 90% of the dataset
+  # used during cross-validation training
+  # =====================================================
+  total_instances_train = 646,
+  # =====================================================
+  # Number of test instances
+  #
+  # Approximately 10% of the dataset
+  # used during cross-validation testing
+  # =====================================================
+  total_instances_test = 72,
+  # =====================================================
+  # Aggregation strategy used to combine
+  # binary submodel predictions
+  # =====================================================
+  method_name = "Voting_with_Tie_Breaking",
+  # =====================================================
+  # Total number of variables/features
+  # present in the original dataset
+  # =====================================================
+  k_value = "3385",
+  # =====================================================
+  # Constraint level applied during
+  # variable selection
+  # =====================================================
+  constraint_factor = "Semi_Constrained",
+  # =====================================================
+  # Dataset name
+  # =====================================================
+  dataset_name = "Imbalanced Enterotype",
+  # =====================================================
+  # Learning approach/model name
+  # =====================================================
+  approch_name = "Terbeam Predomics",
+  # =====================================================
+  # Multiclass binarisation strategy
+  #
+  # OVO = One-vs-One
+  # =====================================================
+  binarisation = "OVO",
+  # =====================================================
+  # Number of folds used during
+  # cross-validation
+  # =====================================================
+  num_folds = 10
+)
+# =========================================================
+# Display final dataframe
+# =========================================================
+print(predo_imbalance_semi_VTB_terbeam_df)
+```
+
+
+
+### Hyperparameter Analysis of the Predomics Framework
+# =========================================================
+#
+# Description:
+# This analysis investigates the impact of multiclass
+# hyperparameter configurations within the Predomics
+# framework using mixed-effects statistical modeling.
+#
+# The objective is to evaluate how:
+# - learning approaches,
+# - multiclass binarisation strategies,
+# - and aggregation methods
+#
+# influence classification performances across multiple
+# microbiome datasets.
+#
+# The analysis is based on the dataframe:
+#
+# Analysis_Dataset_Complet_Sota_vs_Predo
+#
+# which corresponds to a comprehensive dataset obtained
+# by merging all experiment-specific dataframes generated
+# during the study.
+#
+# This global dataframe includes:
+# - all Predomics experiments,
+# - all state-of-the-art (SOTA) experiments,
+# - all datasets,
+# - all sparsity levels,
+# - all constraint configurations,
+# - all aggregation strategies,
+# - and both OvO/OvA multiclass settings.
+#
+# Each row corresponds to a single fold-specific
+# experimental result.
+#
+# The present analysis focuses exclusively on:
+# - Predomics models,
+# - test performances,
+# - and valid multiclass configurations.
+#
+# Mixed-effects models are used to account for:
+# - variability between datasets,
+# - variability between CV folds,
+# while estimating the global effects of:
+# - approaches,
+# - and binarisation strategies.
+#
+
+```{r warning=FALSE, fig.height=8, fig.width=10}
+
+# =========================================================
+# Load the complete experimental dataframe
+# =========================================================
+
+load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/Analysis_Dataset_Complet_Sota_vs_Predo.rda")
+# =========================================================
+# Filter dataframe for Predomics hyperparameter analysis
+# =========================================================
+#
+# Keep only:
+# - multiclass settings (exclude "NO")
+# - Predomics approaches only
+# - test performances only
+#
+# =========================================================
+df_all <- Analysis_Dataset_Complet_Sota_vs_Predo %>%
+  filter(
+    Binarisation != "NO",
+    Approach != "Sota",
+    Set == "Test"
+  )
+# =========================================================
+# Dataset ordering
+# =========================================================
+#
+# Define a consistent ordering of datasets for:
+# - statistical reporting
+# - plotting
+# - reproducibility
+#
+# =========================================================
+ds_order <- c(
+  "Imbalanced Enterotype",
+  "Balanced Enterotype",
+  "Colorectal cancer",
+  "T2D"
+)
+df_all$Dataset <- factor(
+  df_all$Dataset,
+  levels = ds_order
+)
+# =========================================================
+# Mixed-effects model
+# =========================================================
+#
+# Fixed effects:
+# - Approach
+# - Binarisation
+# - Their interaction
+#
+# Random effects:
+# - Dataset variability
+# - Cross-validation fold variability
+#
+# =========================================================
+m_all <- lmer(
+  Accuracy ~ Approach * Binarisation +
+    (1 | Dataset) +
+    (1 | Fold),
+  data = df_all
+)
+# =========================================================
+# Estimated marginal means (EMMs)
+# =========================================================
+#
+# Compute adjusted mean accuracies for each approach
+# within each binarisation strategy.
+#
+# =========================================================
+
+em_all <- emmeans(
+  m_all,
+  ~ Approach | Binarisation
+)
+
+em_all_df <- as.data.frame(em_all)
+# =========================================================
+# Pairwise comparisons between approaches
+# =========================================================
+#
+# Compute pairwise contrasts and confidence intervals
+# within each binarisation strategy.
+#
+# =========================================================
+prs <- pairs(
+  em_all,
+  by = "Binarisation"
+)
+prs_df <- as.data.frame(prs)
+prs_ci <- as.data.frame(
+  confint(prs)
+)
+pairs_all <- merge(
+  prs_df,
+  prs_ci[, c(
+    "contrast",
+    "Binarisation",
+    "lower.CL",
+    "upper.CL"
+  )],
+  by = c("contrast", "Binarisation"),
+  all.x = TRUE
+)
+# =========================================================
+# Statistical significance annotations
+# =========================================================
+#
+# Create:
+# - significance categories
+# - significance symbols
+#
+# =========================================================
+pairs_all$p.value.cat <- ifelse(
+  pairs_all$p.value < 0.05,
+  "pvalue<0.05",
+  "NS"
+)
+pairs_all$sig_symb <- cut(
+  pairs_all$p.value,
+  breaks = c(-Inf, 0.001, 0.01, 0.05, Inf),
+  labels = c("***", "**", "*", "NS"),
+  right = TRUE
+)
+cols_pv <- c(
+  "pvalue<0.05" = muted("green"),
+  "NS" = muted("red")
+)
+# =========================================================
+# Compact letter display (CLD)
+# =========================================================
+#
+# Groups approaches that are not significantly different.
+#
+# =========================================================
+cld_tbl <- tryCatch(
+  {
+    as.data.frame(
+      cld(
+        em_all,
+        by = "Binarisation"
+      )
+    )
+  },
+  error = function(e) {
+    
+    warning(
+      paste(
+        "CLD not computed.",
+        conditionMessage(e)
+      )
+    )
+    NULL
+  }
+)
+# =========================================================
+# Merge CLD annotations with EMM dataframe
+# =========================================================
+if (!is.null(cld_tbl)) {
+  
+  cld_tbl$.group <- gsub(
+    "\\s+",
+    "",
+    cld_tbl$.group
+  )
+  
+  em_all_df <- em_all_df %>%
+    left_join(
+      cld_tbl %>%
+        dplyr::select(
+          Approach,
+          Binarisation,
+          .group
+        ),
+      by = c(
+        "Approach",
+        "Binarisation"
+      )
+    )
+}
+# =========================================================
+# Define Predomics family categories
+# =========================================================
+#
+# Used for plot coloring and interpretation.
+#
+# =========================================================
+em_all_df <- em_all_df %>%
+  mutate(
+    Family = case_when(
+      
+      grepl(
+        "^Terbeam",
+        as.character(Approach)
+      ) ~ "Predomics Terbeam",
+      
+      grepl(
+        "^Terga1",
+        as.character(Approach)
+      ) ~ "Predomics Terga1",
+      
+      TRUE ~ NA_character_
+    )
+  )
+# =========================================================
+# Define family colors
+# =========================================================
+col_family <- c(
+  "Predomics Terbeam" = muted("blue"),
+  "Predomics Terga1" = muted("red")
+)
+
+present_levels <- intersect(
+  names(col_family),
+  unique(em_all_df$Family)
+)
+# =========================================================
+# Panel 1:
+# Estimated marginal means + confidence intervals
+# =========================================================
+p1 <- ggplot(
+  em_all_df,
+  aes(
+    x = Approach,
+    y = emmean,
+    colour = Family
+  )
+) +
+  geom_point(
+    size = 4,
+    na.rm = TRUE
+  ) +
+  geom_errorbar(
+    aes(
+      ymin = lower.CL,
+      ymax = upper.CL
+    ),
+    width = .25,
+    na.rm = TRUE
+  ) +
+  {
+    if (!is.null(cld_tbl))
+      geom_text(
+        aes(label = .group),
+        vjust = -0.8,
+        size = 5,
+        colour = "black",
+        show.legend = FALSE
+      )
+    else NULL
+  } +
+  scale_color_manual(
+    values = col_family,
+    breaks = present_levels,
+    labels = present_levels,
+    na.translate = FALSE,
+    drop = FALSE
+  ) +
+  scale_y_continuous(
+    limits = c(0, 1),
+    expand = expansion(
+      mult = c(0, 0.08)
+    )
+  ) +
+  facet_nested(
+    . ~ Binarisation
+  ) +
+  labs(
+    title = NULL,
+    y = "Estimated mean Accuracy (EMMs)",
+    x = NULL,
+    colour = NULL
+  ) +
+  theme_bw(base_size = 18) +
+  theme(
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.box = "vertical",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    legend.margin = ggplot2::margin(b = 4),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(
+      size = 18,
+      face = "bold"
+    ),
+    strip.text.x = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    plot.margin = ggplot2::margin(
+      t = 5,
+      r = 5,
+      b = 0,
+      l = 5
+    ),
+    panel.spacing.y = unit(4, "pt")
+  ) +
+  
+  guides(
+    colour = guide_legend(
+      nrow = 1,
+      byrow = TRUE
+    )
+  )
+# =========================================================
+# Panel 2:
+# Pairwise contrasts + confidence intervals
+# =========================================================
+p2 <- ggplot(
+  pairs_all,
+  aes(
+    x = contrast,
+    y = estimate
+  )
+) +
+  geom_point(
+    aes(colour = p.value.cat),
+    size = 5
+  ) +
+  geom_errorbar(
+    aes(
+      colour = p.value.cat,
+      ymin = lower.CL,
+      ymax = upper.CL
+    ),
+    width = .25
+  ) +
+  geom_text(
+    aes(label = sig_symb),
+    nudge_y = 0.02,
+    size = 5,
+    show.legend = FALSE
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed"
+  ) +
+  
+  facet_nested(
+    . ~ Binarisation
+  ) +
+  
+  scale_color_manual(
+    values = cols_pv,
+    drop = FALSE,
+    name = "Significance",
+    labels = c(
+      "pvalue<0.05" = "Significant (p < 0.05)",
+      "NS" = "Not significant"
+    )
+  ) +
+  
+  coord_flip() +
+  
+  labs(
+    title = NULL,
+    y = "Contrast estimate (EMMs differences)",
+    x = NULL
+  ) +
+  
+  theme_bw(base_size = 18) +
+  
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(
+      size = 18,
+      face = "bold"
+    ),
+    strip.text.x = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    plot.margin = ggplot2::margin(
+      t = 0,
+      r = 5,
+      b = 5,
+      l = 5
+    )
+  )
+
+# =========================================================
+# Assemble final figure
+# =========================================================
+
+fig_all <- p1 + p2 +
+  plot_layout(
+    nrow = 2,
+    heights = c(1, 1)
+  )
+# =========================================================
+# Display final figure
+# =========================================================
+print(fig_all)
+```
+
+
+### Hyperparameter Analysis of Predomics Constraint Factors
+# =========================================================
+#
+# Description:
+# This analysis evaluates the effect of the constraint factor
+# on the classification performance of the multiclass
+# Predomics framework.
+#
+# The constraint factor corresponds to the level of restriction
+# imposed during the variable selection process.
+#
+# Three constraint configurations are compared:
+# - Full constrained
+# - Semi constrained
+# - Unconstrained
+#
+# The objective is to assess whether these constraint levels
+# significantly influence test accuracy across:
+# - Predomics learning approaches,
+# - multiclass binarisation strategies,
+# - cross-validation folds,
+# - and microbiome datasets.
+#
+# The analysis uses the global dataframe:
+#
+# Analysis_Dataset_Complet_Sota_vs_Predo
+#
+# This dataframe was obtained by merging all individual
+# experiment-specific dataframes generated during the study.
+# It contains both Predomics and state-of-the-art (SOTA)
+# results, but the present analysis focuses only on Predomics
+# configurations.
+#
+# Mixed-effects modeling is used to account for:
+# - dataset-level variability,
+# - fold-level variability,
+# while estimating the fixed effects of:
+# - constraint factor,
+# - binarisation strategy,
+# - learning approach,
+# - and their interactions.
+
+
+```{r fig.height=8, fig.width=10, warning=FALSE}
+# =========================================================
+# Filter dataframe for Predomics constraint analysis
+# =========================================================
+#
+# Keep only:
+# - valid multiclass binarisation strategies
+# - Predomics approaches
+# - test-set performances
+#
+# =========================================================
+df_all <- Analysis_Dataset_Complet_Sota_vs_Predo |>
+  filter(
+    Binarisation != "NO",
+    Approach %in% c(
+      "Terbeam Predomics",
+      "Terga1 Predomics"
+    ),
+    Set == "Test"
+  )
+# =========================================================
+# Define dataset ordering
+# =========================================================
+#
+# This ensures consistent ordering in reports and plots.
+#
+# =========================================================
+ds_levels <- c(
+  "Imbalanced Enterotype",
+  "Balanced Enterotype",
+  "Colorectal cancer",
+  "T2D"
+)
+df_all$Dataset <- factor(
+  df_all$Dataset,
+  levels = ds_levels
+)
+# =========================================================
+# Clean and order constraint factor levels
+# =========================================================
+#
+# Internal labels are converted into readable labels
+# for visualization and reporting.
+#
+# =========================================================
+cf_levels <- c(
+  "Full_Constrained",
+  "Semi_Constrained",
+  "Unconstrained"
+)
+cf_labels <- c(
+  "Full constrained",
+  "Semi constrained",
+  "Unconstrained"
+)
+df_all$Constraint_factor <- factor(
+  df_all$Constraint_factor,
+  levels = cf_levels,
+  labels = cf_labels
+)
+# =========================================================
+# Define colors for constraint levels
+# =========================================================
+cf_cols <- c(
+  "Full constrained" = muted("purple"),
+  "Semi constrained" = muted("orange"),
+  "Unconstrained"    = muted("blue")
+)
+# =========================================================
+# Mixed-effects model
+# =========================================================
+#
+# Fixed effects:
+# - Constraint factor
+# - Binarisation strategy
+# - Predomics approach
+# - All interactions between these factors
+#
+# Random effects:
+# - Dataset
+# - Cross-validation fold
+#
+# =========================================================
+m_all <- lmer(
+  Accuracy ~ Constraint_factor *
+    Binarisation *
+    Approach +
+    (1 | Dataset) +
+    (1 | Fold),
+  data = df_all
+)
+# =========================================================
+# Estimated marginal means
+# =========================================================
+#
+# Estimate adjusted mean accuracy for each constraint level
+# within each combination of:
+# - binarisation strategy
+# - Predomics approach
+#
+# =========================================================
+em_cf <- emmeans(
+  m_all,
+  ~ Constraint_factor | Binarisation + Approach
+)
+em_cf_df <- as.data.frame(em_cf)
+# =========================================================
+# Compact letter display
+# =========================================================
+#
+# Constraint levels sharing the same letter are not
+# significantly different within the same binarisation
+# and approach condition.
+#
+# =========================================================
+cld_tbl <- tryCatch(
+  {
+    as.data.frame(
+      cld(
+        em_cf,
+        by = c(
+          "Binarisation",
+          "Approach"
+        )
+      )
+    )
+  },
+  error = function(e) {
+    warning(
+      paste(
+        "CLD not computed.",
+        conditionMessage(e)
+      )
+    )
+    NULL
+  }
+)
+# =========================================================
+# Merge CLD letters with EMM dataframe
+# =========================================================
+
+if (!is.null(cld_tbl)) {
+  
+  cld_tbl$.group <- gsub(
+    "\\s+",
+    "",
+    cld_tbl$.group
+  )
+  
+  em_cf_df <- em_cf_df |>
+    left_join(
+      cld_tbl[, c(
+        "Constraint_factor",
+        "Binarisation",
+        "Approach",
+        ".group"
+      )],
+      by = c(
+        "Constraint_factor",
+        "Binarisation",
+        "Approach"
+      )
+    )
+}
+# =========================================================
+# Pairwise contrasts between constraint levels
+# =========================================================
+#
+# Compare constraint configurations pairwise within each
+# binarisation and Predomics approach condition.
+#
+# =========================================================
+
+prs <- pairs(
+  em_cf,
+  by = c(
+    "Binarisation",
+    "Approach"
+  )
+)
+
+prs_df <- as.data.frame(prs)
+
+prs_ci <- as.data.frame(
+  confint(prs)
+)
+
+pairs_all <- merge(
+  prs_df,
+  prs_ci[, c(
+    "contrast",
+    "Binarisation",
+    "Approach",
+    "lower.CL",
+    "upper.CL"
+  )],
+  by = c(
+    "contrast",
+    "Binarisation",
+    "Approach"
+  ),
+  all.x = TRUE
+)
+# =========================================================
+# Define significance categories
+# =========================================================
+
+pairs_all$p.value.cat <- ifelse(
+  pairs_all$p.value < 0.05,
+  "pvalue<0.05",
+  "NS"
+)
+pairs_all$sig_symb <- cut(
+  pairs_all$p.value,
+  breaks = c(
+    -Inf,
+    0.001,
+    0.01,
+    0.05,
+    Inf
+  ),
+  labels = c(
+    "***",
+    "**",
+    "*",
+    "NS"
+  ),
+  right = TRUE
+)
+pv_cols <- c(
+  "pvalue<0.05" = muted("green"),
+  "NS" = muted("red")
+)
+
+# =========================================================
+# Panel 1:
+# Estimated marginal means by constraint factor
+# =========================================================
+#
+# This panel displays adjusted mean test accuracy and
+# 95% confidence intervals for each constraint level.
+#
+# =========================================================
+
+p1 <- ggplot(
+  em_cf_df,
+  aes(
+    x = Constraint_factor,
+    y = emmean,
+    colour = Constraint_factor
+  )
+) +
+  
+  geom_point(size = 4) +
+  
+  geom_errorbar(
+    aes(
+      ymin = lower.CL,
+      ymax = upper.CL
+    ),
+    width = .25
+  ) +
+  
+  {
+    if (!is.null(cld_tbl))
+      
+      geom_text(
+        aes(label = .group),
+        vjust = -0.8,
+        size = 5,
+        colour = "black",
+        show.legend = FALSE
+      )
+    
+    else NULL
+  } +
+  
+  scale_colour_manual(
+    values = cf_cols,
+    name = NULL,
+    drop = FALSE
+  ) +
+  
+  scale_y_continuous(
+    limits = c(0, 1),
+    expand = expansion(
+      mult = c(0, 0.08)
+    )
+  ) +
+  
+  scale_x_discrete(
+    position = "top"
+  ) +
+  
+  facet_nested(
+    . ~ Binarisation + Approach,
+    switch = "x"
+  ) +
+  
+  labs(
+    title = NULL,
+    y = "Estimated mean Accuracy (EMMs)",
+    x = NULL
+  ) +
+  
+  theme_bw(base_size = 18) +
+  
+  theme(
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.box = "vertical",
+    legend.margin = ggplot2::margin(b = 4),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 0,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(
+      size = 18,
+      face = "bold"
+    ),
+    strip.text.x = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    strip.background.x = element_rect(
+      fill = NA,
+      colour = "grey70"
+    ),
+    plot.margin = ggplot2::margin(
+      t = 5,
+      r = 5,
+      b = 0,
+      l = 5
+    )
+  ) +
+  
+  guides(
+    colour = guide_legend(
+      nrow = 1,
+      byrow = TRUE
+    )
+  )
+
+# =========================================================
+# Panel 2:
+# Pairwise contrasts between constraint factors
+# =========================================================
+#
+# This panel displays pairwise differences in estimated
+# marginal means between constraint levels, with 95%
+# confidence intervals and significance symbols.
+#
+# =========================================================
+
+p2 <- ggplot(
+  pairs_all,
+  aes(
+    x = contrast,
+    y = estimate
+  )
+) +
+  
+  geom_point(
+    aes(colour = p.value.cat),
+    size = 5
+  ) +
+  
+  geom_errorbar(
+    aes(
+      colour = p.value.cat,
+      ymin = lower.CL,
+      ymax = upper.CL
+    ),
+    width = .25
+  ) +
+  
+  geom_text(
+    aes(label = sig_symb),
+    nudge_y = 0.02,
+    size = 5,
+    show.legend = FALSE
+  ) +
+  
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed"
+  ) +
+  
+  facet_nested(
+    . ~ Binarisation + Approach
+  ) +
+  
+  scale_color_manual(
+    values = pv_cols,
+    drop = FALSE,
+    name = "Significance",
+    labels = c(
+      "pvalue<0.05" = "Significant (p < 0.05)",
+      "NS" = "Not significant"
+    )
+  ) +
+  
+  coord_flip() +
+  
+  labs(
+    title = NULL,
+    y = "Contrast estimate (EMMs differences)",
+    x = NULL
+  ) +
+  
+  theme_bw(base_size = 18) +
+  
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(
+      angle = 35,
+      hjust = 1,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(
+      size = 18,
+      face = "bold"
+    ),
+    strip.text.x = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    strip.background.x = element_rect(
+      fill = NA,
+      colour = "grey70"
+    ),
+    plot.margin = ggplot2::margin(
+      t = 0,
+      r = 5,
+      b = 5,
+      l = 5
+    )
+  )
+
+# =========================================================
+# Assemble final figure
+# =========================================================
+
+fig_cf <- p1 + p2 +
+  plot_layout(
+    nrow = 2,
+    heights = c(1, 1)
+  )
+
+# =========================================================
+# Display final figure
+# =========================================================
+
+print(fig_cf)
+```
+
+
+### Hyperparameter Analysis of Predomics Aggregation Methods
+# =========================================================
+#
+# Description:
+# This analysis evaluates the effect of aggregation methods
+# on the classification performance of the multiclass
+# Predomics framework.
+#
+# In the Predomics multiclass setting, several binary
+# submodels are combined to produce a final multiclass
+# prediction. This step compares the main aggregation
+# strategies used for this purpose.
+#
+# The aggregation methods compared are:
+# - Majority Voting
+# - Voting with Tie-Breaking
+# - Maximization
+#
+# The objective is to determine whether the choice of
+# aggregation method significantly affects test accuracy
+# across:
+# - Predomics learning approaches,
+# - multiclass binarisation strategies,
+# - cross-validation folds,
+# - and microbiome datasets.
+#
+# The analysis uses the global dataframe:
+#
+# Analysis_Dataset_Complet_Sota_vs_Predo
+#
+# This dataframe was obtained by merging all individual
+# experiment-specific dataframes generated during the study.
+# It contains both Predomics and state-of-the-art (SOTA)
+# results, but the present analysis focuses only on Predomics
+# configurations.
+#
+# Mixed-effects modeling is used to account for:
+# - dataset-level variability,
+# - fold-level variability,
+# while estimating the fixed effects of:
+# - aggregation method,
+# - binarisation strategy,
+# - learning approach,
+# - and their interactions.
+#
+
+```{r fig.width=14, fig.heigth = 8}
+# Filter dataframe for Predomics method comparison
+# =========================================================
+#
+# Keep only:
+# - OvA and OvO multiclass settings
+# - test-set performances
+# - Predomics approaches only
+#
+# Exclude:
+# - NO binarisation
+# - SOTA methods
+#
+# =========================================================
+
+df_all <- Analysis_Dataset_Complet_Sota_vs_Predo |>
+  filter(
+    Binarisation %in% c("OVA", "OVO"),
+    Binarisation != "NO",
+    Set == "Test",
+    Approach %in% c(
+      "Terbeam Predomics",
+      "Terga1 Predomics"
+    )
+  )
+# =========================================================
+# Define dataset ordering
+# =========================================================
+#
+# This ensures consistent ordering in reports and plots.
+#
+# =========================================================
+ds_levels <- c(
+  "Imbalanced Enterotype",
+  "Balanced Enterotype",
+  "Colorectal cancer",
+  "T2D"
+)
+df_all$Dataset <- factor(
+  df_all$Dataset,
+  levels = ds_levels
+)
+
+# =========================================================
+# Define aggregation method levels
+# =========================================================
+#
+# These are the Predomics multiclass aggregation strategies
+# compared in this analysis.
+#
+# =========================================================
+
+method_levels <- c(
+  "Majority Voting",
+  "Voting_with_Tie_Breaking",
+  "Maximization"
+)
+
+df_all$Methods <- factor(
+  df_all$Methods,
+  levels = method_levels
+)
+
+
+# =========================================================
+# Define colors for aggregation methods
+# =========================================================
+
+method_cols <- c(
+  "Majority Voting" = muted("blue"),
+  "Voting_with_Tie_Breaking" = muted("green"),
+  "Maximization" = muted("orange")
+)
+
+present_methods <- intersect(
+  method_levels,
+  unique(as.character(df_all$Methods))
+)
+
+pal <- method_cols[present_methods]
+
+
+# =========================================================
+# Mixed-effects model
+# =========================================================
+#
+# Fixed effects:
+# - Aggregation method
+# - Binarisation strategy
+# - Predomics approach
+# - All interactions between these factors
+#
+# Random effects:
+# - Dataset
+# - Cross-validation fold
+#
+# =========================================================
+
+m_all <- lmer(
+  Accuracy ~ Methods *
+    Binarisation *
+    Approach +
+    (1 | Dataset) +
+    (1 | Fold),
+  data = df_all
+)
+
+
+# =========================================================
+# Estimated marginal means
+# =========================================================
+#
+# Estimate adjusted mean accuracy for each aggregation
+# method within each combination of:
+# - binarisation strategy
+# - Predomics approach
+#
+# =========================================================
+
+em_methods <- emmeans(
+  m_all,
+  ~ Methods | Binarisation + Approach
+)
+
+em_df <- as.data.frame(em_methods)
+
+
+# =========================================================
+# Compact letter display
+# =========================================================
+#
+# Aggregation methods sharing the same letter are not
+# significantly different within the same binarisation
+# and approach condition.
+#
+# =========================================================
+
+cld_tbl <- tryCatch(
+  {
+    as.data.frame(
+      cld(
+        em_methods,
+        by = c(
+          "Binarisation",
+          "Approach"
+        )
+      )
+    )
+  },
+  error = function(e) {
+    
+    warning(
+      paste(
+        "CLD not computed.",
+        conditionMessage(e)
+      )
+    )
+    
+    NULL
+  }
+)
+
+
+# =========================================================
+# Merge CLD letters with EMM dataframe
+# =========================================================
+
+if (!is.null(cld_tbl)) {
+  
+  cld_tbl$.group <- gsub(
+    "\\s+",
+    "",
+    cld_tbl$.group
+  )
+  
+  em_df <- em_df |>
+    left_join(
+      cld_tbl[, c(
+        "Methods",
+        "Binarisation",
+        "Approach",
+        ".group"
+      )],
+      by = c(
+        "Methods",
+        "Binarisation",
+        "Approach"
+      )
+    )
 }
 
-# --------------------------------------------
-# Apply the custom theme to all plots
-# --------------------------------------------
-plots1 <- lapply(plots1, adjust_plot_theme)
-plots2 <- lapply(plots2, adjust_plot_theme)
 
-# --------------------------------------------
-# Save plots as a PDF file with high readability
-# PDF size here is set to approx. A0 format
-# --------------------------------------------
-pdf("model_visualization_plots2.pdf", width = 70, height = 28)  
-grid.arrange(grobs = c(plots1, plots2), ncol = 3)
-dev.off()
-cat("The plots have been saved under the name 'model_visualization_plots2.pdf'.\n")
+# =========================================================
+# Pairwise contrasts between aggregation methods
+# =========================================================
+#
+# Compare aggregation methods pairwise within each
+# binarisation and Predomics approach condition.
+#
+# =========================================================
 
-# --------------------------------------------
-# Direct visualization in RStudio (with better fonts)
-# --------------------------------------------
-grid.arrange(grobs = c(plots1, plots2), ncol = 3)
+prs <- pairs(
+  em_methods,
+  by = c(
+    "Binarisation",
+    "Approach"
+  )
+)
+
+prs_df <- as.data.frame(prs)
+
+prs_ci <- as.data.frame(
+  confint(prs)
+)
+
+pairs_all <- merge(
+  prs_df,
+  prs_ci[, c(
+    "contrast",
+    "Binarisation",
+    "Approach",
+    "lower.CL",
+    "upper.CL"
+  )],
+  by = c(
+    "contrast",
+    "Binarisation",
+    "Approach"
+  ),
+  all.x = TRUE
+)
 
 
+# =========================================================
+# Define significance categories
+# =========================================================
 
+pairs_all$p.value.cat <- ifelse(
+  pairs_all$p.value < 0.05,
+  "pvalue<0.05",
+  "NS"
+)
+
+pairs_all$sig_symb <- cut(
+  pairs_all$p.value,
+  breaks = c(
+    -Inf,
+    0.001,
+    0.01,
+    0.05,
+    Inf
+  ),
+  labels = c(
+    "***",
+    "**",
+    "*",
+    "NS"
+  ),
+  right = TRUE
+)
+
+pv_cols <- c(
+  "pvalue<0.05" = muted("green"),
+  "NS" = muted("red")
+)
+
+
+# =========================================================
+# Panel 1:
+# Estimated marginal means by aggregation method
+# =========================================================
+#
+# This panel displays adjusted mean test accuracy and
+# 95% confidence intervals for each aggregation method.
+#
+# =========================================================
+
+p1 <- ggplot(
+  em_df,
+  aes(
+    x = Methods,
+    y = emmean,
+    colour = Methods
+  )
+) +
+  
+  geom_point(size = 4) +
+  
+  geom_errorbar(
+    aes(
+      ymin = lower.CL,
+      ymax = upper.CL
+    ),
+    width = .25
+  ) +
+  
+  {
+    if (!is.null(cld_tbl))
+      
+      geom_text(
+        aes(label = .group),
+        vjust = -0.8,
+        size = 5,
+        colour = "black",
+        show.legend = FALSE
+      )
+    
+    else NULL
+  } +
+  
+  scale_colour_manual(
+    values = pal,
+    breaks = present_methods,
+    name = NULL,
+    drop = FALSE
+  ) +
+  
+  scale_y_continuous(
+    limits = c(0, 1),
+    expand = expansion(
+      mult = c(0, 0.08)
+    )
+  ) +
+  
+  scale_x_discrete(
+    position = "top"
+  ) +
+  
+  facet_nested(
+    . ~ Binarisation + Approach,
+    switch = "x"
+  ) +
+  
+  labs(
+    title = NULL,
+    y = "Estimated mean Accuracy (EMMs)",
+    x = NULL
+  ) +
+  
+  theme_bw(base_size = 18) +
+  
+  theme(
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.box = "vertical",
+    legend.margin = ggplot2::margin(b = 4),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 0,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(
+      size = 18,
+      face = "bold"
+    ),
+    strip.text.x = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    strip.background.x = element_rect(
+      fill = NA,
+      colour = "grey70"
+    ),
+    plot.margin = ggplot2::margin(
+      t = 5,
+      r = 5,
+      b = 0,
+      l = 5
+    )
+  ) +
+  
+  guides(
+    colour = guide_legend(
+      nrow = 1,
+      byrow = TRUE
+    )
+  )
+
+
+# =========================================================
+# Panel 2:
+# Pairwise contrasts between aggregation methods
+# =========================================================
+#
+# This panel displays pairwise differences in estimated
+# marginal means between aggregation methods, with 95%
+# confidence intervals and significance symbols.
+#
+# =========================================================
+
+p2 <- ggplot(
+  pairs_all,
+  aes(
+    x = contrast,
+    y = estimate
+  )
+) +
+  
+  geom_point(
+    aes(colour = p.value.cat),
+    size = 5
+  ) +
+  
+  geom_errorbar(
+    aes(
+      colour = p.value.cat,
+      ymin = lower.CL,
+      ymax = upper.CL
+    ),
+    width = .25
+  ) +
+  
+  geom_text(
+    aes(label = sig_symb),
+    nudge_y = 0.02,
+    size = 5,
+    show.legend = FALSE
+  ) +
+  
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed"
+  ) +
+  
+  facet_nested(
+    . ~ Binarisation + Approach
+  ) +
+  
+  scale_color_manual(
+    values = pv_cols,
+    drop = FALSE,
+    name = "Significance",
+    labels = c(
+      "pvalue<0.05" = "Significant (p < 0.05)",
+      "NS" = "Not significant"
+    )
+  ) +
+  
+  coord_flip() +
+  
+  labs(
+    title = NULL,
+    y = "Contrast estimate (EMMs differences)",
+    x = NULL
+  ) +
+  
+  theme_bw(base_size = 18) +
+  
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(
+      size = 18,
+      face = "bold"
+    ),
+    strip.text.x = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    strip.background.x = element_rect(
+      fill = NA,
+      colour = "grey70"
+    ),
+    plot.margin = ggplot2::margin(
+      t = 0,
+      r = 5,
+      b = 5,
+      l = 5
+    )
+  )
+
+
+# =========================================================
+# Assemble final figure
+# =========================================================
+
+fig_methods <- p1 + p2 +
+  plot_layout(
+    nrow = 2,
+    heights = c(1, 1)
+  )
+
+
+# =========================================================
+# Display final figure
+# =========================================================
+
+print(fig_methods)
+```
+
+
+### Performance Analysis: Predomics vs State-of-the-Art Methods
+# =========================================================
+#
+# Description:
+# This analysis compares the test performance of selected
+# Predomics configurations against state-of-the-art (SOTA)
+# machine learning methods across multiple microbiome datasets.
+#
+# The analysis focuses on a fixed Predomics configuration:
+# - Constraint factor: Semi_Constrained
+# - Aggregation method: Voting_with_Tie_Breaking
+# - Binarisation strategies: OVA and OVO
+#
+# Two Predomics learning approaches are evaluated separately:
+# - Terbeam Predomics
+# - Terga1 Predomics
+#
+# For each dataset, a mixed-effects model is fitted to compare
+# Predomics variants with each SOTA method.
+#
+# The contrasts are explicitly defined as:
+#
+# Predomics - SOTA
+#
+# This means that positive contrast estimates indicate that
+# the Predomics configuration has higher estimated accuracy
+# than the corresponding SOTA method.
+#
+# The analysis uses the global dataframe:
+#
+# Analysis_Dataset_Complet_Sota_vs_Predo
+#
+# This dataframe was obtained by merging all individual
+# experiment-specific dataframes generated during the study,
+# including both Predomics and SOTA experiments.
+#
+# For each dataset, the analysis produces:
+# - Estimated marginal means of accuracy,
+# - 95% confidence intervals,
+# - pairwise contrasts between Predomics and SOTA methods,
+# - statistical significance labels.
+#
+
+
+```{r fig.heigth=14, fig.width=16, warning=FALSE}
+# One PDF figure is exported per dataset.
+# =========================================================
+# Define output directory
+# =========================================================
+#
+# Figures are exported into the current working directory.
+#
+# =========================================================
+out_dir <- getwd()
+# =========================================================
+# Define datasets to analyze
+# =========================================================
+
+datasets <- c(
+  "Imbalanced Enterotype",
+  "Balanced Enterotype",
+  "Colorectal cancer",
+  "T2D"
+)
+# =========================================================
+# Identify SOTA methods present in the global dataframe
+# =========================================================
+sotamethods <- unique(
+  Analysis_Dataset_Complet_Sota_vs_Predo$Methods[
+    Analysis_Dataset_Complet_Sota_vs_Predo$Approach == "Sota"
+  ]
+)
+# =========================================================
+# Define significance colors
+# =========================================================
+cols_sig <- c(
+  "pvalue<0.05" = muted("green"),
+  "NS" = muted("red")
+)
+# =========================================================
+# Main loop: one analysis and one PDF per dataset
+# =========================================================
+for (ds in datasets) {
+  message("=== Dataset: ", ds, " ===")
+  # =======================================================
+  # Filter data for the current dataset
+  # =======================================================
+  #
+  # Keep only:
+  # - current dataset
+  # - test-set performances
+  # - OVA and OVO binarisation strategies
+  # - SOTA methods
+  # - Predomics methods using:
+  #   * Semi_Constrained configuration
+  #   * Voting_with_Tie_Breaking aggregation
+  #
+  # =======================================================
+  ijdf <- Analysis_Dataset_Complet_Sota_vs_Predo %>%
+    filter(
+      Dataset == ds,
+      Set == "Test",
+      Binarisation %in% c("OVA", "OVO"),
+      Binarisation != "NO"
+    ) %>%
+    filter(
+      (Approach == "Sota") |
+        (
+          Approach %in% c(
+            "Terbeam Predomics",
+            "Terga1 Predomics"
+          ) &
+            Constraint_factor == "Semi_Constrained" &
+            Methods == "Voting_with_Tie_Breaking"
+        )
+    ) %>%
+    mutate(
+      
+      # Unified method labels for plotting
+      
+      Methods_plot = case_when(
+        Approach == "Sota" ~ Methods,
+        Approach == "Terbeam Predomics" ~
+          "Predomics Terbeam SC VotingWTB",
+        Approach == "Terga1 Predomics" ~
+          "Predomics Terga1 SC VotingWTB",
+        TRUE ~ Methods
+      ),
+      
+      # Method family used for plot coloring
+      
+      Heuristic = case_when(
+        Methods_plot == "Predomics Terbeam SC VotingWTB" ~ "Terbeam",
+        Methods_plot == "Predomics Terga1 SC VotingWTB" ~ "Terga1",
+        TRUE ~ "SOTA"
+      )
+    )
+  # =======================================================
+  # Safety check: ensure enough rows are available
+  # =======================================================
+  
+  if (nrow(ijdf) < 5) {
+    warning("Not enough rows for dataset: ", ds)
+    next
+  }
+  # =======================================================
+  # Prepare plotting factors
+  # =======================================================
+  
+  ijdf$Methods_plot <- as.character(
+    ijdf$Methods_plot
+  )
+  
+  ijdf$Methods_plot <- factor(
+    ijdf$Methods_plot
+  )
+  
+  ijdf$Heuristic <- factor(
+    ijdf$Heuristic,
+    levels = c(
+      "SOTA",
+      "Terbeam",
+      "Terga1"
+    )
+  )
+  # =======================================================
+  # Safety check: at least two methods are required
+  # =======================================================
+  
+  if (nlevels(ijdf$Methods_plot) < 2) {
+    warning(
+      "Not enough Methods_plot levels for dataset: ",
+      ds
+    )
+    next
+  }
+  # =======================================================
+  # Mixed-effects model for the current dataset
+  # =======================================================
+  #
+  # Fixed effects:
+  # - Methods_plot
+  # - Binarisation
+  # - Their interaction
+  #
+  # Random effect:
+  # - Cross-validation fold
+  #
+  # =======================================================
+  
+  m <- lmer(
+    Accuracy ~ Methods_plot * Binarisation +
+      (1 | Fold),
+    data = ijdf
+  )
+  
+  # =======================================================
+  # Estimated marginal means
+  # =======================================================
+  #
+  # Compute adjusted mean accuracy for each method within
+  # each binarisation strategy.
+  #
+  # =======================================================
+  
+  em <- emmeans(
+    m,
+    ~ Methods_plot | Binarisation
+  )
+  
+  em_df <- as.data.frame(em) %>%
+    mutate(
+      Heuristic = case_when(
+        Methods_plot == "Predomics Terbeam SC VotingWTB" ~ "Terbeam",
+        Methods_plot == "Predomics Terga1 SC VotingWTB" ~ "Terga1",
+        TRUE ~ "SOTA"
+      ),
+      Heuristic = factor(
+        Heuristic,
+        levels = c(
+          "SOTA",
+          "Terbeam",
+          "Terga1"
+        )
+      )
+    )
+  
+  # =======================================================
+  # Build Predomics-vs-SOTA contrasts
+  # =======================================================
+  #
+  # Contrasts are defined as:
+  #
+  # Predomics - SOTA
+  #
+  # Therefore:
+  # - positive estimate: Predomics > SOTA
+  # - negative estimate: Predomics < SOTA
+  #
+  # =======================================================
+  
+  all_levels <- levels(
+    ijdf$Methods_plot
+  )
+  
+  pres_tbl <- ijdf %>%
+    mutate(
+      Methods_plot = factor(
+        Methods_plot,
+        levels = all_levels
+      )
+    ) %>%
+    count(
+      Binarisation,
+      Methods_plot
+    ) %>%
+    tidyr::complete(
+      Binarisation,
+      Methods_plot,
+      fill = list(n = 0)
+    )
+  
+  # =======================================================
+  # Helper function: check level presence
+  # =======================================================
+  
+  is_present <- function(b, lev) {
+    pres_tbl$n[
+      pres_tbl$Binarisation == b &
+        as.character(pres_tbl$Methods_plot) == lev
+    ] > 0
+  }
+  
+  # =======================================================
+  # Helper function: construct one contrast vector
+  # =======================================================
+  
+  make_one_contrast <- function(pred_name, sota_name) {
+    
+    v <- rep(
+      0,
+      length(all_levels)
+    )
+    
+    names(v) <- all_levels
+    
+    v[pred_name] <- 1
+    v[sota_name] <- -1
+    
+    v
+  }
+  
+  
+  # =======================================================
+  # Create all valid Predomics-vs-SOTA contrasts
+  # =======================================================
+  
+  contrast_list <- list()
+  
+  bins <- sort(
+    unique(
+      as.character(ijdf$Binarisation)
+    )
+  )
+  
+  for (b in bins) {
+    
+    # -----------------------------------------------------
+    # Terbeam Predomics contrasts
+    # -----------------------------------------------------
+    
+    pred_tb <- "Predomics Terbeam SC VotingWTB"
+    
+    if (
+      pred_tb %in% all_levels &&
+      is_present(b, pred_tb)
+    ) {
+      
+      for (
+        sota in setdiff(
+          all_levels,
+          c(
+            pred_tb,
+            "Predomics Terga1 SC VotingWTB"
+          )
+        )
+      ) {
+        
+        if (is_present(b, sota)) {
+          
+          nm <- paste0(
+            pred_tb,
+            " - ",
+            sota
+          )
+          
+          contrast_list[[nm]] <-
+            make_one_contrast(
+              pred_tb,
+              sota
+            )
+        }
+      }
+    }
+    
+    
+    # -----------------------------------------------------
+    # Terga1 Predomics contrasts
+    # -----------------------------------------------------
+    
+    pred_tg <- "Predomics Terga1 SC VotingWTB"
+    
+    if (
+      pred_tg %in% all_levels &&
+      is_present(b, pred_tg)
+    ) {
+      
+      for (
+        sota in setdiff(
+          all_levels,
+          c(
+            pred_tg,
+            "Predomics Terbeam SC VotingWTB"
+          )
+        )
+      ) {
+        
+        if (is_present(b, sota)) {
+          
+          nm <- paste0(
+            pred_tg,
+            " - ",
+            sota
+          )
+          
+          contrast_list[[nm]] <-
+            make_one_contrast(
+              pred_tg,
+              sota
+            )
+        }
+      }
+    }
+  }
+  
+  
+  # =======================================================
+  # Safety check: ensure at least one contrast exists
+  # =======================================================
+  
+  if (length(contrast_list) == 0) {
+    warning(
+      "No valid Predomics-vs-SOTA contrasts for dataset: ",
+      ds
+    )
+    next
+  }
+  
+  
+  # =======================================================
+  # Apply contrasts within each binarisation strategy
+  # =======================================================
+  
+  ct <- contrast(
+    em,
+    method = contrast_list,
+    by = "Binarisation"
+  )
+  
+  ct_df <- as.data.frame(ct)
+  
+  ct_ci <- as.data.frame(
+    confint(ct)
+  )
+  
+  pairs_all <- merge(
+    ct_df,
+    ct_ci[, c(
+      "contrast",
+      "Binarisation",
+      "lower.CL",
+      "upper.CL"
+    )],
+    by = c(
+      "contrast",
+      "Binarisation"
+    ),
+    all.x = TRUE
+  ) %>%
+    mutate(
+      
+      # Significance category
+      
+      p.value.cat = ifelse(
+        p.value < 0.05,
+        "pvalue<0.05",
+        "NS"
+      ),
+      
+      # Significance symbol
+      
+      sig_symb = cut(
+        p.value,
+        breaks = c(
+          -Inf,
+          0.001,
+          0.01,
+          0.05,
+          Inf
+        ),
+        labels = c(
+          "***",
+          "**",
+          "*",
+          "NS"
+        ),
+        right = TRUE
+      ),
+      
+      # Predomics variant involved in the contrast
+      
+      Predomics_variant = case_when(
+        grepl("^Predomics Terbeam", contrast) ~ "Terbeam",
+        grepl("^Predomics Terga1", contrast) ~ "Terga1",
+        TRUE ~ "Other"
+      )
+    )
+  
+  pairs_all$Predomics_variant <- factor(
+    pairs_all$Predomics_variant,
+    levels = c(
+      "Terbeam",
+      "Terga1"
+    )
+  )
+  
+  
+  # =======================================================
+  # Panel 1:
+  # Estimated marginal means of accuracy
+  # =======================================================
+  
+  p1 <- ggplot(
+    em_df,
+    aes(
+      x = Methods_plot,
+      y = emmean,
+      colour = Heuristic
+    )
+  ) +
+    
+    geom_point(size = 3) +
+    
+    geom_errorbar(
+      aes(
+        ymin = lower.CL,
+        ymax = upper.CL
+      ),
+      width = .2
+    ) +
+    
+    scale_x_discrete(
+      position = "top"
+    ) +
+    
+    facet_nested(
+      . ~ Binarisation,
+      switch = "x"
+    ) +
+    
+    labs(
+      title = paste0(
+        ds,
+        " – EMMs (Test only)"
+      ),
+      x = NULL,
+      y = "Estimated mean Accuracy (EMMs)",
+      colour = NULL
+    ) +
+    
+    theme_bw(base_size = 16) +
+    
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 0
+      ),
+      plot.title = element_text(
+        face = "bold"
+      ),
+      legend.position = "top"
+    )
+  
+  
+  # =======================================================
+  # Panel 2:
+  # Predomics-vs-SOTA contrasts
+  # =======================================================
+  
+  p2 <- ggplot(
+    pairs_all,
+    aes(
+      x = contrast,
+      y = estimate,
+      colour = p.value.cat
+    )
+  ) +
+    
+    geom_point(size = 3) +
+    
+    geom_errorbar(
+      aes(
+        ymin = lower.CL,
+        ymax = upper.CL
+      ),
+      width = .2
+    ) +
+    
+    geom_text(
+      aes(label = sig_symb),
+      nudge_y = 0.02,
+      size = 4,
+      show.legend = FALSE
+    ) +
+    
+    geom_hline(
+      yintercept = 0,
+      linetype = "dashed"
+    ) +
+    
+    facet_nested(
+      Predomics_variant ~ Binarisation,
+      scales = "free_y",
+      space = "free_y"
+    ) +
+    
+    scale_color_manual(
+      values = cols_sig,
+      name = NULL
+    ) +
+    
+    coord_flip() +
+    
+    labs(
+      title = paste0(
+        ds,
+        " – Contrasts (Test only): Predomics − each SOTA method"
+      ),
+      x = NULL,
+      y = "Contrast estimate (95% CI)"
+    ) +
+    
+    theme_bw(base_size = 16) +
+    
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(
+        face = "bold"
+      )
+    )
+  
+  
+  # =======================================================
+  # Assemble final figure
+  # =======================================================
+  
+  fig <- p1 / p2
+  
+  
+  # =======================================================
+  # Display final figure
+  # =======================================================
+  
+  print(fig)
+  
+  
+  # =======================================================
+  # Export PDF for the current dataset
+  # =======================================================
+  
+  file_ds <- file.path(
+    out_dir,
+    paste0(
+      "accuracy_sota_predomics_testonly_",
+      gsub(
+        "[^A-Za-z0-9]+",
+        "_",
+        tolower(ds)
+      ),
+      ".pdf"
+    )
+  )
+  
+  ggsave(
+    filename = file_ds,
+    plot = fig,
+    width = 16,
+    height = 12,
+    units = "in"
+  )
+  
+  message("Exported: ", file_ds)
+}
+```
+
+
+## ============================================================
+### Interpretability Analysis of the Best Predomics Models
+## ============================================================
+##
+## Description:
+## This section focuses on the biological interpretability of
+## the best Predomics models obtained for the T2D dataset.
+##
+## The objects:
+## - mda_complete.annot_full_constraint_T2D
+## - mda_complete.annot_semi_constraint_T2D
+## - mda_complete.annot_unconstraint_T2D
+##
+## correspond to annotated interpretability files generated
+## from the best model selected under each experimental
+## configuration.
+##
+## Each file contains the variables selected by the best model,
+## their cross-validated MDA importance values, their coefficient
+## signs, and their taxonomic annotations.
+##
+## These annotated files were obtained separately according to:
+## - the constraint configuration,
+## - the aggregation method,
+## - the binarisation strategy,
+## - the learning approach,
+## - and the selected family of best models.
+##
+## In this analysis, the annotated results from the full,
+## semi-constrained, and unconstrained configurations are merged
+## into a single long-format dataframe.
+##
+## The resulting heatmap allows comparison of microbial features
+## selected across constraint settings.
+##
+## In the figure:
+## - tiles represent the MDA-based importance of each feature,
+## - dots represent the sign of the coefficient,
+## - rows correspond to annotated microbial species,
+## - columns correspond to OvO binary submodels,
+## - facets separate taxonomic phyla and constraint settings.
+##
+## This visualization helps identify which microbial signatures
+## are stable, specific, or variable across Predomics constraint
+## configurations.
+##
+
+```{r fig.width=14, fig.heigth = 12, warning=TRUE}
+full_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mda_complete.annot_full_constraint_T2D.rda"
+semi_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mda_complete.annot_semi_constraint_T2D.rda"
+unco_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mda_complete.annot_unconstraint_T2D.rda"
+
+stopifnot(file.exists(path.expand(full_path)))
+stopifnot(file.exists(path.expand(semi_path)))
+stopifnot(file.exists(path.expand(unco_path)))
+
+## ----------------------------
+## 2) Load data and add source label
+## ----------------------------
+##
+## Each loaded object is tagged with its corresponding
+## constraint configuration in order to facilitate:
+## - merging,
+## - comparison,
+## - and downstream visualization.
+##
+## The source variable is later used for:
+## - facet organization,
+## - interpretability comparison,
+## - and constraint-specific analysis.
+##
+## ----------------------------------------------------
+
+load(full_path)
+mda_complete.annot_full_constraint_T2D$source <- "full-constraint"
+
+load(semi_path)
+mda_complete.annot_semi_constraint_T2D$source <- "semi-constraint"
+
+load(unco_path)
+mda_complete.annot_unconstraint_T2D$source <- "unconstraint"
+
+
+## Merge all annotated interpretability results
+## into a single long-format dataframe
+##
+## This unified dataframe allows:
+## - direct comparison between constraint settings,
+## - identification of shared microbial signatures,
+## - and visualization of stable biomarkers.
+
+alldf <- bind_rows(
+  mda_complete.annot_full_constraint_T2D,
+  mda_complete.annot_semi_constraint_T2D,
+  mda_complete.annot_unconstraint_T2D
+)
+
+
+## ----------------------------
+## 3) Parse taxonomy from the feature string
+## ----------------------------
+##
+## Taxonomic information is extracted directly from the
+## microbial feature identifiers.
+##
+## The parsing step retrieves:
+## - phylum information,
+## - species-level annotations.
+##
+## These annotations are used to:
+## - biologically organize the heatmap,
+## - improve interpretability,
+## - and highlight taxonomic patterns.
+##
+## ----------------------------------------------------
+
+split_feat <- strsplit(alldf$feature, "\\|")
+
+# Extract phylum (2nd field)
+# and species (7th field) when available
+
+alldf$phylum  <- sapply(
+  split_feat,
+  function(x)
+    if (length(x) >= 2) x[2]
+    else NA_character_
+)
+
+alldf$species <- sapply(
+  split_feat,
+  function(x)
+    if (length(x) >= 7) x[7]
+    else NA_character_
+)
+
+
+## ----------------------------
+## 4) Reshape importance and coefficient
+## ----------------------------
+##
+## Convert data from wide format to long format in order
+## to facilitate:
+## - heatmap visualization,
+## - merging of importance and coefficient information,
+## - and ggplot compatibility.
+##
+## Importance values correspond to:
+## - cross-validated MDA importance scores.
+##
+## Coefficients correspond to:
+## - the direction of association of each microbial
+##   variable within the binary OvO submodels.
+##
+## ----------------------------------------------------
+
+
+# ----------------------------------------------------
+# Importance matrix
+# ----------------------------------------------------
+
+alldf2 <- dcast(
+  alldf,
+  species + phylum + model ~ source,
+  value.var = "importance"
+)
+
+# Missing values correspond to absent features
+# in a given constraint configuration and are
+# replaced by zero.
+
+alldf2[is.na(alldf2)] <- 0
+
+# Convert to long format
+
+alldf2 <- melt(
+  alldf2,
+  id.vars = c("species", "phylum", "model"),
+  variable.name = "source",
+  value.name = "importance"
+)
+
+
+# ----------------------------------------------------
+# Coefficient matrix
+# ----------------------------------------------------
+
+alldf3 <- dcast(
+  alldf,
+  species + phylum + model ~ source,
+  value.var = "coefficient"
+)
+
+# Missing coefficients are replaced by zero
+
+alldf3[is.na(alldf3)] <- 0
+
+# Convert to long format
+
+alldf3 <- melt(
+  alldf3,
+  id.vars = c("species", "phylum", "model"),
+  variable.name = "source",
+  value.name = "coefficient"
+)
+
+
+## ----------------------------
+## 5) Merge importance and coefficient information
+## ----------------------------
+##
+## Join importance scores and coefficient signs into
+## a unified dataframe used for visualization.
+##
+## Coefficient signs indicate:
+## - negative association (-1),
+## - positive association (+1),
+## - absence of feature contribution (0).
+##
+## Constraint configurations are converted into ordered
+## factors to ensure consistent visualization ordering.
+##
+## ----------------------------------------------------
+
+alldf23 <- left_join(
+  alldf2,
+  alldf3,
+  by = c(
+    "species",
+    "phylum",
+    "model",
+    "source"
+  )
+)
+
+alldf23$coefficient <- factor(
+  alldf23$coefficient,
+  levels = c(-1, 1, 0)
+)
+
+alldf23$source <- factor(
+  alldf23$source,
+  levels = c(
+    "full-constraint",
+    "semi-constraint",
+    "unconstraint"
+  ),
+  labels = c(
+    "full\nconstraint",
+    "semi\nconstraint",
+    "unconstraint"
+  )
+)
+
+
+## ----------------------------
+## 6) Heatmap visualization
+## ----------------------------
+##
+## Heatmap representation of the microbial signatures
+## selected by the best Predomics models.
+##
+## Interpretation:
+##
+## - Tiles:
+##   represent MDA importance scores obtained during
+##   cross-validation.
+##
+## - Dots:
+##   represent the coefficient sign associated with
+##   each microbial feature.
+##
+## - Red dots:
+##   negative contribution.
+##
+## - Blue dots:
+##   positive contribution.
+##
+## - White:
+##   absence of contribution.
+##
+## The figure enables:
+## - comparison of microbial signatures across
+##   constraint configurations,
+## - visualization of stable biomarkers,
+## - and biological interpretation of multiclass
+##   OvO Predomics models.
+##
+## ----------------------------------------------------
+
+p_top <- ggplot(alldf23, aes(x = model, y = species)) +
+  geom_tile(
+    aes(fill = importance),
+    color = "grey90",
+    linewidth = 0.3
+  ) +
+  geom_point(
+    aes(color = coefficient),
+    size = 3.8,
+    stroke = 0,
+    shape = 16,
+    na.rm = TRUE
+  ) +
+  scale_fill_gradient(
+    low = "white",
+    high = "steelblue",
+    name = "MDA | CV"
+  ) +
+  scale_color_manual(
+    name   = "Sign",
+    values = c(
+      "firebrick1",
+      "deepskyblue1",
+      "white"
+    ),
+    breaks = c(-1, 1, 0),
+    labels = c("-1", "1", ""),
+    drop   = TRUE
+  ) +
+  labs(
+    title = "",
+    x = NULL,
+    y = NULL
+  ) +
+  facet_grid(
+    phylum ~ source,
+    scales = "free_y",
+    space = "free_y"
+  ) +
+  theme_minimal(base_size = 20) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 16
+    ),
+    axis.text.y = element_text(size = 16),
+    plot.margin = ggplot2::margin(
+      t = 10,
+      r = 25,
+      b = 10,
+      l = 30
+    ),
+    strip.text.y = element_text(
+      angle = 0,
+      size = 18,
+      face = "bold"
+    ),
+    legend.position = "right",
+    legend.text = element_text(size = 16),
+    legend.title = element_text(
+      size = 18,
+      face = "bold"
+    )
+  )
+
+print(p_top)
+save(
+  alldf,
+  alldf2,
+  alldf3,
+  alldf23,
+  p_top,
+  file = "~/Documents/multiclasse_predomics/mcpredomics/vignettes/T2D_interpretability_analysis_workspace.rda",
+  compress = "xz"
+)
+```
+
+
+### Interpretability Analysis of the Imbalanced Enterotype Dataset
+## ============================================================
+##
+## Description:
+## This section presents the interpretability analysis of the
+## best multiclass Predomics models obtained for the
+## Imbalanced Enterotype dataset.
+##
+## The analysis compares microbial signatures identified under
+## three different constraint configurations:
+## - full constrained,
+## - semi-constrained,
+## - unconstrained.
+##
+## The input files:
+## - data_contraint1
+## - data_semicontraint3
+## - data_uncontraint2
+##
+## correspond to annotated interpretability outputs generated
+## from the best-performing Predomics models selected during
+## the multiclass optimization process.
+##
+## Each file contains:
+## - microbial variables selected by the model,
+## - cross-validated MDA importance scores,
+## - coefficient signs,
+## - taxonomic annotations,
+## - and OvO multiclass submodel information.
+##
+## These annotated results were generated separately according
+## to:
+## - the constraint configuration,
+## - the aggregation strategy,
+## - the binarisation strategy,
+## - the learning approach,
+## - and the selected sparsity level.
+##
+## The objective of this analysis is to compare how microbial
+## signatures vary across different Predomics constraint
+## configurations.
+##
+## The three annotated datasets are merged into a single
+## long-format dataframe in order to:
+## - compare feature importance profiles,
+## - identify stable microbial biomarkers,
+## - visualize constraint-specific signatures,
+## - and facilitate biological interpretation.
+##
+## In the heatmap:
+##
+## - Tiles:
+##   represent MDA-based importance values obtained during
+##   cross-validation.
+##
+## - Dots:
+##   represent the coefficient sign associated with each
+##   microbial variable.
+##
+## - Red dots:
+##   indicate negative associations.
+##
+## - Blue dots:
+##   indicate positive associations.
+##
+## - White:
+##   indicates absence of contribution.
+##
+## The heatmap is organized according to:
+## - microbial phylum,
+## - constraint configuration,
+## - and OvO multiclass submodels.
+##
+## This visualization facilitates the identification of:
+## - robust microbial biomarkers,
+## - taxonomic patterns,
+## - and biologically interpretable multiclass signatures
+## extracted by the Predomics framework.
+##
+## The final figure is exported in PDF format to ensure:
+## - high graphical quality,
+## - reproducibility,
+## - and publication-ready rendering.
+##
+## ============================================================
+
+```{r fig.width=18, fig.height=12, warning=FALSE}
+## 1) File paths and validation
+## ----------------------------
+
+full_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/data_contraint1.rda"
+semi_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/data_semicontraint3.rda"
+unco_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/data_uncontraint2.rda"
+
+stopifnot(file.exists(path.expand(full_path)))
+stopifnot(file.exists(path.expand(semi_path)))
+stopifnot(file.exists(path.expand(unco_path)))
+
+
+## ----------------------------
+## 2) Load datasets
+## ----------------------------
+
+load(full_path)
+load(semi_path)
+load(unco_path)
+
+
+## ----------------------------
+## 3) Add source labels
+## ----------------------------
+
+data_contraint1$source <- "full-constraint"
+
+data_semicontraint3$source <- "semi-constraint"
+
+data_uncontraint2$source <- "unconstraint"
+
+
+## ----------------------------
+## 4) Merge datasets
+## ----------------------------
+
+alldf <- rbind(
+  data_contraint1,
+  data_semicontraint3,
+  data_uncontraint2
+)
+
+
+## ----------------------------
+## 5) Build species display labels
+## ----------------------------
+
+alldf$species <- ifelse(
+  is.na(alldf$species),
+  paste(alldf$feature, ":Unknown", sep = ""),
+  paste(alldf$feature, alldf$species, sep = ":")
+)
+
+
+## ----------------------------
+## 6) Importance reshaping
+## ----------------------------
+
+alldf2 <- reshape2::dcast(
+  data = alldf,
+  formula = species + phylum + model ~ source,
+  value.var = "importance"
+)
+
+alldf2$`full-constraint` <- ifelse(
+  is.na(alldf2$`full-constraint`),
+  0,
+  alldf2$`full-constraint`
+)
+
+alldf2$`semi-constraint` <- ifelse(
+  is.na(alldf2$`semi-constraint`),
+  0,
+  alldf2$`semi-constraint`
+)
+
+alldf2$unconstraint <- ifelse(
+  is.na(alldf2$unconstraint),
+  0,
+  alldf2$unconstraint
+)
+
+alldf2 <- reshape2::melt(alldf2)
+
+colnames(alldf2) <- gsub(
+  "variable",
+  "source",
+  colnames(alldf2)
+)
+
+colnames(alldf2) <- gsub(
+  "value",
+  "importance",
+  colnames(alldf2)
+)
+
+
+## ----------------------------
+## 7) Coefficient reshaping
+## ----------------------------
+
+alldf3 <- reshape2::dcast(
+  data = alldf,
+  formula = species + phylum + model ~ source,
+  value.var = "coefficient"
+)
+
+alldf3 <- reshape2::melt(alldf3)
+
+colnames(alldf3) <- gsub(
+  "variable",
+  "source",
+  colnames(alldf3)
+)
+
+colnames(alldf3) <- gsub(
+  "value",
+  "coefficient",
+  colnames(alldf3)
+)
+
+alldf3$coefficient <- ifelse(
+  is.na(alldf3$coefficient),
+  0,
+  alldf3$coefficient
+)
+
+alldf3$coefficient <- factor(
+  alldf3$coefficient,
+  levels = c(-1, 1, 0)
+)
+
+
+## ----------------------------
+## 8) Merge importance and coefficient
+## ----------------------------
+
+alldf23 <- cbind(
+  alldf2,
+  alldf3[, "coefficient", drop = FALSE]
+)
+
+alldf23$source <- factor(
+  alldf23$source,
+  levels = c(
+    "full-constraint",
+    "semi-constraint",
+    "unconstraint"
+  ),
+  labels = c(
+    "full\nconstraint",
+    "semi\nconstraint",
+    "unconstraint"
+  )
+)
+
+
+## ----------------------------
+## 9) Heatmap plot
+## ----------------------------
+
+p_top <- ggplot(alldf23, aes(x = model, y = species)) +
+  geom_tile(
+    aes(fill = importance),
+    color = "grey90",
+    linewidth = 0.3
+  ) +
+  geom_point(
+    aes(color = coefficient),
+    size = 3.8,
+    stroke = 0,
+    shape = 16,
+    na.rm = TRUE
+  ) +
+  scale_fill_gradient(
+    low = "white",
+    high = "steelblue",
+    name = "MDA | CV"
+  ) +
+  scale_color_manual(
+    name = "Sign",
+    values = c(
+      "firebrick1",
+      "deepskyblue1",
+      "white"
+    ),
+    breaks = c(-1, 1, 0),
+    labels = c("-1", "1", ""),
+    drop = TRUE
+  ) +
+  labs(
+    title = "",
+    x = NULL,
+    y = NULL
+  ) +
+  facet_grid(
+    phylum ~ source,
+    scales = "free_y",
+    space = "free_y"
+  ) +
+  theme_minimal(base_size = 20) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(
+      angle = 60,
+      hjust = 1,
+      vjust = 1,
+      size = 14
+    ),
+    axis.text.y = element_text(size = 16),
+    plot.margin = ggplot2::margin(
+      t = 10,
+      r = 20,
+      b = 40,
+      l = 20
+    ),
+    strip.text.y = element_text(
+      angle = 0,
+      size = 18,
+      face = "bold"
+    ),
+    legend.position = "right",
+    legend.text = element_text(size = 16),
+    legend.title = element_text(
+      size = 18,
+      face = "bold"
+    )
+  )
+
+print(p_top)
+
+
+## ----------------------------
+## 10) Save PDF figure
+## ----------------------------
+
+ggsave(
+  filename = "~/Documents/multiclasse_predomics/mcpredomics/vignettes/enterotypes_heatmap.pdf",
+  plot = p_top,
+  device = "pdf",
+  width = 16,
+  height = 12
+)
+```
+
+
+### Interpretability Analysis of the CRC Dataset
+## ============================================================
+##
+## Description:
+## This section presents the interpretability analysis of the
+## best multiclass Predomics models obtained for the
+## colorectal cancer (CRC) dataset.
+##
+## The analysis compares microbial signatures identified under
+## three different constraint configurations:
+## - full constrained,
+## - semi-constrained,
+## - unconstrained.
+##
+## The input files:
+## - mod_annot_crc_full
+## - mod_annot_crc_semi
+## - mod_annot_crc_unco
+##
+## correspond to annotated interpretability outputs generated
+## from the best-performing Predomics models selected during
+## the multiclass optimization process.
+##
+## Each file contains:
+## - microbial variables selected by the model,
+## - cross-validated MDA importance scores,
+## - coefficient signs,
+## - taxonomic annotations,
+## - and OvO multiclass submodel information.
+##
+## These annotated results were generated separately according
+## to:
+## - the constraint configuration,
+## - the aggregation strategy,
+## - the binarisation strategy,
+## - the learning approach,
+## - and the selected sparsity level.
+##
+## The objective is to compare how microbial signatures vary
+## across Predomics constraint configurations in the CRC task.
+
+```{r fig.width=16, fig.height=12, warning=FALSE}
+
+full_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mod_annot_crc_full.rda"
+semi_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mod_annot_crc_semi.rda"
+unco_path <- "~/Documents/multiclasse_predomics/mcpredomics/vignettes/mod_annot_crc_unco.rda"
+
+stopifnot(file.exists(path.expand(full_path)))
+stopifnot(file.exists(path.expand(semi_path)))
+stopifnot(file.exists(path.expand(unco_path)))
+
+
+## ------------------------------------------------------------
+## 2) Load annotated model objects
+## ------------------------------------------------------------
+
+load(full_path)
+mod_annot_crc_full$source <- "full-constraint"
+
+load(semi_path)
+mod_annot_crc_semi$source <- "semi-constraint"
+
+load(unco_path)
+mod_annot_crc_unco$source <- "unconstraint"
+
+
+## ------------------------------------------------------------
+## 3) Merge all constraint configurations
+## ------------------------------------------------------------
+
+alldf <- bind_rows(
+  mod_annot_crc_full,
+  mod_annot_crc_semi,
+  mod_annot_crc_unco
+)
+
+
+## ------------------------------------------------------------
+## 4) Ensure feature column is character
+## ------------------------------------------------------------
+
+alldf$feature <- as.character(alldf$feature)
+
+
+## ------------------------------------------------------------
+## 5) Extract taxonomic information from feature string
+## ------------------------------------------------------------
+##
+## Feature format example:
+## k__Bacteria|p__Firmicutes|...|s__Species_name
+##
+## The parsing step extracts:
+## - phylum-level annotation,
+## - species-level annotation.
+##
+## These annotations are used to biologically organize
+## the heatmap and facilitate interpretation.
+##
+## ------------------------------------------------------------
+
+split_feat <- strsplit(alldf$feature, "\\|")
+
+alldf$phylum <- sapply(
+  split_feat,
+  function(x)
+    if (length(x) >= 2) x[2]
+    else NA_character_
+)
+
+alldf$species <- sapply(
+  split_feat,
+  function(x)
+    if (length(x) >= 7) x[7]
+    else NA_character_
+)
+
+
+## ------------------------------------------------------------
+## 6) Reshape importance values
+## ------------------------------------------------------------
+##
+## MDA importance values are reshaped from wide to long
+## format to allow ggplot-based heatmap visualization.
+##
+## Missing importance values correspond to features absent
+## from a given constraint configuration and are replaced
+## by zero.
+##
+## ------------------------------------------------------------
+
+alldf2 <- dcast(
+  alldf,
+  species + phylum + model ~ source,
+  value.var = "importance"
+)
+
+alldf2[is.na(alldf2)] <- 0
+
+alldf2 <- melt(
+  alldf2,
+  id.vars = c(
+    "species",
+    "phylum",
+    "model"
+  ),
+  variable.name = "source",
+  value.name = "importance"
+)
+
+
+## ------------------------------------------------------------
+## 7) Reshape coefficient values
+## ------------------------------------------------------------
+##
+## Coefficients are reshaped from wide to long format.
+##
+## The coefficient sign represents the direction of the
+## contribution of each microbial feature within each OvO
+## binary submodel.
+##
+## Missing coefficients are replaced by zero, indicating
+## absence of contribution.
+##
+## ------------------------------------------------------------
+
+alldf3 <- dcast(
+  alldf,
+  species + phylum + model ~ source,
+  value.var = "coefficient"
+)
+
+alldf3[is.na(alldf3)] <- 0
+
+alldf3 <- melt(
+  alldf3,
+  id.vars = c(
+    "species",
+    "phylum",
+    "model"
+  ),
+  variable.name = "source",
+  value.name = "coefficient"
+)
+
+
+## ------------------------------------------------------------
+## 8) Merge importance and coefficient information
+## ------------------------------------------------------------
+
+alldf23 <- left_join(
+  alldf2,
+  alldf3,
+  by = c(
+    "species",
+    "phylum",
+    "model",
+    "source"
+  )
+)
+
+
+## ------------------------------------------------------------
+## 9) Define factor levels for consistent ordering
+## ------------------------------------------------------------
+
+alldf23$coefficient <- factor(
+  alldf23$coefficient,
+  levels = c(-1, 1, 0)
+)
+
+alldf23$source <- factor(
+  alldf23$source,
+  levels = c(
+    "full-constraint",
+    "semi-constraint",
+    "unconstraint"
+  ),
+  labels = c(
+    "full\nconstraint",
+    "semi\nconstraint",
+    "unconstraint"
+  )
+)
+
+
+## ------------------------------------------------------------
+## 10) Heatmap visualization
+## ------------------------------------------------------------
+##
+## Interpretation:
+##
+## - Tiles represent MDA importance scores.
+## - Dots represent coefficient signs.
+## - Red dots indicate negative contributions.
+## - Blue dots indicate positive contributions.
+## - White indicates absence of contribution.
+##
+## The heatmap is organized by:
+## - microbial phylum,
+## - constraint configuration,
+## - and OvO binary submodels.
+##
+## This visualization helps identify microbial signatures
+## that are stable, constraint-specific, or biologically
+## relevant for CRC classification.
+##
+## ------------------------------------------------------------
+
+p_top <- ggplot(alldf23, aes(x = model, y = species)) +
+  
+  geom_tile(
+    aes(fill = importance),
+    color = "grey90",
+    linewidth = 0.3
+  ) +
+  
+  geom_point(
+    aes(color = coefficient),
+    size = 3.8,
+    stroke = 0,
+    shape = 16,
+    na.rm = TRUE
+  ) +
+  
+  scale_fill_gradient(
+    low = "white",
+    high = "steelblue",
+    name = "MDA | CV"
+  ) +
+  
+  scale_color_manual(
+    name = "Sign",
+    values = c(
+      "firebrick1",
+      "deepskyblue1",
+      "white"
+    ),
+    breaks = c(-1, 1, 0),
+    labels = c("-1", "1", ""),
+    drop = TRUE
+  ) +
+  
+  facet_grid(
+    phylum ~ source,
+    scales = "free_y",
+    space = "free_y"
+  ) +
+  
+  labs(
+    title = "",
+    x = NULL,
+    y = NULL
+  ) +
+  
+  theme_minimal(base_size = 20) +
+  
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 16
+    ),
+    axis.text.y = element_text(size = 16),
+    plot.margin = ggplot2::margin(
+      t = 10,
+      r = 25,
+      b = 10,
+      l = 30
+    ),
+    strip.text.y = element_text(
+      angle = 0,
+      size = 18,
+      face = "bold"
+    ),
+    legend.position = "right",
+    legend.text = element_text(size = 16),
+    legend.title = element_text(
+      size = 18,
+      face = "bold"
+    )
+  )
+
+print(p_top)
+ggsave(
+  filename = "~/Documents/multiclasse_predomics/mcpredomics/vignettes/crc_heatmap.pdf",
+  plot = p_top,
+  device = "pdf",
+  width = 16,
+  height = 12
+)
 ```
 
 
 
 
 
+### The four files loaded below correspond to the experimental results obtained using our interpretable multiclass extension of Predomics applied to four gut microbiome datasets:
+
+* **CRC**: colorectal cancer dataset;
+* **T2D**: type 2 diabetes dataset;
+* **Enterotype Balanced**: balanced enterotype dataset;
+* **Enterotype Imbalanced**: imbalanced enterotype dataset.
+
+For each experiment, we used:
+
+* the **One-vs-One (OvO)** binarization strategy;
+* an aggregation method based on **majority voting with tie-breaking**;
+* the **semi-constrained** regime, which partially enforces feature-selection constraints in order to obtain more interpretable models while maintaining strong predictive performance.
+
+These experiments were conducted as part of a comparative evaluation against several State-of-the-Art (SOTA) methods, including:
+
+* **Random Forest (RF)**;
+* **Logistic Regression (LR)**;
+* **Support Vector Machine (SVM)**.
+
+The loaded `.rda` files contain all results generated from the cross-validation experiments, including multiclass confusion matrices, performance metrics, OvO submodels, and all information required for the comparative analyses and visualizations presented in this study.
+
+
+
+```{r pressure, echo=FALSE}
+load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_CRC_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_T2D_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_balance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/vignettes/res_clf_mc_imbalance_2026.rda")
+```
+
+
+```{r}
+# =========================================================
+# Build the four datasets
+# =========================================================
+df_crc <- get_aggregated_confusion_df(
+  res_clf_mc_CRC_2026,
+  "CRC"
+)
+
+df_t2d <- get_aggregated_confusion_df(
+  res_clf_mc_T2D_2026,
+  "T2D"
+)
+
+df_balance <- get_aggregated_confusion_df(
+  res_clf_mc_balance_2026,
+  "Enterotype Balanced"
+)
+
+df_imbalance <- get_aggregated_confusion_df(
+  res_clf_mc_imbalance_2026,
+  "Enterotype Imbalanced"
+)
+
+# =========================================================
+# Merge all datasets
+# =========================================================
+df_all <- bind_rows(
+  df_crc,
+  df_t2d,
+  df_balance,
+  df_imbalance
+)
+
+df_all$Dataset <- factor(
+  df_all$Dataset,
+  levels = c(
+    "CRC",
+    "T2D",
+    "Enterotype Balanced",
+    "Enterotype Imbalanced"
+  )
+)
+
+df_all$Facet_Label <- paste0(
+  df_all$Dataset,
+  "\n",
+  df_all$Metrics
+)
+
+df_all$Facet_Label <- factor(
+  df_all$Facet_Label,
+  levels = unique(df_all$Facet_Label[order(df_all$Dataset)])
+)
+
+# =========================================================
+# Text color according to cell intensity
+# =========================================================
+max_value <- max(df_all$Value, na.rm = TRUE)
+
+df_all$Text_Color <- ifelse(
+  df_all$Value > 0.45 * max_value,
+  "white",
+  "black"
+)
+
+# =========================================================
+# Final merged plot
+# =========================================================
+p <- ggplot(df_all, aes(x = Predicted, y = Actual, fill = Value)) +
+  
+  geom_tile(color = "grey85", linewidth = 0.6) +
+  
+  geom_text(
+    aes(label = Value, color = Text_Color),
+    size = 5,
+    fontface = "bold"
+  ) +
+  
+  scale_color_identity() +
+  
+  scale_fill_gradientn(
+    colours = c("#FFFFE5", "#C7E9B4", "#41B6C4", "#2C7FB8", "#081D58"),
+    name = "Count"
+  ) +
+  
+  facet_wrap(
+    ~ Facet_Label,
+    ncol = 2,
+    scales = "free"
+  ) +
+  
+  theme_minimal(base_size = 16) +
+  
+  labs(
+    title = NULL,
+    x = "Predicted class",
+    y = "Actual class"
+  ) +
+  
+  theme(
+    strip.text = element_text(
+      size = 16,
+      face = "bold",
+      lineheight = 1.15,
+      margin = ggplot2::margin(t = 8, b = 12)
+    ),
+    
+    axis.title.x = element_text(
+      size = 20,
+      face = "bold",
+      margin = ggplot2::margin(t = 20)
+    ),
+    
+    axis.title.y = element_text(
+      size = 20,
+      face = "bold",
+      margin = ggplot2::margin(r = 20)
+    ),
+    
+    axis.text.x = element_text(
+      size = 14,
+      face = "bold",
+      angle = 45,
+      hjust = 1,
+      vjust = 1
+    ),
+    
+    axis.text.y = element_text(
+      size = 14,
+      face = "bold"
+    ),
+    
+    legend.title = element_text(
+      size = 16,
+      face = "bold"
+    ),
+    
+    legend.text = element_text(
+      size = 14,
+      face = "bold"
+    ),
+    
+    panel.spacing.x = grid::unit(3.2, "cm"),
+    panel.spacing.y = grid::unit(2.8, "cm"),
+    
+    panel.grid = element_blank(),
+    
+    plot.margin = ggplot2::margin(
+      t = 20,
+      r = 35,
+      b = 25,
+      l = 35
+    )
+  )
+
+print(p)
+
+# =========================================================
+# Save as PDF
+# =========================================================
+ggsave(
+  filename = "confusion_matrices_4_datasets_cv10_article.pdf",
+  plot = p,
+  width = 22,
+  height = 14,
+  units = "in",
+  dpi = 600
+)
+```
+
+
+
+### Loading the best State-of-the-Art (SOTA) models
+
+The files loaded below correspond to the best-performing State-of-the-Art (SOTA) multiclass classification models evaluated on the four gut microbiome datasets used in this study:
+
+- **CRC** (Colorectal Cancer),
+- **T2D** (Type 2 Diabetes),
+- **Enterotype Balanced**,
+- **Enterotype Imbalanced**.
+
+These models were selected as the strongest baseline approaches for comparison with our interpretable multiclass Predomics framework.
+
+The loaded experiments include the following SOTA methods:
+
+- **Random Forest (RF)**,
+- **Logistic Regression (LR)**,
+- **Support Vector Machine (SVM)**.
+
+All SOTA models were trained using the **One-vs-One (OvO)** multiclass decomposition strategy in order to ensure a fair and consistent comparison with the proposed Predomics multiclass extension.
+
+The `.rda` files contain the complete experimental outputs generated during the cross-validation procedures, including:
+
+- multiclass confusion matrices,
+- prediction results,
+- OvO submodels,
+- performance metrics,
+- and all information required for comparative analyses and visualization.
+
+```{r}
+load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_CRC_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_T2D_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_balance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_CRC_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_imbalance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_LOGIT_ovo_balance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_T2D_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_RF_ovo_imbalance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_balance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_CRC_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_imbalance_2026.rda")
+load("~/Documents/multiclasse_predomics/mcpredomics/res_SVM_ovo_T2D_2026.rda")
+```
+
+
+
+```{r fig.width=16, fig.height=12, warning=FALSE}
+# ======================================================
+# Function: compute recall and precision from one binary matrix
+# rows = Predicted, columns = Actual
+# ======================================================
+
+compute_metrics_one_binary_matrix_generic <- function(conf_mat, pair_classes, fold_id) {
+  
+  pair_classes <- as.character(pair_classes)
+  pair_name <- paste(pair_classes, collapse = " vs ")
+  
+  aligned_mat <- matrix(
+    0,
+    nrow = length(pair_classes),
+    ncol = length(pair_classes),
+    dimnames = list(pair_classes, pair_classes)
+  )
+  
+  valid_rows <- intersect(rownames(conf_mat), pair_classes)
+  valid_cols <- intersect(colnames(conf_mat), pair_classes)
+  
+  aligned_mat[valid_rows, valid_cols] <- conf_mat[valid_rows, valid_cols, drop = FALSE]
+  
+  metrics_table <- data.frame()
+  
+  for (current_class in pair_classes) {
+    
+    TP <- aligned_mat[current_class, current_class]
+    
+    # rows = Predicted, columns = Actual
+    FP <- sum(aligned_mat[current_class, ]) - TP
+    FN <- sum(aligned_mat[, current_class]) - TP
+    
+    recall_value <- ifelse((TP + FN) == 0, NA, TP / (TP + FN))
+    precision_value <- ifelse((TP + FP) == 0, NA, TP / (TP + FP))
+    
+    metrics_table <- rbind(
+      metrics_table,
+      data.frame(
+        Fold = fold_id,
+        Pair = pair_name,
+        Class = current_class,
+        Recall = recall_value,
+        Precision = precision_value,
+        stringsAsFactors = FALSE
+      )
+    )
+  }
+  
+  return(metrics_table)
+}
+
+# ======================================================
+# Function: extract metrics for one method
+# ======================================================
+
+extract_crc_precision_recall <- function(result_object, method_name, class_order) {
+  
+  all_results_list <- list()
+  result_index <- 1
+  
+  all_best_test_folds <- result_object$crossVal$best_fold_test
+  
+  if (!is.null(result_object$class_pairs)) {
+    class_pairs <- result_object$class_pairs
+  } else {
+    class_pairs <- combn(class_order, 2, simplify = FALSE)
+  }
+  
+  for (fold_index in seq_along(all_best_test_folds)) {
+    
+    current_fold <- all_best_test_folds[[fold_index]]
+    
+    if (!is.null(current_fold) && !is.null(current_fold$confusionMatrix_)) {
+      
+      binary_confusion_list <- current_fold$confusionMatrix_
+      
+      for (pair_index in seq_along(binary_confusion_list)) {
+        
+        current_binary_matrix <- binary_confusion_list[[pair_index]]
+        
+        if (!is.null(result_object$class_pairs)) {
+          pair_classes <- class_pairs[[pair_index]]
+        } else {
+          pair_classes <- sort(unique(c(
+            rownames(current_binary_matrix),
+            colnames(current_binary_matrix)
+          )))
+        }
+        
+        all_results_list[[result_index]] <-
+          compute_metrics_one_binary_matrix_generic(
+            conf_mat = current_binary_matrix,
+            pair_classes = pair_classes,
+            fold_id = fold_index
+          )
+        
+        result_index <- result_index + 1
+      }
+    }
+  }
+  
+  all_metrics_df <- do.call(rbind, all_results_list)
+  
+  df_summary <- aggregate(
+    cbind(Recall, Precision) ~ Pair + Class,
+    data = all_metrics_df,
+    FUN = function(x) mean(x, na.rm = TRUE)
+  )
+  
+  df_plot <- melt(
+    df_summary,
+    id.vars = c("Pair", "Class"),
+    measure.vars = c("Recall", "Precision"),
+    variable.name = "Metric",
+    value.name = "Score"
+  )
+  
+  pair_order <- c(
+    "adenoma vs control",
+    "adenoma vs CRC",
+    "control vs CRC"
+  )
+  
+  df_plot$Pair <- factor(df_plot$Pair, levels = pair_order)
+  df_plot$Class <- factor(df_plot$Class, levels = class_order)
+  df_plot$Method <- method_name
+  
+  return(df_plot)
+}
+
+# ======================================================
+# CRC class order
+# ======================================================
+
+crc_classes <- c("adenoma", "control", "CRC")
+
+# ======================================================
+# Extract results for the four methods
+# ======================================================
+
+df_predomics_crc <- extract_crc_precision_recall(
+  result_object = res_clf_mc_CRC_2026,
+  method_name = "Predomics",
+  class_order = crc_classes
+)
+
+df_rf_crc <- extract_crc_precision_recall(
+  result_object = res_RF_ovo_CRC_2026,
+  method_name = "Random Forest",
+  class_order = crc_classes
+)
+
+df_svm_crc <- extract_crc_precision_recall(
+  result_object = res_SVM_ovo_CRC_2026,
+  method_name = "SVM",
+  class_order = crc_classes
+)
+
+df_logit_crc <- extract_crc_precision_recall(
+  result_object = res_LOGIT_ovo_CRC_2026,
+  method_name = "Logistic Regression",
+  class_order = crc_classes
+)
+
+# ======================================================
+# Plot function for one method
+# ======================================================
+
+make_crc_method_plot <- function(df_method, plot_title, show_legend = FALSE) {
+  
+  p <- ggplot(df_method, aes(x = Pair, y = Score, fill = Class)) +
+    geom_bar(
+      stat = "identity",
+      position = position_dodge(width = 0.8),
+      width = 0.7
+    ) +
+    geom_text(
+      aes(label = round(Score, 2)),
+      position = position_dodge(width = 0.8),
+      vjust = -0.3,
+      size = 4
+    ) +
+    facet_wrap(~ Metric, nrow = 1) +
+    ylim(0, 1.08) +
+    theme_minimal(base_size = 13) +
+    labs(
+      title = plot_title,
+      x = NULL,
+      y = "Score",
+      fill = "Class"
+    ) +
+    theme(
+      plot.title = element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 15
+      ),
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        face = "bold"
+      ),
+      strip.text = element_text(
+        face = "bold",
+        size = 13
+      ),
+      panel.border = element_rect(
+        color = "black",
+        fill = NA,
+        linewidth = 0.7
+      )
+    )
+  
+  if (!show_legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+}
+
+# ======================================================
+# Create four plots
+# ======================================================
+
+p_predomics_crc <- make_crc_method_plot(
+  df_predomics_crc,
+  plot_title = "Predomics",
+  show_legend = FALSE
+)
+
+p_rf_crc <- make_crc_method_plot(
+  df_rf_crc,
+  plot_title = "Random Forest",
+  show_legend = TRUE
+)
+
+p_svm_crc <- make_crc_method_plot(
+  df_svm_crc,
+  plot_title = "SVM",
+  show_legend = FALSE
+)
+
+p_logit_crc <- make_crc_method_plot(
+  df_logit_crc,
+  plot_title = "Logistic Regression",
+  show_legend = TRUE
+)
+
+# ======================================================
+# Combine plots in 2 x 2 layout
+# ======================================================
+
+final_crc_plot <-
+  (p_predomics_crc | p_rf_crc) /
+  (p_svm_crc | p_logit_crc) +
+  plot_annotation(
+    title = "CRC - Pairwise Class-Specific Recall and Precision",
+    theme = theme(
+      plot.title = element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 18
+      )
+    )
+  )
+
+# ======================================================
+# Save as PDF
+# ======================================================
+
+ggsave(
+  filename = "crc_precision_recall_per_class.pdf",
+  plot = final_crc_plot,
+  width = 18,
+  height = 10,
+  dpi = 300
+)
+
+# Display in RStudio
+print(final_crc_plot)
+```
+
+
+
+```{r fig.width=16, fig.height=12}
+# ======================================================
+# T2D - Precision and Recall per class
+# Predomics, RF, SVM, Logistic Regression
+# Output PDF: t2d_precision_recall_per_class.pdf
+# ======================================================
+
+# ======================================================
+# Generic function: compute recall and precision
+# rows = Predicted, columns = Actual
+# ======================================================
+
+compute_metrics_one_binary_matrix_generic <- function(conf_mat, pair_classes, fold_id) {
+  
+  pair_classes <- as.character(pair_classes)
+  pair_name <- paste(pair_classes, collapse = " vs ")
+  
+  aligned_mat <- matrix(
+    0,
+    nrow = length(pair_classes),
+    ncol = length(pair_classes),
+    dimnames = list(pair_classes, pair_classes)
+  )
+  
+  valid_rows <- intersect(rownames(conf_mat), pair_classes)
+  valid_cols <- intersect(colnames(conf_mat), pair_classes)
+  
+  aligned_mat[valid_rows, valid_cols] <- conf_mat[valid_rows, valid_cols, drop = FALSE]
+  
+  metrics_table <- data.frame()
+  
+  for (current_class in pair_classes) {
+    
+    TP <- aligned_mat[current_class, current_class]
+    
+    FP <- sum(aligned_mat[current_class, ]) - TP
+    FN <- sum(aligned_mat[, current_class]) - TP
+    
+    recall_value <- ifelse((TP + FN) == 0, NA, TP / (TP + FN))
+    precision_value <- ifelse((TP + FP) == 0, NA, TP / (TP + FP))
+    
+    metrics_table <- rbind(
+      metrics_table,
+      data.frame(
+        Fold = fold_id,
+        Pair = pair_name,
+        Class = current_class,
+        Recall = recall_value,
+        Precision = precision_value,
+        stringsAsFactors = FALSE
+      )
+    )
+  }
+  
+  return(metrics_table)
+}
+
+# ======================================================
+# Generic function: extract metrics for one method
+# ======================================================
+
+extract_t2d_precision_recall <- function(result_object, method_name, class_order) {
+  
+  all_results_list <- list()
+  result_index <- 1
+  
+  all_best_test_folds <- result_object$crossVal$best_fold_test
+  
+  if (!is.null(result_object$class_pairs)) {
+    class_pairs <- result_object$class_pairs
+  } else {
+    class_pairs <- combn(class_order, 2, simplify = FALSE)
+  }
+  
+  for (fold_index in seq_along(all_best_test_folds)) {
+    
+    current_fold <- all_best_test_folds[[fold_index]]
+    
+    if (!is.null(current_fold) && !is.null(current_fold$confusionMatrix_)) {
+      
+      binary_confusion_list <- current_fold$confusionMatrix_
+      
+      for (pair_index in seq_along(binary_confusion_list)) {
+        
+        current_binary_matrix <- binary_confusion_list[[pair_index]]
+        
+        if (!is.null(result_object$class_pairs)) {
+          pair_classes <- class_pairs[[pair_index]]
+        } else {
+          pair_classes <- sort(unique(c(
+            rownames(current_binary_matrix),
+            colnames(current_binary_matrix)
+          )))
+        }
+        
+        all_results_list[[result_index]] <-
+          compute_metrics_one_binary_matrix_generic(
+            conf_mat = current_binary_matrix,
+            pair_classes = pair_classes,
+            fold_id = fold_index
+          )
+        
+        result_index <- result_index + 1
+      }
+    }
+  }
+  
+  all_metrics_df <- do.call(rbind, all_results_list)
+  
+  df_summary <- aggregate(
+    cbind(Recall, Precision) ~ Pair + Class,
+    data = all_metrics_df,
+    FUN = function(x) mean(x, na.rm = TRUE)
+  )
+  
+  df_plot <- melt(
+    df_summary,
+    id.vars = c("Pair", "Class"),
+    measure.vars = c("Recall", "Precision"),
+    variable.name = "Metric",
+    value.name = "Score"
+  )
+  
+  pair_order <- c(
+    "control vs IGT",
+    "control vs T2D",
+    "IGT vs T2D"
+  )
+  
+  df_plot$Pair <- factor(df_plot$Pair, levels = pair_order)
+  df_plot$Class <- factor(df_plot$Class, levels = class_order)
+  df_plot$Method <- method_name
+  
+  return(df_plot)
+}
+
+# ======================================================
+# T2D class order
+# ======================================================
+
+t2d_classes <- c("control", "IGT", "T2D")
+
+# ======================================================
+# Extract results for the four methods
+# ======================================================
+
+df_predomics_t2d <- extract_t2d_precision_recall(
+  result_object = res_clf_mc_T2D_2026,
+  method_name = "Predomics",
+  class_order = t2d_classes
+)
+
+df_rf_t2d <- extract_t2d_precision_recall(
+  result_object = res_RF_ovo_T2D_2026,
+  method_name = "Random Forest",
+  class_order = t2d_classes
+)
+
+df_svm_t2d <- extract_t2d_precision_recall(
+  result_object = res_SVM_ovo_T2D_2026,
+  method_name = "SVM",
+  class_order = t2d_classes
+)
+
+df_logit_t2d <- extract_t2d_precision_recall(
+  result_object = res_LOGIT_ovo_T2D_2026,
+  method_name = "Logistic Regression",
+  class_order = t2d_classes
+)
+
+# ======================================================
+# Plot function for one method
+# ======================================================
+
+make_t2d_method_plot <- function(df_method, plot_title, show_legend = FALSE) {
+  
+  p <- ggplot(df_method, aes(x = Pair, y = Score, fill = Class)) +
+    geom_bar(
+      stat = "identity",
+      position = position_dodge(width = 0.8),
+      width = 0.7
+    ) +
+    geom_text(
+      aes(label = round(Score, 2)),
+      position = position_dodge(width = 0.8),
+      vjust = -0.3,
+      size = 4
+    ) +
+    facet_wrap(~ Metric, nrow = 1) +
+    ylim(0, 1.08) +
+    theme_minimal(base_size = 13) +
+    labs(
+      title = plot_title,
+      x = NULL,
+      y = "Score",
+      fill = "Class"
+    ) +
+    theme(
+      plot.title = element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 15
+      ),
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        face = "bold"
+      ),
+      strip.text = element_text(
+        face = "bold",
+        size = 13
+      ),
+      panel.border = element_rect(
+        color = "black",
+        fill = NA,
+        linewidth = 0.7
+      )
+    )
+  
+  if (!show_legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+}
+
+# ======================================================
+# Create four plots
+# ======================================================
+
+p_predomics_t2d <- make_t2d_method_plot(
+  df_predomics_t2d,
+  plot_title = "Predomics",
+  show_legend = FALSE
+)
+
+p_rf_t2d <- make_t2d_method_plot(
+  df_rf_t2d,
+  plot_title = "Random Forest",
+  show_legend = TRUE
+)
+
+p_svm_t2d <- make_t2d_method_plot(
+  df_svm_t2d,
+  plot_title = "SVM",
+  show_legend = FALSE
+)
+
+p_logit_t2d <- make_t2d_method_plot(
+  df_logit_t2d,
+  plot_title = "Logistic Regression",
+  show_legend = TRUE
+)
+
+# ======================================================
+# Combine plots in 2 x 2 layout
+# ======================================================
+
+final_t2d_plot <-
+  (p_predomics_t2d | p_rf_t2d) /
+  (p_svm_t2d | p_logit_t2d) +
+  plot_annotation(
+    title = "T2D - Pairwise Class-Specific Recall and Precision",
+    theme = theme(
+      plot.title = element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 18
+      )
+    )
+  )
+
+# ======================================================
+# Save as PDF
+# ======================================================
+
+ggsave(
+  filename = "t2d_precision_recall_per_class.pdf",
+  plot = final_t2d_plot,
+  width = 18,
+  height = 10,
+  dpi = 300
+)
+
+print(final_t2d_plot)
+```
+
+```{r fig.width=16, fig.height=12}
+# ======================================================
+# Enterotype Imbalanced - Precision and Recall per class
+# Predomics, RF, SVM, Logistic Regression
+# Output PDF: enterotype_imbalanced_precision_recall_per_class.pdf
+# ======================================================
+
+compute_metrics_one_binary_matrix_generic <- function(conf_mat, pair_classes, fold_id) {
+  
+  pair_classes <- as.character(pair_classes)
+  pair_name <- paste(pair_classes, collapse = " vs ")
+  
+  aligned_mat <- matrix(
+    0,
+    nrow = length(pair_classes),
+    ncol = length(pair_classes),
+    dimnames = list(pair_classes, pair_classes)
+  )
+  
+  valid_rows <- intersect(rownames(conf_mat), pair_classes)
+  valid_cols <- intersect(colnames(conf_mat), pair_classes)
+  
+  aligned_mat[valid_rows, valid_cols] <- conf_mat[valid_rows, valid_cols, drop = FALSE]
+  
+  metrics_table <- data.frame()
+  
+  for (current_class in pair_classes) {
+    
+    TP <- aligned_mat[current_class, current_class]
+    
+    FP <- sum(aligned_mat[current_class, ]) - TP
+    FN <- sum(aligned_mat[, current_class]) - TP
+    
+    recall_value <- ifelse((TP + FN) == 0, NA, TP / (TP + FN))
+    precision_value <- ifelse((TP + FP) == 0, NA, TP / (TP + FP))
+    
+    metrics_table <- rbind(
+      metrics_table,
+      data.frame(
+        Fold = fold_id,
+        Pair = pair_name,
+        Class = current_class,
+        Recall = recall_value,
+        Precision = precision_value,
+        stringsAsFactors = FALSE
+      )
+    )
+  }
+  
+  return(metrics_table)
+}
+
+extract_enterotype_imbalance_precision_recall <- function(result_object, method_name, class_order) {
+  
+  all_results_list <- list()
+  result_index <- 1
+  
+  all_best_test_folds <- result_object$crossVal$best_fold_test
+  
+  if (!is.null(result_object$class_pairs)) {
+    class_pairs <- result_object$class_pairs
+  } else {
+    class_pairs <- combn(class_order, 2, simplify = FALSE)
+  }
+  
+  for (fold_index in seq_along(all_best_test_folds)) {
+    
+    current_fold <- all_best_test_folds[[fold_index]]
+    
+    if (!is.null(current_fold) && !is.null(current_fold$confusionMatrix_)) {
+      
+      binary_confusion_list <- current_fold$confusionMatrix_
+      
+      for (pair_index in seq_along(binary_confusion_list)) {
+        
+        current_binary_matrix <- binary_confusion_list[[pair_index]]
+        
+        if (!is.null(result_object$class_pairs)) {
+          pair_classes <- class_pairs[[pair_index]]
+        } else {
+          pair_classes <- sort(unique(c(
+            rownames(current_binary_matrix),
+            colnames(current_binary_matrix)
+          )))
+        }
+        
+        all_results_list[[result_index]] <-
+          compute_metrics_one_binary_matrix_generic(
+            conf_mat = current_binary_matrix,
+            pair_classes = pair_classes,
+            fold_id = fold_index
+          )
+        
+        result_index <- result_index + 1
+      }
+    }
+  }
+  
+  all_metrics_df <- do.call(rbind, all_results_list)
+  
+  df_summary <- aggregate(
+    cbind(Recall, Precision) ~ Pair + Class,
+    data = all_metrics_df,
+    FUN = function(x) mean(x, na.rm = TRUE)
+  )
+  
+  df_plot <- melt(
+    df_summary,
+    id.vars = c("Pair", "Class"),
+    measure.vars = c("Recall", "Precision"),
+    variable.name = "Metric",
+    value.name = "Score"
+  )
+  
+  pair_order <- c(
+    "Bact1 vs Bact2",
+    "Bact1 vs Prev",
+    "Bact1 vs Rum",
+    "Bact2 vs Prev",
+    "Bact2 vs Rum",
+    "Prev vs Rum"
+  )
+  
+  df_plot$Pair <- factor(df_plot$Pair, levels = pair_order)
+  df_plot$Class <- factor(df_plot$Class, levels = class_order)
+  df_plot$Method <- method_name
+  
+  return(df_plot)
+}
+
+enterotype_classes <- c("Bact1", "Bact2", "Prev", "Rum")
+
+df_predomics_imbalance <- extract_enterotype_imbalance_precision_recall(
+  result_object = res_clf_mc_imbalance_2026,
+  method_name = "Predomics",
+  class_order = enterotype_classes
+)
+
+df_rf_imbalance <- extract_enterotype_imbalance_precision_recall(
+  result_object = res_RF_ovo_imbalance_2026,
+  method_name = "Random Forest",
+  class_order = enterotype_classes
+)
+
+df_svm_imbalance <- extract_enterotype_imbalance_precision_recall(
+  result_object = res_SVM_ovo_imbalance_2026,
+  method_name = "SVM",
+  class_order = enterotype_classes
+)
+
+df_logit_imbalance <- extract_enterotype_imbalance_precision_recall(
+  result_object = res_LOGIT_ovo_imbalance_2026,
+  method_name = "Logistic Regression",
+  class_order = enterotype_classes
+)
+
+make_enterotype_imbalance_method_plot <- function(df_method, plot_title, show_legend = FALSE) {
+  
+  p <- ggplot(df_method, aes(x = Pair, y = Score, fill = Class)) +
+    geom_bar(
+      stat = "identity",
+      position = position_dodge(width = 0.8),
+      width = 0.7
+    ) +
+    geom_text(
+      aes(label = round(Score, 2)),
+      position = position_dodge(width = 0.8),
+      vjust = -0.3,
+      size = 3.5
+    ) +
+    facet_wrap(~ Metric, nrow = 1) +
+    ylim(0, 1.08) +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = plot_title,
+      x = NULL,
+      y = "Score",
+      fill = "Class"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+      axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", size = 9),
+      strip.text = element_text(face = "bold", size = 13),
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.7)
+    )
+  
+  if (!show_legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+}
+
+p_predomics_imbalance <- make_enterotype_imbalance_method_plot(
+  df_predomics_imbalance,
+  plot_title = "Predomics",
+  show_legend = FALSE
+)
+
+p_rf_imbalance <- make_enterotype_imbalance_method_plot(
+  df_rf_imbalance,
+  plot_title = "Random Forest",
+  show_legend = TRUE
+)
+
+p_svm_imbalance <- make_enterotype_imbalance_method_plot(
+  df_svm_imbalance,
+  plot_title = "SVM",
+  show_legend = FALSE
+)
+
+p_logit_imbalance <- make_enterotype_imbalance_method_plot(
+  df_logit_imbalance,
+  plot_title = "Logistic Regression",
+  show_legend = TRUE
+)
+
+final_enterotype_imbalance_plot <-
+  (p_predomics_imbalance | p_rf_imbalance) /
+  (p_svm_imbalance | p_logit_imbalance) +
+  plot_annotation(
+    title = "Enterotype Imbalanced - Pairwise Class-Specific Recall and Precision",
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 18)
+    )
+  )
+
+ggsave(
+  filename = "enterotype_imbalanced_precision_recall_per_class.pdf",
+  plot = final_enterotype_imbalance_plot,
+  width = 20,
+  height = 11,
+  dpi = 300
+)
+
+print(final_enterotype_imbalance_plot)
+```
+
+
+
+```{r fig.width=16, fig.heigth = 12}
+# Enterotype Balanced - Precision and Recall per class
+# Predomics, RF, SVM, Logistic Regression
+# Output PDF: enterotype_balanced_precision_recall_per_class.pdf
+# ======================================================
+compute_metrics_one_binary_matrix_generic <- function(conf_mat, pair_classes, fold_id) {
+  
+  pair_classes <- as.character(pair_classes)
+  pair_name <- paste(pair_classes, collapse = " vs ")
+  
+  aligned_mat <- matrix(
+    0,
+    nrow = length(pair_classes),
+    ncol = length(pair_classes),
+    dimnames = list(pair_classes, pair_classes)
+  )
+  
+  valid_rows <- intersect(rownames(conf_mat), pair_classes)
+  valid_cols <- intersect(colnames(conf_mat), pair_classes)
+  
+  aligned_mat[valid_rows, valid_cols] <- conf_mat[valid_rows, valid_cols, drop = FALSE]
+  
+  metrics_table <- data.frame()
+  
+  for (current_class in pair_classes) {
+    
+    TP <- aligned_mat[current_class, current_class]
+    
+    # rows = Predicted, columns = Actual
+    FP <- sum(aligned_mat[current_class, ]) - TP
+    FN <- sum(aligned_mat[, current_class]) - TP
+    
+    recall_value <- ifelse((TP + FN) == 0, NA, TP / (TP + FN))
+    precision_value <- ifelse((TP + FP) == 0, NA, TP / (TP + FP))
+    
+    metrics_table <- rbind(
+      metrics_table,
+      data.frame(
+        Fold = fold_id,
+        Pair = pair_name,
+        Class = current_class,
+        Recall = recall_value,
+        Precision = precision_value,
+        stringsAsFactors = FALSE
+      )
+    )
+  }
+  
+  return(metrics_table)
+}
+
+extract_enterotype_balance_precision_recall <- function(result_object, method_name, class_order) {
+  
+  all_results_list <- list()
+  result_index <- 1
+  
+  all_best_test_folds <- result_object$crossVal$best_fold_test
+  
+  if (!is.null(result_object$class_pairs)) {
+    class_pairs <- result_object$class_pairs
+  } else {
+    class_pairs <- combn(class_order, 2, simplify = FALSE)
+  }
+  
+  for (fold_index in seq_along(all_best_test_folds)) {
+    
+    current_fold <- all_best_test_folds[[fold_index]]
+    
+    if (!is.null(current_fold) && !is.null(current_fold$confusionMatrix_)) {
+      
+      binary_confusion_list <- current_fold$confusionMatrix_
+      
+      for (pair_index in seq_along(binary_confusion_list)) {
+        
+        current_binary_matrix <- binary_confusion_list[[pair_index]]
+        
+        if (!is.null(result_object$class_pairs)) {
+          pair_classes <- class_pairs[[pair_index]]
+        } else {
+          pair_classes <- sort(unique(c(
+            rownames(current_binary_matrix),
+            colnames(current_binary_matrix)
+          )))
+        }
+        
+        all_results_list[[result_index]] <-
+          compute_metrics_one_binary_matrix_generic(
+            conf_mat = current_binary_matrix,
+            pair_classes = pair_classes,
+            fold_id = fold_index
+          )
+        
+        result_index <- result_index + 1
+      }
+    }
+  }
+  
+  all_metrics_df <- do.call(rbind, all_results_list)
+  
+  df_summary <- aggregate(
+    cbind(Recall, Precision) ~ Pair + Class,
+    data = all_metrics_df,
+    FUN = function(x) mean(x, na.rm = TRUE)
+  )
+  
+  df_plot <- melt(
+    df_summary,
+    id.vars = c("Pair", "Class"),
+    measure.vars = c("Recall", "Precision"),
+    variable.name = "Metric",
+    value.name = "Score"
+  )
+  
+  pair_order <- c(
+    "Bact1 vs Bact2",
+    "Bact1 vs Prev",
+    "Bact1 vs Rum",
+    "Bact2 vs Prev",
+    "Bact2 vs Rum",
+    "Prev vs Rum"
+  )
+  
+  df_plot$Pair <- factor(df_plot$Pair, levels = pair_order)
+  df_plot$Class <- factor(df_plot$Class, levels = class_order)
+  df_plot$Method <- method_name
+  
+  return(df_plot)
+}
+
+enterotype_classes <- c("Bact1", "Bact2", "Prev", "Rum")
+
+df_predomics_balance <- extract_enterotype_balance_precision_recall(
+  result_object = res_clf_mc_balance_2026,
+  method_name = "Predomics",
+  class_order = enterotype_classes
+)
+
+df_rf_balance <- extract_enterotype_balance_precision_recall(
+  result_object = res_RF_ovo_balance_2026,
+  method_name = "Random Forest",
+  class_order = enterotype_classes
+)
+
+df_svm_balance <- extract_enterotype_balance_precision_recall(
+  result_object = res_SVM_ovo_balance_2026,
+  method_name = "SVM",
+  class_order = enterotype_classes
+)
+
+df_logit_balance <- extract_enterotype_balance_precision_recall(
+  result_object = res_LOGIT_ovo_balance_2026,
+  method_name = "Logistic Regression",
+  class_order = enterotype_classes
+)
+
+make_enterotype_balance_method_plot <- function(df_method, plot_title, show_legend = FALSE) {
+  
+  p <- ggplot(df_method, aes(x = Pair, y = Score, fill = Class)) +
+    geom_bar(
+      stat = "identity",
+      position = position_dodge(width = 0.8),
+      width = 0.7
+    ) +
+    geom_text(
+      aes(label = round(Score, 2)),
+      position = position_dodge(width = 0.8),
+      vjust = -0.3,
+      size = 3.5
+    ) +
+    facet_wrap(~ Metric, nrow = 1) +
+    ylim(0, 1.08) +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = plot_title,
+      x = NULL,
+      y = "Score",
+      fill = "Class"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+      axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", size = 9),
+      strip.text = element_text(face = "bold", size = 13),
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.7)
+    )
+  
+  if (!show_legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+}
+
+p_predomics_balance <- make_enterotype_balance_method_plot(
+  df_predomics_balance,
+  plot_title = "Predomics",
+  show_legend = FALSE
+)
+
+p_rf_balance <- make_enterotype_balance_method_plot(
+  df_rf_balance,
+  plot_title = "Random Forest",
+  show_legend = TRUE
+)
+
+p_svm_balance <- make_enterotype_balance_method_plot(
+  df_svm_balance,
+  plot_title = "SVM",
+  show_legend = FALSE
+)
+
+p_logit_balance <- make_enterotype_balance_method_plot(
+  df_logit_balance,
+  plot_title = "Logistic Regression",
+  show_legend = TRUE
+)
+
+final_enterotype_balance_plot <-
+  (p_predomics_balance | p_rf_balance) /
+  (p_svm_balance | p_logit_balance) +
+  plot_annotation(
+    title = "Enterotype Balanced - Pairwise Class-Specific Recall and Precision",
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 18)
+    )
+  )
+
+ggsave(
+  filename = "enterotype_balanced_precision_recall_per_class.pdf",
+  plot = final_enterotype_balance_plot,
+  width = 20,
+  height = 11,
+  dpi = 300
+)
+
+print(final_enterotype_balance_plot)
+```
 
 
 
 
+```{r}
+# =========================================================
+# AUROC and AUPRC computation for Predomics OvO submodels
+# across 10-fold cross-validation for four datasets
+# =========================================================
+
+library(pROC)
+library(PRROC)
 
 
+# =========================================================
+# 1. Compute AUROC and AUPRC for one binary classifier
+# =========================================================
+compute_binary_auc_metrics <- function(y_true, y_score) {
+  
+  keep_idx <- which(!is.na(y_true) & !is.na(y_score))
+  y_true <- y_true[keep_idx]
+  y_score <- y_score[keep_idx]
+  
+  if (length(unique(y_true)) < 2) {
+    return(list(
+      auroc = NA_real_,
+      auprc = NA_real_
+    ))
+  }
+  
+  roc_obj <- pROC::roc(
+    response = y_true,
+    predictor = y_score,
+    quiet = TRUE
+  )
+  
+  auroc_value <- as.numeric(pROC::auc(roc_obj))
+  
+  scores_pos <- y_score[y_true == 1]
+  scores_neg <- y_score[y_true == 0]
+  
+  pr_obj <- PRROC::pr.curve(
+    scores.class0 = scores_pos,
+    scores.class1 = scores_neg,
+    curve = FALSE
+  )
+  
+  auprc_value <- pr_obj$auc.integral
+  
+  return(list(
+    auroc = auroc_value,
+    auprc = auprc_value
+  ))
+}
 
+# =========================================================
+# 2. Extract the two classes of one OvO submodel
+# =========================================================
+get_ovo_classes_from_confmat <- function(confmat) {
+  return(rownames(confmat))
+}
 
+# =========================================================
+# 3. Compute AUROC and AUPRC for one fold
+# =========================================================
+compute_fold_binary_metrics <- function(res_object, fold_id, dataset_name) {
+  
+  fold_test <- res_object$crossVal$best_fold_test[[fold_id]]
+  fold_xy <- res_object$crossVal$best_fold_xy[[fold_id]]
+  
+  confusion_list <- fold_test$confusionMatrix_
+  scores_predictions <- fold_test$scores_predictions
+  y_test_fold <- fold_xy$y_test
+  
+  n_submodels <- length(confusion_list)
+  
+  results <- data.frame(
+    dataset = character(0),
+    fold = integer(0),
+    submodel = integer(0),
+    class_pos = character(0),
+    class_neg = character(0),
+    n_samples = integer(0),
+    auroc = numeric(0),
+    auprc = numeric(0),
+    stringsAsFactors = FALSE
+  )
+  
+  for (k in seq_len(n_submodels)) {
+    
+    classes_k <- get_ovo_classes_from_confmat(
+      confusion_list[[k]]
+    )
+    
+    class_pos <- classes_k[1]
+    class_neg <- classes_k[2]
+    
+    idx <- which(
+      y_test_fold %in% c(class_pos, class_neg)
+    )
+    
+    y_true <- ifelse(
+      y_test_fold[idx] == class_pos,
+      1,
+      0
+    )
+    
+    y_score <- scores_predictions[[k]][idx]
+    
+    if (length(y_score) != length(y_true)) {
+      stop(
+        paste0(
+          "Length mismatch in ", dataset_name,
+          " fold ", fold_id,
+          ", submodel ", k,
+          ": length(y_score) = ", length(y_score),
+          ", length(y_true) = ", length(y_true)
+        )
+      )
+    }
+    
+    met <- compute_binary_auc_metrics(
+      y_true = y_true,
+      y_score = y_score
+    )
+    
+    results <- rbind(
+      results,
+      data.frame(
+        dataset = dataset_name,
+        fold = fold_id,
+        submodel = k,
+        class_pos = class_pos,
+        class_neg = class_neg,
+        n_samples = length(idx),
+        auroc = met$auroc,
+        auprc = met$auprc,
+        stringsAsFactors = FALSE
+      )
+    )
+  }
+  
+  return(results)
+}
 
+# =========================================================
+# 4. Compute AUROC and AUPRC across all folds
+# =========================================================
+compute_all_folds_binary_metrics <- function(res_object, dataset_name) {
+  
+  n_folds <- length(res_object$crossVal$best_fold_test)
+  all_results <- data.frame()
+  
+  for (fold_id in seq_len(n_folds)) {
+    
+    fold_results <- compute_fold_binary_metrics(
+      res_object = res_object,
+      fold_id = fold_id,
+      dataset_name = dataset_name
+    )
+    
+    all_results <- rbind(all_results, fold_results)
+  }
+  
+  return(all_results)
+}
+
+# =========================================================
+# 5. Summarize AUROC and AUPRC results
+# =========================================================
+summarize_binary_metrics <- function(all_results) {
+  
+  submodel_summary <- all_results %>%
+    group_by(dataset, submodel, class_pos, class_neg) %>%
+    summarise(
+      mean_auroc = mean(auroc, na.rm = TRUE),
+      mean_auprc = mean(auprc, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  global_summary <- all_results %>%
+    group_by(dataset) %>%
+    summarise(
+      mean_auroc = mean(auroc, na.rm = TRUE),
+      sd_auroc = sd(auroc, na.rm = TRUE),
+      mean_auprc = mean(auprc, na.rm = TRUE),
+      sd_auprc = sd(auprc, na.rm = TRUE),
+      n_results = n(),
+      .groups = "drop"
+    )
+  
+  return(list(
+    submodel_summary = submodel_summary,
+    global_summary = global_summary
+  ))
+}
+
+# =========================================================
+# 6. Run analysis for the four Predomics datasets
+# =========================================================
+all_metrics_crc <- compute_all_folds_binary_metrics(
+  res_object = res_clf_mc_CRC_2026,
+  dataset_name = "CRC"
+)
+
+all_metrics_t2d <- compute_all_folds_binary_metrics(
+  res_object = res_clf_mc_T2D_2026,
+  dataset_name = "T2D"
+)
+
+all_metrics_balance <- compute_all_folds_binary_metrics(
+  res_object = res_clf_mc_balance_2026,
+  dataset_name = "Enterotype Balanced"
+)
+
+all_metrics_imbalance <- compute_all_folds_binary_metrics(
+  res_object = res_clf_mc_imbalance_2026,
+  dataset_name = "Enterotype Imbalanced"
+)
+
+# =========================================================
+# 7. Merge all results
+# =========================================================
+all_metrics_predomics <- bind_rows(
+  all_metrics_crc,
+  all_metrics_t2d,
+  all_metrics_balance,
+  all_metrics_imbalance
+)
+
+# =========================================================
+# 8. Summarize all results
+# =========================================================
+summary_metrics_predomics <- summarize_binary_metrics(
+  all_metrics_predomics
+)
+
+cat("\n=== Mean AUROC/AUPRC by OvO submodel ===\n")
+print(summary_metrics_predomics$submodel_summary)
+
+cat("\n=== Global mean AUROC/AUPRC by dataset ===\n")
+print(summary_metrics_predomics$global_summary)
+# =========================================================
+# Final article-ready table
+# =========================================================
+final_auc_table_predomics <- summary_metrics_predomics$global_summary %>%
+  mutate(
+    AUROC = paste0(round(mean_auroc, 3), " ± ", round(sd_auroc, 3)),
+    AUPRC = paste0(round(mean_auprc, 3), " ± ", round(sd_auprc, 3))
+  ) %>%
+  select(dataset, AUROC, AUPRC)
+
+print(final_auc_table_predomics)
+```
 

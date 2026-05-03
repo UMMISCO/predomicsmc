@@ -3672,5 +3672,403 @@ digestmc <- function(obj,
 
 
 
+#' Build annotated heatmap data for OvO or OvA Predomics models
+#'
+#' This function prepares a long-format annotated dataframe used to build
+#' interpretability heatmaps from Predomics multiclass models. It supports
+#' both One-vs-One (OvO) and One-vs-All (OvA) strategies.
+#'
+#' @param y A factor or vector containing class labels.
+#' @param X The input feature matrix used by the model.
+#' @param best_model A Predomics model object containing `mda.cv_` and `coeffs_`.
+#' @param taxo_file Path to the taxonomy annotation file.
+#' @param approach Character string. Either `"ovo"` or `"ova"`.
+#' @param feature_col Column name in the taxonomy file containing feature IDs.
+#' @param species_col Column name containing species annotations.
+#' @param phylum_col Column name containing phylum annotations.
+#'
+#' @return A dataframe containing model labels, features, MDA importance,
+#' coefficient signs, species, phylum, and annotated feature names.
+#'
+#' @export
+build_model_annotation_heatmap_data <- function(
+    y,
+    X,
+    best_model,
+    taxo_file,
+    approach = c("ovo", "ova"),
+    feature_col = "cag_name",
+    species_col = "species",
+    phylum_col = "phylum"
+) {
+
+  approach <- match.arg(approach)
+
+  # Generate binary combinations according to the selected strategy
+  combi <- generate_combinations_with_factors(
+    y,
+    X,
+    approch = approach
+  )
+
+  # Sort class names
+  classes <- sort(unique(as.character(y)))
+
+  # Extract class labels for each binary submodel
+  l_y <- lapply(
+    combi$list_y,
+    function(v) sort(as.character(unique(v)))
+  )
+
+  # Order submodels and build readable labels
+  if (approach == "ovo") {
+
+    ord <- order(
+      sapply(l_y, function(v) match(v[1], classes)),
+      sapply(l_y, function(v) match(v[2], classes))
+    )
+
+    comb_labels <- sapply(
+      l_y[ord],
+      function(v) paste(v, collapse = " vs ")
+    )
+
+  } else {
+
+    ord <- order(
+      sapply(l_y, function(v) match(v[1], classes))
+    )
+
+    comb_labels <- sapply(
+      l_y[ord],
+      function(v) paste0(v[1], " vs Rest")
+    )
+  }
+
+  # Reorder combinations
+  combi$list_y <- l_y[ord]
+
+  if (!is.null(combi$list_X)) {
+    combi$list_X <- combi$list_X[ord]
+  }
+
+  # Reorder MDA and coefficient lists
+  mda_list <- best_model$mda.cv_[ord]
+  coeff_list <- best_model$coeffs_[ord]
+
+  # Convert MDA values to long format
+  mda_long <- lapply(seq_along(mda_list), function(i) {
+
+    v <- mda_list[[i]]
+
+    data.frame(
+      model = comb_labels[i],
+      feature = names(v),
+      importance = as.numeric(v),
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+
+  }) |> dplyr::bind_rows()
+
+  # Convert coefficients to long format
+  coef_long <- lapply(seq_along(coeff_list), function(i) {
+
+    v <- coeff_list[[i]]
+
+    if (is.null(v) || length(v) == 0) {
+      return(NULL)
+    }
+
+    data.frame(
+      model = comb_labels[i],
+      feature = names(v),
+      coefficient = as.numeric(v),
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+
+  }) |> dplyr::bind_rows()
+
+  # Complete missing feature/submodel combinations with importance = 0
+  all_features <- sort(unique(mda_long$feature))
+
+  mda_complete <- tidyr::complete(
+    mda_long,
+    model = factor(model, levels = comb_labels),
+    feature = all_features,
+    fill = list(importance = 0)
+  )
+
+  # Add coefficient signs
+  mda_complete <- mda_complete |>
+    dplyr::left_join(coef_long, by = c("model", "feature")) |>
+    dplyr::mutate(
+      sign_label = dplyr::case_when(
+        is.na(coefficient) ~ NA_character_,
+        coefficient < 0 ~ "Class A",
+        TRUE ~ "Class B"
+      ),
+      sign_label = factor(sign_label, levels = c("Class A", "Class B"))
+    )
+
+  # Order features by maximum importance
+  feat_order <- mda_complete |>
+    dplyr::group_by(feature) |>
+    dplyr::summarise(
+      max_imp = max(importance),
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(dplyr::desc(max_imp)) |>
+    dplyr::pull(feature)
+
+  mda_complete <- mda_complete |>
+    dplyr::mutate(
+      feature = factor(feature, levels = rev(feat_order)),
+      model = factor(model, levels = comb_labels)
+    )
+
+  # Read taxonomy annotation file
+  df_annot <- read.table(
+    taxo_file,
+    sep = "\t",
+    header = TRUE,
+    quote = "",
+    comment.char = "",
+    stringsAsFactors = FALSE
+  )
+
+  # Check required taxonomy columns
+  required_cols <- c(feature_col, species_col, phylum_col)
+
+  if (!all(required_cols %in% colnames(df_annot))) {
+    stop(
+      paste(
+        "The taxonomy file must contain the following columns:",
+        paste(required_cols, collapse = ", ")
+      )
+    )
+  }
+
+  # Merge model data with taxonomy annotations
+  mod_annot <- merge(
+    mda_complete,
+    df_annot,
+    by.x = "feature",
+    by.y = feature_col,
+    all.x = TRUE
+  )
+
+  # Replace missing annotations
+  mod_annot[[species_col]] <- ifelse(
+    is.na(mod_annot[[species_col]]),
+    "unclassified",
+    mod_annot[[species_col]]
+  )
+
+  mod_annot[[phylum_col]] <- ifelse(
+    is.na(mod_annot[[phylum_col]]),
+    "unclassified",
+    mod_annot[[phylum_col]]
+  )
+
+  # Build readable feature annotation
+  mod_annot$feature.annot <- paste(
+    mod_annot$feature,
+    mod_annot[[species_col]],
+    sep = ":"
+  )
+
+  return(mod_annot)
+}
+
+
+
+# =========================================================
+# Function: get_aggregated_confusion_df()
+# =========================================================
+#
+# Description:
+# This function extracts, aligns, aggregates, and prepares
+# multiclass confusion matrices obtained from cross-validation
+# test folds. It is designed for Predomics multiclass results
+# stored in an object containing:
+#
+#   res_object$crossVal$best_fold_test
+#
+# For each fold, the function retrieves the multiclass confusion
+# matrix named:
+#
+#   Multi_confusionMatrix_
+#
+# The function then aggregates all available confusion matrices
+# into a single global confusion matrix representing the summed
+# test performance over all cross-validation folds.
+#
+# This is particularly useful for comparing multiclass Predomics
+# experiments across several datasets, such as CRC, T2D,
+# Enterotype Balanced, and Enterotype Imbalanced.
+#
+# Main steps:
+#
+# 1. Extract confusion matrices
+#    - Retrieves all non-null multiclass confusion matrices from
+#      the cross-validation test folds.
+#
+# 2. Identify all class labels
+#    - Builds the complete list of classes observed across all folds,
+#      using both row names and column names.
+#
+# 3. Align confusion matrices
+#    - Ensures that all confusion matrices have the same dimensions
+#      and the same class ordering.
+#    - Missing classes in a fold are filled with zeros.
+#
+# 4. Aggregate confusion matrices
+#    - Sums all aligned confusion matrices to obtain one global
+#      confusion matrix over the full cross-validation procedure.
+#
+# 5. Reorient the matrix for visualization
+#    - Transposes the aggregated matrix so that:
+#        rows    = Actual classes
+#        columns = Predicted classes
+#
+# 6. Compute performance metrics
+#    - True Positives (TP)
+#    - False Positives (FP)
+#    - False Negatives (FN)
+#    - Per-class precision
+#    - Per-class recall
+#    - Global accuracy
+#    - Macro-Precision
+#    - Macro-Recall
+#    - Macro-F1 score
+#
+# 7. Prepare ggplot-compatible data
+#    - Converts the aggregated confusion matrix into long format
+#      using melt().
+#    - Adds the dataset name and a compact metrics label.
+#
+# Arguments:
+#
+# res_object:
+#   A multiclass classification result object containing the
+#   cross-validation results and confusion matrices.
+#
+# dataset_name:
+#   A character string indicating the name of the dataset.
+#   Example: "CRC", "T2D", "Enterotype Balanced",
+#   "Enterotype Imbalanced".
+#
+# Returns:
+#
+# A data frame in long format with the following columns:
+#
+#   Actual:
+#     The true class label.
+#
+#   Predicted:
+#     The predicted class label.
+#
+#   Value:
+#     The number of observations for each Actual/Predicted pair.
+#
+#   Dataset:
+#     The name of the dataset.
+#
+#   Metrics:
+#     A text label summarizing the global metrics:
+#     Accuracy, Macro-Precision, Macro-Recall, and F1 score.
+#
+# Error handling:
+#
+# If no confusion matrix is found in the cross-validation folds,
+# the function stops and returns an explicit error message.
+#
+# Output usage:
+#
+# The returned data frame can be directly used with ggplot2
+# to create heatmaps and faceted visualizations of aggregated
+# multiclass confusion matrices.
+#
+# =========================================================
+
+# =========================================================
+# Function to extract, aggregate and prepare confusion matrix
+# =========================================================
+get_aggregated_confusion_df <- function(res_object, dataset_name) {
+
+  cm_list <- lapply(
+    res_object$crossVal$best_fold_test,
+    function(x) if (!is.null(x)) x$Multi_confusionMatrix_ else NULL
+  )
+
+  cm_list <- cm_list[!sapply(cm_list, is.null)]
+
+  if (length(cm_list) == 0) {
+    stop(paste("No confusion matrix found for", dataset_name))
+  }
+
+  all_classes <- unique(unlist(lapply(cm_list, function(m) {
+    union(rownames(m), colnames(m))
+  })))
+
+  all_classes <- sort(all_classes)
+
+  align_conf_mat <- function(mat, classes) {
+    out <- matrix(
+      0,
+      nrow = length(classes),
+      ncol = length(classes),
+      dimnames = list(classes, classes)
+    )
+
+    out[rownames(mat), colnames(mat)] <- mat
+    return(out)
+  }
+
+  cm_list_aligned <- lapply(cm_list, align_conf_mat, classes = all_classes)
+
+  agg_mat <- Reduce("+", cm_list_aligned)
+
+  # rows = Actual, columns = Predicted
+  agg_mat_plot <- t(agg_mat)
+
+  TP <- diag(agg_mat_plot)
+  FP <- colSums(agg_mat_plot) - TP
+  FN <- rowSums(agg_mat_plot) - TP
+
+  precision <- TP / (TP + FP)
+  recall <- TP / (TP + FN)
+
+  precision[is.nan(precision)] <- 0
+  recall[is.nan(recall)] <- 0
+
+  accuracy <- sum(TP) / sum(agg_mat_plot)
+  macro_precision <- mean(precision)
+  macro_recall <- mean(recall)
+
+  macro_f1 <- 2 * macro_precision * macro_recall /
+    (macro_precision + macro_recall)
+
+  if (is.nan(macro_f1)) macro_f1 <- 0
+
+  metrics_label <- paste0(
+    "Acc = ", round(accuracy, 3),
+    " | Macro-P = ", round(macro_precision, 3),
+    " | Macro-R = ", round(macro_recall, 3),
+    " | F1 = ", round(macro_f1, 3)
+  )
+
+  df <- melt(agg_mat_plot)
+  colnames(df) <- c("Actual", "Predicted", "Value")
+
+  df$Dataset <- dataset_name
+  df$Metrics <- metrics_label
+
+  return(df)
+}
+
+
 
 

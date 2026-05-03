@@ -1,0 +1,25 @@
+Dataset,Methods,Constraint_factor,Approach,Binarisation,Accuracy,Recall,Precision,F1
+Balanced Enterotype,Logistic Regression,None,Sota,OVO,0.754 ± 0.044,0.754 ± 0.044,0.762 ± 0.046,0.753 ± 0.046
+Balanced Enterotype,Random Forest,None,Sota,OVO,0.753 ± 0.072,0.752 ± 0.073,0.771 ± 0.071,0.751 ± 0.077
+Balanced Enterotype,Voting_with_Tie_Breaking,Unconstrained,Terbeam Predomics,OVO,0.737 ± 0.069,0.737 ± 0.069,0.747 ± 0.071,0.742 ± 0.070
+Balanced Enterotype,Voting,Unconstrained,Terbeam Predomics,OVO,0.737 ± 0.064,0.737 ± 0.064,0.749 ± 0.064,0.743 ± 0.064
+Balanced Enterotype,Voting_with_Tie_Breaking,Semi_Constrained,Terbeam Predomics,OVO,0.735 ± 0.050,0.735 ± 0.050,0.750 ± 0.049,0.742 ± 0.049
+Balanced Enterotype,Voting,Semi_Constrained,Terbeam Predomics,OVO,0.731 ± 0.029,0.731 ± 0.029,0.752 ± 0.033,0.741 ± 0.031
+Balanced Enterotype,Maximization,Semi_Constrained,Terbeam Predomics,OVO,0.716 ± 0.067,0.738 ± 0.086,0.733 ± 0.064,0.734 ± 0.067
+Balanced Enterotype,SVM,None,Sota,OVO,0.702 ± 0.070,0.702 ± 0.069,0.718 ± 0.073,0.700 ± 0.069
+Balanced Enterotype,Artificial Neural Network,None,Sota,OVO,0.699 ± 0.053,0.699 ± 0.054,0.711 ± 0.051,0.697 ± 0.048
+Balanced Enterotype,Decision Tree,None,Sota,OVO,0.689 ± 0.053,0.689 ± 0.054,0.701 ± 0.051,0.687 ± 0.048
+Balanced Enterotype,Voting,Unconstrained,Terga1 Predomics,OVO,0.683 ± 0.045,0.683 ± 0.045,0.709 ± 0.046,0.696 ± 0.045
+Balanced Enterotype,Voting,Semi_Constrained,Terga1 Predomics,OVO,0.676 ± 0.063,0.676 ± 0.063,0.753 ± 0.010,0.694 ± 0.062
+Balanced Enterotype,Voting_with_Tie_Breaking,Semi_Constrained,Terga1 Predomics,OVO,0.676 ± 0.063,0.676 ± 0.063,0.753 ± 0.010,0.694 ± 0.062
+Balanced Enterotype,Maximization,Unconstrained,Terbeam Predomics,OVO,0.658 ± 0.102,0.680 ± 0.127,0.695 ± 0.083,0.685 ± 0.099
+Balanced Enterotype,Voting_with_Tie_Breaking,Unconstrained,Terga1 Predomics,OVO,0.655 ± 0.059,0.655 ± 0.059,0.678 ± 0.062,0.666 ± 0.060
+Balanced Enterotype,Maximization,Semi_Constrained,Terga1 Predomics,OVO,0.574 ± 0.122,0.583 ± 0.098,0.572 ± 0.159,0.574 ± 0.131
+Balanced Enterotype,Voting,Full_Constrained,Terbeam Predomics,OVO,0.552 ± 0.060,0.557 ± 0.062,0.552 ± 0.060,0.555 ± 0.061
+Balanced Enterotype,Voting_with_Tie_Breaking,Full_Constrained,Terbeam Predomics,OVO,0.549 ± 0.059,0.555 ± 0.061,0.549 ± 0.059,0.552 ± 0.060
+Balanced Enterotype,Voting,Full_Constrained,Terga1 Predomics,OVO,0.511 ± 0.068,0.518 ± 0.070,0.511 ± 0.068,0.514 ± 0.069
+Balanced Enterotype,Maximization,Full_Constrained,Terbeam Predomics,OVO,0.508 ± 0.059,0.552 ± 0.047,0.513 ± 0.057,0.530 ± 0.042
+Balanced Enterotype,Voting_with_Tie_Breaking,Full_Constrained,Terga1 Predomics,OVO,0.503 ± 0.053,0.501 ± 0.049,0.503 ± 0.053,0.502 ± 0.050
+Balanced Enterotype,Maximization,Unconstrained,Terga1 Predomics,OVO,0.494 ± 0.105,0.577 ± 0.097,0.566 ± 0.158,0.569 ± 0.130
+Balanced Enterotype,Maximization,Full_Constrained,Terga1 Predomics,OVO,0.465 ± 0.071,0.522 ± 0.078,0.491 ± 0.091,0.503 ± 0.074
+Balanced Enterotype,KNN,None,Sota,OVO,0.259 ± 0.012,0.259 ± 0.010,0.336 ± 0.181,0.337 ± 0.068

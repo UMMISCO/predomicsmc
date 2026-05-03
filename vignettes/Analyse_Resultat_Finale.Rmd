@@ -838,7 +838,3 @@ ggplot(df_all, aes(x = Estimate, y = reorder(Condition, Estimate))) +
 
 
 
-
-
-
-
